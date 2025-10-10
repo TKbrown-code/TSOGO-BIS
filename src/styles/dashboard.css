@@ -1,0 +1,46 @@
+.remove-btn {
+  background-color: var(--accentColor);
+  color: var(--secondaryColor);
+  padding: 0.5rem 1rem;
+  font-size: var(--font-sm);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: background-color 0.2s ease;
+}
+
+.remove-btn:hover {
+  background-color: #e74c3c;
+}
+
+.order-details-link {
+  display: inline-block;
+  margin-top: 0.5rem;
+  color: var(--headingColor);
+  text-decoration: underline;
+  font-size: var(--font-sm);
+}
+
+.order-details-link:hover {
+  color: var(--accentColor);
+}
+
+.refresh-btn, .back-btn {
+  background-color: var(--primaryColor);
+  color: var(--secondaryColor);
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-right: 0.5rem;
+  font-size: var(--font-sm);
+}
+
+.refresh-btn:hover, .back-btn:hover {
+  background-color: var(--accentColor);
+}
+
+.button-group {
+  margin-top: 1.5rem;
+}

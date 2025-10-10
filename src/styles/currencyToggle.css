@@ -1,0 +1,26 @@
+/* styles/currencyToggle.css */
+.currency-toggle {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 2000;
+  background: var(--primaryColor);
+  color: var(--secondaryColor);
+  padding: 0.5rem 1rem;
+  border-radius: 50px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.currency-toggle select {
+  background: transparent;
+  border: none;
+  color: var(--secondaryColor);
+  font-size: 0.9rem;
+  font-weight: bold;
+  cursor: pointer;
+  background: var(--primaryColor);
+}

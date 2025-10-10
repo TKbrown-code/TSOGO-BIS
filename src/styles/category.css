@@ -1,0 +1,147 @@
+/* ===== Sidebar Container ===== */
+.categories-aside {
+  background: #f9f9f9;
+  padding: 1rem;
+  border-radius: 8px;
+  border-right: 1px solid #ddd;
+  font-family: var(--bodyFont);
+  height: fit-content;
+  position: sticky;
+  top: 50px; /* sticky for desktop */
+  max-height: calc(100vh - 50px);
+  overflow-y: auto;
+}
+
+/* Sidebar scrollbar styling */
+.categories-aside::-webkit-scrollbar {
+  width: 6px;
+}
+.categories-aside::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.2);
+  border-radius: 3px;
+}
+.categories-aside::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ===== Sidebar Title ===== */
+.aside-title {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: var(--primaryColor);
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 5px;
+}
+
+/* ===== Categories & Subcategories Lists ===== */
+.categories-list,
+.subcategory-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* ===== Category Group ===== */
+.category-group {
+  margin: 0.2rem 0;
+}
+
+/* Category Button */
+.category-btn {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0.5rem 0.3rem;
+  font-weight: normal;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: color 0.3s ease, background 0.2s ease;
+}
+
+.category-btn:hover {
+  background: #ececec;
+  border-radius: 4px;
+}
+
+.category-btn.active {
+  font-weight: bold;
+  color: var(--accentColor);
+}
+
+/* Chevron Icon for Expand/Collapse */
+.category-btn .chevron {
+  font-size: 0.8rem;
+  transition: transform 0.3s ease;
+}
+
+.category-btn .chevron.rotate {
+  transform: rotate(90deg);
+}
+
+/* Subcategory List */
+.subcategory-list {
+  padding-left: 1rem;
+  margin-top: 0.2rem;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.category-group.expanded .subcategory-list {
+  max-height: 500px; /* enough to show all subcategories */
+}
+
+/* Subcategory Button */
+.subcategory-btn {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.9rem;
+  color: var(--textColor);
+  transition: color 0.3s ease, background 0.2s ease;
+}
+
+.subcategory-btn:hover {
+  background: #f0f0f0;
+  border-radius: 4px;
+}
+
+.subcategory-btn.active {
+  font-weight: bold;
+  color: var(--accentColor);
+}
+
+/* ===== Layout Helper ===== */
+.home-container {
+  display: flex;
+  gap: 2rem;
+}
+
+/* ===== Loading & Error States ===== */
+.loading,
+.error {
+  font-size: 0.9rem;
+  color: var(--textColor);
+  padding: 0.5rem 0;
+}
+
+/* ===== Responsive Adjustments ===== */
+@media (max-width: 992px) {
+  .home-container {
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1rem;
+  }
+  .categories-aside {
+    width: 100%;
+    max-height: none;
+    position: relative; /* remove sticky for mobile */
+  }
+}

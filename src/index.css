@@ -1,0 +1,452 @@
+/* ===== Theme Variables ===== */
+:root {
+  /* Colors */
+  --primaryColor: #000000;   /* Black */
+  --secondaryColor: #ffffff; /* White */
+  --headingColor: #FFD700;   /* Gold */
+  --accentColor: #FF5733;    /* Accent (buttons, highlights) */
+  --mutedColor: #f4f4f4;     /* Light gray */
+  --textColor: #333333;      /* Default text */
+
+  /* Fonts */
+  --headingFont: 'Poppins', sans-serif;
+  --bodyFont: 'Roboto', sans-serif;
+
+  /* Font Sizes */
+  --font-xs: 0.75rem;   /* 12px */
+  --font-sm: 0.875rem;  /* 14px */
+  --font-base: 1rem;    /* 16px */
+  --font-lg: 1.25rem;   /* 20px */
+  --font-xl: 1.5rem;    /* 24px */
+  --font-2xl: 2rem;     /* 32px */
+  --font-3xl: 3rem;     /* 48px */
+}
+
+/* ===== Reset & Base ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--bodyFont);
+  font-size: var(--font-base);
+  color: var(--textColor);
+  background: linear-gradient(135deg, #f8f9fc, #eef1f8);
+  line-height: 1.6;
+}
+
+/* ===== Navbar ===== */
+.navbar {
+  position: fixed;
+  top: 0;
+  z-index: 100;
+  background: var(--primaryColor);
+  padding: 5px 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  width: 100%;
+}
+
+.navbar .logo {
+  font-family: var(--headingFont);
+  font-size: var(--font-xl);
+  font-weight: bold;
+  color: var(--headingColor);
+}
+
+.navbar ul {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.navbar a {
+  text-decoration: none;
+  color: var(--secondaryColor);
+  font-size: var(--font-sm);
+  transition: color 0.3s ease;
+}
+
+.navbar a:hover {
+  color: var(--headingColor);
+}
+
+
+/* ===== Search Bar ===== */
+.searchbar-wrapper{
+  position: relative;
+}
+
+.searchbar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background-color: white;
+  border-radius: 5px;
+}
+
+.searchbar input {
+  padding: 0.4rem 0.6rem;
+  border-radius: 5px;
+  border: none;
+  background: none;
+  font-size: var(--font-sm);
+  color: var(--textColor);
+}
+
+.searchbar button {
+  padding: 0.4rem 0.6rem;
+  border: none;
+  background: var(--accentColor);
+  color: var(--secondaryColor);
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  height: inherit;
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+
+.searchbar button:hover {
+  background: var(--headingColor);
+  color: var(--primaryColor);
+}
+
+.search-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--darkColor);
+  border-radius: 10px;
+  padding: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 20;
+  background-color: #000000;
+  color: #eef1f8;
+}
+
+.suggestion-group h4 {
+  margin: 0.5rem 0;
+  color: var(--accentColor);
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 6px;
+}
+
+.suggestion-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.suggestion-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+
+/* ===== Cart Badge ===== */
+.cart-btn {
+  position: relative;
+  font-size: var(--font-lg);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--secondaryColor);
+}
+
+.cart-btn:hover{
+  background: none;
+}
+
+.cart-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: var(--accentColor);
+  color: var(--secondaryColor);
+  font-size: var(--font-xs);
+  padding: 2px 6px;
+  border-radius: 50%;
+  font-weight: bold;
+}
+
+/* ===== User Menu (Dropdown) ===== */
+.user-dropdown {
+  position: relative;
+}
+
+.user-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  background: var(--accentColor);
+  border: none;
+  font-size: var(--font-sm);
+  color: var(--secondaryColor);
+  padding: 5px;
+}
+
+.user-btn:hover {
+  color: var(--headingColor);
+}
+
+.chevron {
+  transition: transform 0.2s ease;
+}
+
+.chevron.rotate {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 140%;
+  right: 0;
+  background: var(--primaryColor);
+  border: 1px solid #333;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  list-style: none;
+  min-width: 150px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  padding: 5px;
+}
+
+.dropdown-menu li {
+  width: 100%;
+  text-align: center;
+}
+
+.dropdown-menu a,
+.dropdown-menu button {
+  color: var(--secondaryColor);
+  text-decoration: none;
+  font-size: var(--font-sm);
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+}
+
+.dropdown-menu li:hover {
+  background: var(--headingColor);
+  color: var(--primaryColor);
+}
+
+.dropdown-logout {
+  font-weight: bold;
+  color: var(--accentColor);
+  text-align: center;
+}
+
+/* ===== Mobile Menu ===== */
+.hamburger {
+  display: none;
+  font-size: var(--font-2xl);
+  cursor: pointer;
+  color: var(--secondaryColor);
+  background: none;
+  border: none;
+}
+
+.main-home-container{
+  display: grid;
+  grid-template-columns: 15% 85%;
+}
+
+.user-btn{
+  height: 40px;
+  width: 40px;
+  padding: 0;
+  border-radius: 50%;
+  place-content: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.chevron{
+  display: none;
+}
+
+.user-btn:hover .chevron{
+  display: block;
+}
+
+/* ===== Hero Section ===== */
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  height: 50svh;
+  text-align: center;
+  background: linear-gradient(
+      rgba(0, 0, 0, 0.6),
+      rgba(0, 0, 0, 0.6)
+    ),
+    url('./assets/hero-bg.jpg') center/cover no-repeat;
+  color: var(--secondaryColor);
+  overflow: hidden;
+}
+select{
+  margin: 0;
+  padding: 0;
+}
+.hero button{
+  padding: 15px;
+  background: var(--headingColor);
+  font-size: large;
+  box-shadow: 2px 4px 16px;
+}
+
+.hero h1 {
+  font-family: var(--headingFont);
+  font-size: var(--font-3xl);
+  color: var(--headingColor);
+}
+
+.hero p {
+  font-size: var(--font-lg);
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    flex-wrap: wrap;
+  }
+
+  .searchbar {
+    order: 3;
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+
+  .navbar ul {
+    display: none;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+    background: var(--primaryColor);
+    padding: 1rem;
+    border-top: 1px solid #333;
+  }
+
+  .navbar ul.active {
+    display: flex;
+  }
+
+  .hamburger {
+    display: block;
+  }
+  .categories-aside{
+    display: none;
+  }
+  .categorysection{
+    display: none;
+  }
+  .main-home-container{
+    grid-template-columns: 1fr;
+    min-width: 100%;
+  }
+ .main-home-container .productsection{
+    min-width: 100%;
+    padding: 0;
+  }
+  .user-dropdown .dropdown-menu{
+    display: flex;
+  }
+  .hero{
+    height: 80svh;
+  }
+  .suggestion-group ul{
+    display: block;
+  }
+}
+
+@media (max-width: 992px) {
+   .categories-aside{
+    display: none;
+  }
+  .categorysection{
+    display: none;
+  }
+  .main-home-container{
+    grid-template-columns: 1fr;
+    min-width: 100%;
+  }
+ .main-home-container .productsection{
+    min-width: 100%;
+  }
+}
+
+
+/* ===== Footer ===== */
+.footer {
+  background: var(--primaryColor);
+  color: var(--secondaryColor);
+  text-align: center;
+  padding: 1rem;
+  margin-top: 2rem;
+}
+
+.footer .socials {
+  margin-top: 0.5rem;
+}
+
+.footer .socials a {
+  margin: 0 0.5rem;
+  color: var(--headingColor);
+  font-size: var(--font-lg);
+  transition: color 0.3s ease;
+}
+
+.footer .socials a:hover {
+  color: var(--accentColor);
+}
+
+.whatsapp-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #25D366;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  z-index: 1000;
+}
+
+.whatsapp-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+}
+
+.whatsapp-btn .icon {
+  font-size: 30px;
+}
+
+

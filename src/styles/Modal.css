@@ -1,0 +1,88 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  min-width: 320px;
+  max-width: 500px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  position: relative;
+  animation: fadeIn 0.3s ease;
+}
+
+
+
+.modal-body {
+  margin: 15px 0;
+}
+
+.modal-footer {
+  border-top: 1px solid #eee;
+  padding-top: 10px;
+  text-align: right;
+  display: flex;
+  gap: 5px;
+}
+
+.modal-close {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.modalbtn {
+  padding: 5px;
+  background: rgb(5, 5, 5);
+  color: var(--headingColor);
+  border-radius: 10px;
+  cursor: pointer;
+  border: #fff solid 2px;
+  box-shadow: 0 2px 4px  rgba(54, 54, 54, 0.753);
+  transition: background 0.3s ease-in-out;
+}
+
+.modalbtn:hover{
+   color: white;
+   background-color: var(--headingColor);
+    border: #000000 solid 2px;
+}
+
+.verifybtn{
+  background-color: var(--headingColor);
+  color: white;
+  border: #000000 solid 2px;
+  box-shadow: 0 2px 4px  rgba(54, 54, 54, 0.753);
+}
+
+.verifybtn:hover{
+  background: rgb(5, 5, 5);
+  color: var(--headingColor);
+   border: #fff solid 2px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

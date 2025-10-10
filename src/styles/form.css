@@ -1,0 +1,94 @@
+.formBody{
+    width: 100%;
+    height: 80svh;
+   display: flex;
+   justify-content: center;
+   align-items: center;
+}
+.formContainer{
+    width: 30%;
+    place-items: center;
+    box-shadow: 1px 4px 10px rgba(0, 0, 0, 0.205);
+    padding: 10px;
+    border: grey solid 0.5px;
+    border-radius: 20px;
+    background-color: white;
+}
+.formHeader{
+    text-align: center;
+    margin-bottom: 5px;
+}
+.formHeader p{
+    color: var(--headingColor);
+    font-weight: 600;
+    font-size: var(--font-sm);
+}
+.formContainer form{
+    width: 100%;
+    background: white;
+}
+.formContainer form fieldset{
+    margin-bottom: 5px;
+    border-radius: 15px;
+    box-shadow: rgba(0, 0, 0, 0.151) -2px -1px 6px;
+}
+.formContainer form fieldset legend{
+    color: rgb(63, 63, 63);
+    font-size: var(--font-base);
+    font-family: var(--headingFont);
+}
+.formContainer form fieldset input{
+    width: 100%;
+    height: 30px;
+    border: none;
+    padding: 5px;
+    outline: none;
+    font-size: 1rem;
+    border-radius: 15px;
+    background: none;
+}
+
+.formContainer form .formbtn{
+    padding: 5px;
+    width: 50%;
+    transform: translate(50%);
+    margin: 5px 0;
+    background: black;
+    color: var(--headingColor);
+    cursor: pointer;
+    transition: background 0.3s ease-in-out;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+.formContainer form .formbtn:hover{
+    background-color: var(--textColor);
+}
+.policy{
+    display: flex;
+    gap: 5px;
+    width: 100%;
+}
+
+@media(max-width:600px){
+    .formContainer{
+        width: 90%;
+        box-shadow: none;  
+    }
+}
+
+@media(max-width:900px) and (min-width: 600px){
+    .formContainer{
+        width: 70%;
+        box-shadow: none;  
+    }
+}
+
+@media(min-width:900px) and (max-width:1024px){
+    .formContainer{
+        width: 70%;
+        box-shadow: none;  
+    }
+}

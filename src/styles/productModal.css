@@ -1,0 +1,396 @@
+/* Overlay */
+.product-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 2010;
+  justify-content: center;
+  align-items: center;
+  pointer-events: auto;
+  place-content: center;
+  overflow-y: auto;
+}
+
+.product-modal-content {
+  position: relative;
+  background: #fff;
+  pointer-events: auto;
+  display: flex;
+  overflow: auto;
+  max-height: 95vh;
+}
+
+.options-btn-container{
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  z-index: 2000;
+}
+
+.options-btn-container .option-buttons{
+  display: flex;
+  gap: 5px;
+  width: 100%;
+  z-index: 2000;
+  flex-wrap: wrap;
+}
+
+.modal-option-sizes{
+ max-height: 200px;
+ overflow-y: auto;
+ z-index: 2000;
+}
+
+.modal-option-sizes .size-item{
+  display: flex;
+  gap: 150px;
+  margin-top: 10px;
+  z-index: 3000;
+}
+
+.options-btn-container .option-buttons
+button{
+  width: 15%;
+  border: none;
+  padding: 5px;
+  cursor: pointer;
+  color: #333;
+}
+
+.activebtn{
+  background-color: var(--accentColor);
+  color: white;
+}
+
+.modal-option-sizes .size-item
+.valueSection{
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-option-sizes .size-item 
+.size-name{
+  font-weight: 800;
+}
+
+.modal-option-sizes .size-item
+.unit-price, .modal-option-sizes 
+.size-item .unit-weight{
+  font-size: 0.7rem;
+}
+
+.shipping-methods{
+  display: flex;
+  align-items: end;
+  gap: 10px;
+}
+
+.shipping-methods .option-title{
+  font-size: 1rem;
+}
+
+/* Close button */
+.modal-close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 2rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #333;
+  z-index: 10;
+}
+
+/* Left side: Images */
+.modal-left {
+  flex: 1;
+  max-width: 100%;
+  background: #f9f9f9;
+  position: relative;
+}
+
+/* Carousel buttons */
+.carousel-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 2rem;
+  background: rgba(0,0,0,0.3);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-radius: 50%;
+  transition: background 0.3s ease;
+}
+
+.carousel-btn:hover {
+  background: rgba(0,0,0,0.6);
+}
+
+.carousel-btn.prev {
+  left: 10px;
+}
+
+.carousel-btn.next {
+  right: 10px;
+}
+
+.image-carousel{
+  width: 800px;
+  height: 100%;
+}
+
+.modal-image {
+  height: 100%;
+  object-fit: fill;
+  width: 100%;
+}
+
+
+/* Right side: Product details */
+.modal-right {
+  flex: 1;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 250px;
+  background:#ccc ;
+}
+
+/* Product title */
+.modal-right h2 {
+  font-family: var(--headingFont);
+  font-size: 1.5rem;
+  color: var(--headingColor);
+  margin: 0;
+}
+
+/* Description */
+.modal-right .product-Details {
+  font-size: 1rem;
+  color: var(--textColor);
+  line-height: 1.5;
+  max-height: 6em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Price */
+.modal-right .price {
+  font-weight: bold;
+  color: var(--accentColor);
+  font-size: 1.2rem;
+}
+
+/* Category */
+.modal-right .category-label {
+  font-size: 0.9rem;
+  color: #888;
+}
+
+/* Buttons container */
+.product-modal-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+/* Add to cart */
+.modal-add-to-cart {
+  flex: 1;
+  background: var(--primaryColor);
+  color: #fff;
+  border: none;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.modal-add-to-cart:hover {
+  background: var(--headingColor);
+}
+
+/* View product */
+.modal-view-btn {
+  flex: 1;
+  background: var(--primaryColor);
+  color: var(--secondaryColor);
+  border: none;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.modal-view-btn:hover {
+  background: var(--headingColor);
+  color: var(--primaryColor);
+}
+
+/* Checkout */
+.modal-checkout-btn {
+  width: 100%;
+  background: var(--headingColor);
+  color: var(--primaryColor);
+  font-weight: bold;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.modal-checkout-btn:hover {
+  background: var(--accentColor);
+}
+
+/* Thumbnails */
+.thumbnail-wrapper {
+  display: flex;
+  gap: 5px;
+  padding: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  height: inherit;
+  width: 100%;
+  height: auto;
+  background: #333;
+}
+
+.thumbnail {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border 0.3s ease, transform 0.3s ease;
+}
+
+.thumbnail:hover {
+  transform: scale(1.05);
+}
+
+.thumbnail.active-thumb {
+  border-color: var(--accentColor);
+}
+
+/* Placeholder */
+.product-placeholder {
+  width: 100%;
+  height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f0f0f0;
+  color: #aaa;
+  font-size: 0.9rem;
+}
+
+
+/* Animations */
+@keyframes fadeIn {
+  0% { opacity: 0; transform: translateY(-20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .modal-left,
+  .modal-right {
+    max-width: 100%;
+    background-color: #333;
+  }
+
+  .carousel-btn.prev {
+    left: 5px;
+  }
+
+  .carousel-btn.next {
+    right: 5px;
+  }
+
+  .thumbnail-wrapper {
+    justify-content: center;
+  }
+
+  .modal-right {
+    padding: 1rem;
+    background-color: #ccc;
+  }
+
+  .product-modal-content{
+    overflow: auto;
+    flex-direction: column;
+    max-height: 100vh;
+     touch-action: manipulation;
+  }
+
+  .modal-image{
+    min-width: none;
+    width: 100% !important;
+  }
+
+  .modal-option-sizes{
+    display: block;
+  }
+}
+
+@media(max-width:600px){
+  .modal-image{
+    min-width: 380px;
+    width: 100% !important;
+  }
+
+  .product-modal-content{
+    width: 100%;
+    height: 100vh;
+    overflow: auto;
+    flex-direction: column;
+    touch-action: manipulation;
+    z-index: 3000;
+    scrollbar-width: none;
+  }
+
+  .thumbnail-wrapper{
+    height: 15%;
+  }
+
+  .image-carousel{
+  width: 100%;
+  height: 90%;
+  }
+
+  .modal-option-sizes .size-item{
+    gap: 50px;
+  }
+
+}
+
+@media(max-width:900px) and (min-width:768px){
+  .image-carousel{
+  width: 100%;
+  height: 90%;
+  }
+}
+
+@media(max-width:1024px) and (min-width:900px) {
+  .product-modal-content{
+    height: 100vh;
+    overflow: auto;
+    flex-direction: column;
+  }
+
+  .image-carousel{
+  width: 100%;
+  height: 95%;
+  }
+
+}
