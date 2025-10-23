@@ -1,0 +1,122 @@
+/* Brand Partners Section */
+.brand-partners-section {
+  padding: 4rem 2rem;
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.brand-partners-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Header */
+.brand-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.brand-title {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: #1f2937;
+  margin: 0 0 0.75rem 0;
+  letter-spacing: -0.02em;
+}
+
+.brand-subtitle {
+  font-size: 1.125rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Grid */
+.brands-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 2rem;
+}
+
+/* Brand Card */
+.brand-card {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  min-height: 120px;
+}
+
+.brand-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  border-color: #d1d5db;
+}
+
+.brand-logo {
+  max-width: 150px;
+  max-height: 60px;
+  object-fit: contain;
+  filter: grayscale(100%);
+  opacity: 0.6;
+  transition: all 0.3s ease;
+}
+
+.brand-card:hover .brand-logo {
+  filter: grayscale(0%);
+  opacity: 1;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .brand-partners-section {
+    padding: 3rem 1rem;
+  }
+
+  .brand-title {
+    font-size: 2rem;
+  }
+
+  .brand-subtitle {
+    font-size: 1rem;
+  }
+
+  .brands-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .brand-card {
+    padding: 1.5rem;
+    min-height: 100px;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand-partners-section {
+    padding: 2rem 0.75rem;
+  }
+
+  .brand-title {
+    font-size: 1.75rem;
+  }
+
+  .brands-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .brand-card {
+    padding: 1.25rem;
+    min-height: 90px;
+  }
+
+  .brand-logo {
+    max-width: 120px;
+    max-height: 50px;
+  }
+}

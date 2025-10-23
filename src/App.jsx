@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Home from "./pages/Home";       // create Home page
@@ -11,15 +11,31 @@ import  Form  from "./pages/form";
 import AppModal from './hooks/AppModal'
 import { ModalMessageProvider } from "./context/ModalMessageContext";
 import Userdashboard from "./pages/userDashboard";
+import UserDashboardComplete from "./pages/UserDashboardComplete";
+import UserDashboardNew from "./pages/UserDashboardNew";
+import ProtectedRoute from "./components/ProtectedRoute";
 import ProductDetails from "./pages/productDetailspage";
 import Shop from "./pages/shop";
 import Orders from "./pages/Orders";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
+import TrackOrder from "./pages/TrackOrder";
 import Languagebtn from "./components/languagebtn";
 import WhatsAppButton from "./components/whatsappbtn";
+import ErrorBoundary from "./components/ErrorBoundary";
+import CookieConsent from "./components/CookieConsent";
+import LanguageCurrencySwitcher from "./components/LanguageCurrencySwitcher";
+import BackToTop from "./components/BackToTop";
 
-export default function App() {
+function AppContent() {
+  const location = useLocation();
   const [cartItems, setCartItems] = useState([]);
   const [cartOpen, setCartOpen] = useState(false); // move here
+  
+  // Check if current route is admin or user dashboard
+  const isAdminRoute = location.pathname.startsWith('/admin');
+  const isDashboardRoute = location.pathname.startsWith('/dashboard');
+  const isSignUpRoute = location.pathname.startsWith('/SignUp');
 
   const addToCart = (product) => {
     setCartItems((prev) => {
@@ -42,8 +58,11 @@ export default function App() {
 
   return (
     <>
+    <ErrorBoundary>
      <ModalMessageProvider>
-      <Navbar cartCount={totalItems} />
+      {/* Only show Navbar on non-admin and non-dashboard routes */}
+      {!isAdminRoute && !isDashboardRoute && <Navbar cartCount={totalItems} />}
+      
       <Routes>
         <Route
           path="/"
@@ -59,23 +78,48 @@ export default function App() {
         <Route path="/checkout" element={<Checkout cartItems={cartItems} />} />
         <Route path="/admin/*" element={<AdminApp />} />
         <Route path="/logistics" element={<Logistics/>}/>
-        <Route path="/SignUp" element={<Form/>}/>
-        <Route path="/dashboard" element={<Userdashboard/>}/>
-        <Route path="/ProductDetails/:tag/:id/:name" element={<ProductDetails />} />
+        {<Route path="/SignUp" element={<Form/>}/>}
+        <Route 
+          path="/dashboard" 
+          element={
+            <ProtectedRoute>
+              <UserDashboardNew />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/ProductDetails/:id/:name" element={<ProductDetails />} />
         <Route path="/shop" element={<Shop/>} />
         <Route path="/orders" element={<Orders/>}/>
+        <Route path="/about" element={<About/>}/>
+        <Route path="/contact" element={<Contact/>}/>
+        <Route path="/track" element={<TrackOrder/>}/>
+        <Route path="/track/:trackingId" element={<TrackOrder/>}/>
       </Routes>
-      <Cart 
-        cartItems={cartItems} 
-        cartOpen={cartOpen} 
-        setCartOpen={setCartOpen} 
-      />
-
-      <Footer />
-       <AppModal />
-      </ModalMessageProvider>
+      
+      {/* Only show Cart, Footer, Language button, and WhatsApp on non-admin and non-dashboard routes */}
+      {!isAdminRoute && !isDashboardRoute && (
+        <>
+          <Cart 
+            cartItems={cartItems} 
+            cartOpen={cartOpen} 
+            setCartOpen={setCartOpen} 
+          />
+          <Footer />
+          <WhatsAppButton />
+        </>
+      )}
+      
+      {/* Cookie Consent Banner - Shows on all pages */}
+      <CookieConsent />
       <Languagebtn/>
-      <WhatsAppButton />
+      <BackToTop />
+      <AppModal />
+      </ModalMessageProvider>
+    </ErrorBoundary>
     </>
   );
+}
+
+export default function App() {
+  return <AppContent />;
 }

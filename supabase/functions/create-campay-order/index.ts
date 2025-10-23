@@ -84,14 +84,44 @@ Deno.serve(async (req)=>{
     if (typeof address !== "string" || !address.trim()) return badRequest("Missing or invalid 'address'");
     if (typeof total !== "number" || total <= 0) return badRequest("Missing or invalid 'total'");
     if (!Array.isArray(items) || items.length === 0) return badRequest("Missing or invalid 'items'");
-    // Save checkout
-    const { data: checkoutData, error: checkoutError } = await supabase.from("checkouts").insert({
-      user_name: name,
-      phone_number: String(phone),
-      user_id: userId,
-      address,
-      total
-    }).select().single();
+    
+    // Debug: Log the items structure
+    console.log("Received items from frontend:", JSON.stringify(items, null, 2));
+    
+    // Transform items to ensure they have the expected structure for the database function
+    const transformedItems = items.map(item => {
+      // Ensure each item has a valid price field that the database function expects
+      const price = Number(item.price || item.unitPrice || 0);
+      console.log(`Transforming item: ${item.product_id}, price=${price}`);
+      
+      return {
+        ...item,
+        price: price, // Ensure price is always a number, never null
+        unit_price: price, // Add unit_price as well for compatibility
+        product_id: item.product_id,
+        quantity: Number(item.quantity) || 1,
+        size: item.size || null,
+        color: item.color || null,
+        shipping_method: item.shipping_method || null,
+        shipping_fee: Number(item.shipping_fee || 0) || 0
+      };
+    });
+
+    console.log("Transformed items for database:", JSON.stringify(transformedItems, null, 2));
+
+    // Save checkout with transformed items
+    const { data: checkoutData, error: checkoutError } = await supabase.from("checkouts").insert([
+      {
+        user_name: name,
+        phone_number: phone,
+        address,
+        total: total,
+        user_id: userId,
+        items: transformedItems, // Use transformed items
+        status: "pending"
+      }
+    ]).select().single();
+    
     if (checkoutError || !checkoutData) {
       console.error("DB checkout insert error:", checkoutError);
       return serverError("Failed to create checkout");

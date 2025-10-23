@@ -1,11 +1,13 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 import "../styles/form.css"
 import useFormValidation from "../hooks/verifyForm";
 import useUserInfo from "../hooks/useUserInfo";
 import LoadingUX from "../components/loadingUX"
 
 export default function Form (){
+    const { t } = useTranslation();
     const [isSignUp, setIsSignUp] = useState(true);
     const { form, errors, handleChange, validateForm, handleChangeSign,validateFormSignIn } = useFormValidation({
         fullName: "",
@@ -52,8 +54,8 @@ export default function Form (){
           <div className="formBody">
                 <div className="formContainer">
                     <div className="formHeader">
-                        <h2>{isSignUp === true ? "Sign Up For TSOGO-BIS" : "Sign Into TSOGO-BIS"}</h2>
-                        <p>For a faster and efficiant service</p>   
+                        <h2>{isSignUp === true ? t('auth.signup_title') : t('auth.signin_title')}</h2>
+                        <p>{t('auth.subtitle')}</p>   
                     </div>
                    
                         {isSignUp === true ? 
@@ -61,74 +63,74 @@ export default function Form (){
                          <form onSubmit={handleSubmit}>
                             <fieldset>
                             <legend>
-                               Your Full-Names<span style={{color:"red"}}>*</span>
+                               {t('auth.full_name')}<span style={{color:"red"}}>*</span>
                             </legend>
-                            <input type="name" name="fullName" value={form.fullName} onChange={handleChange} placeholder="enter your full names.." required/>
+                            <input type="name" name="fullName" value={form.fullName} onChange={handleChange} placeholder={t('auth.full_name_placeholder')} required/>
                         </fieldset>
                         <p style={styleErr("fullName")}>{errors.fullName}</p> 
                         <fieldset>
                             <legend>
-                               Your Email<span style={{color:"red"}}>*</span>
+                               {t('auth.email')}<span style={{color:"red"}}>*</span>
                             </legend>
-                            <input type="email" name="email" value={form.email} onChange={handleChange} placeholder="example@email.com" required/>
+                            <input type="email" name="email" value={form.email} onChange={handleChange} placeholder={t('auth.email_placeholder')} required/>
                         </fieldset> 
                         <p style={styleErr("email")}>{errors.email}</p>
                         <fieldset>
                             <legend>
-                                Your Phone Number<span style={{color:"red"}}>*</span>
+                                {t('auth.phone')}<span style={{color:"red"}}>*</span>
                             </legend>
-                            <input type="tel" name="phone" value={form.phone} onChange={handleChange} placeholder="+(237) 678 554 120" required/>
+                            <input type="tel" name="phone" value={form.phone} onChange={handleChange} placeholder={t('auth.phone_placeholder')} required/>
                         </fieldset>
                         <p style={styleErr("phone_number")}>{errors.phone}</p>
                         <fieldset>
                             <legend>
-                                Your Password<span style={{color:"red"}}>*</span>
+                                {t('auth.password')}<span style={{color:"red"}}>*</span>
                             </legend>
-                            <input type="password" name="password" value={form.password} onChange={handleChange} placeholder="password must be 6 characters long" required/>
+                            <input type="password" name="password" value={form.password} onChange={handleChange} placeholder={t('auth.password_placeholder')} required/>
                         </fieldset>
                         <p style={styleErr("password")}>{errors.password}</p>
                         <fieldset>
                             <legend>
-                               Verify Your Password<span style={{color:"red"}}>*</span>
+                               {t('auth.verify_password')}<span style={{color:"red"}}>*</span>
                             </legend>
-                            <input type="password" name="vpassword" value={form.Vpassword} onChange={handleChange} placeholder="password must be 6 characters long" required/>
+                            <input type="password" name="vpassword" value={form.Vpassword} onChange={handleChange} placeholder={t('auth.password_placeholder')} required/>
                         </fieldset>
                         <p style={styleErr("vpassword")}>{errors.vpassword}</p>
                          <div className="policy">
                             <input type="checkbox" name="policy" checked={form.policy} onChange={handleChange}/>
-                            <span>I agree to TSOGO-BIS <Link> policies</Link></span>
+                            <span>{t('auth.agree_policy')} <Link> {t('auth.policies')}</Link></span>
                         </div>
                         <p style={styleErr("policy")}>{errors.policy}</p>
-                        <button className="formbtn">{loading === true ? <LoadingUX loading setLoading/> : ""}<span>{isSignUp === true ? "Sign Up" : "Sign In"}</span></button>
+                        <button className="formbtn">{loading === true ? <LoadingUX loading setLoading/> : ""}<span>{isSignUp === true ? t('auth.signup') : t('auth.signin')}</span></button>
                     </form>
                         </>) : 
                         (<>
                          <form onSubmit={handleSignIn}>
                         <fieldset>
                             <legend>
-                               Your Email<span style={{color:"red"}}>*</span>
+                               {t('auth.email')}<span style={{color:"red"}}>*</span>
                             </legend>
-                            <input type="email" name="email" value={form.email} onChange={handleChangeSign} placeholder="example@email.com" required/>
+                            <input type="email" name="email" value={form.email} onChange={handleChangeSign} placeholder={t('auth.email_placeholder')} required/>
                         </fieldset>
                         <p style={styleErr("email")}>{errors.email}</p> 
                         <fieldset>
                             <legend>
-                                Your Password<span style={{color:"red"}}>*</span>
+                                {t('auth.password')}<span style={{color:"red"}}>*</span>
                             </legend>
-                            <input type="password" name="password" value={form.password} onChange={handleChangeSign} placeholder="password must be 6 characters long" required/>
+                            <input type="password" name="password" value={form.password} onChange={handleChangeSign} placeholder={t('auth.password_placeholder')} required/>
                         </fieldset>
                         <p style={styleErr("password")}>{errors.password}</p>
                         <div className="policy">
                             <input type="checkbox" name="policy" checked={form.policy} onChange={handleChangeSign}/>
-                            <span>I agree to TSOGO-BIS <Link> policies</Link></span>
+                            <span>{t('auth.agree_policy')} <Link> {t('auth.policies')}</Link></span>
                         </div>
                         <p style={styleErr("policy")}>{errors.policy}</p>
-                        <button type="submite" className="formbtn">{loading === true ? <LoadingUX/> : ""}<span>{isSignUp === true ? "Sign Up" : "Sign In"}</span></button>
+                        <button type="submite" className="formbtn">{loading === true ? <LoadingUX/> : ""}<span>{isSignUp === true ? t('auth.signup') : t('auth.signin')}</span></button>
                     </form>
                         </>
                         )}
                         
-                    <span>{isSignUp ===true ? "Already have an account?" : "Don't have an account?"} <span onClick={() => setIsSignUp(!isSignUp)} style={{color:"blue", cursor:"pointer"}}>{isSignUp === true ? "Sign In" : "Sign Up"}</span></span>    
+                    <span>{isSignUp ===true ? t('auth.have_account') : t('auth.no_account')} <span onClick={() => setIsSignUp(!isSignUp)} style={{color:"blue", cursor:"pointer"}}>{isSignUp === true ? t('auth.signin') : t('auth.signup')}</span></span>    
                 </div>            
           </div>
         </>

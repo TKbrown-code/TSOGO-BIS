@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import "../styles/AdminCategories.css";
 
 export default function AdminCategories() {
   const [categories, setCategories] = useState([]);

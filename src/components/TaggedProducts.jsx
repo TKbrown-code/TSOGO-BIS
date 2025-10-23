@@ -83,25 +83,26 @@ export default function Promotions({ tag = "promotion" }) {
          <h2 className="promotions-title">{tag.toUpperCase()} Products <FontAwesomeIcon icon={faBullhorn} style={{ color: "white", fontSize: "24px" }} /></h2>
       <div className="promotions-grid">
         {products.map((product) => (
-          <div key={product.id} className="promotion-card">
-            <div className="promotion-badge">
-              <FaTag className="promotion-icon" />
-              {tag.toUpperCase()}
+          <Link key={product.id} to={`/ProductDetails/${product.id}/${product.name}`} className="promotion-link">
+            <div className="promotion-card">
+              <div className="promotion-badge">
+                <FaTag className="promotion-icon" />
+                {tag.toUpperCase()}
+              </div>
+              <div className="promotion-image-wrapper">
+                {product.image_url ? (
+                  <img src={product.image_url} alt={product.name} className="promotion-image" />
+                ) : (
+                  <div className="promotion-placeholder">No Image</div>
+                )}
+              </div>
+              <div className="promotion-info">
+                <h3 className="promotion-name">{product.name}</h3>
+                <p className="promotion-desc">{product.description}</p>
+                <span className="promotion-price">{convert(product.price, currency)} {currency}</span>
+              </div>
             </div>
-            <div className="promotion-image-wrapper">
-              {product.image_url ? (
-                <img src={product.image_url} alt={product.name} className="promotion-image" />
-              ) : (
-                <div className="promotion-placeholder">No Image</div>
-              )}
-            </div>
-            <div className="promotion-info">
-              <h3 className="promotion-name">{product.name}</h3>
-              <p className="promotion-desc">{product.description}</p>
-              <span className="promotion-price">{convert(product.price, currency)} {currency}</span>
-              <Link to="/ProductDetails/:id/:name"><button className="promotion-view-btn">View Product</button></Link>
-            </div>
-          </div>
+          </Link>
         ))}
         </div>
         <div className="promotion-footer">

@@ -1,5 +1,6 @@
 // components/AfterHeroHighlight.jsx
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { FaShippingFast, FaShieldAlt, FaGem } from "react-icons/fa";
 import "../styles/afterHeroHighlight.css";
@@ -7,14 +8,17 @@ import "../styles/afterHeroHighlight.css";
 // No changes needed for 'motion' as it's correctly used.
 
 export default function AfterHeroHighlight({
-  title = "Why Shop With Us?",
-  subtitle = "We go beyond just products. Our goal is to deliver trust, style, and unmatched service.",
-  features = [
-    { icon: <FaShippingFast />, heading: "Fast Delivery", text: "Get your orders quickly with real-time tracking updates." },
-    { icon: <FaGem />, heading: "Premium Quality", text: "Only the best materials and craftsmanship make it to you." },
-    { icon: <FaShieldAlt />, heading: "Secure Payments", text: "Your data and payments are encrypted for peace of mind." }
-  ]
+  title,
+  subtitle,
+  features
 }) {
+  const { t } = useTranslation();
+
+  const defaultFeatures = [
+    { icon: <FaShippingFast />, heading: t('after_hero.features.fast_delivery.heading'), text: t('after_hero.features.fast_delivery.text') },
+    { icon: <FaGem />, heading: t('after_hero.features.premium_quality.heading'), text: t('after_hero.features.premium_quality.text') },
+    { icon: <FaShieldAlt />, heading: t('after_hero.features.secure_payments.heading'), text: t('after_hero.features.secure_payments.text') }
+  ];
   return (
     <section className="after-hero">
       <div className="after-hero-overlay" />
@@ -34,7 +38,7 @@ export default function AfterHeroHighlight({
           transition={{ duration: 0.6, delay: 0.2 }}
           viewport={{ once: true }}
         >
-          {title}
+          {title || t('after_hero.title')}
         </motion.h2>
         
         <motion.p 
@@ -44,12 +48,12 @@ export default function AfterHeroHighlight({
           transition={{ duration: 0.6, delay: 0.4 }}
           viewport={{ once: true }}
         >
-          {subtitle}
+          {subtitle || t('after_hero.subtitle')}
         </motion.p>
 
         {/* Features */}
         <div className="after-hero-features">
-          {features.map((f, i) => (
+          {(features || defaultFeatures).map((f, i) => (
             <motion.div
               key={i}
               className="after-hero-card"

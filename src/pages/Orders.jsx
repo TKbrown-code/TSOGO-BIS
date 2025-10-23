@@ -5,7 +5,7 @@ import { useCurrencyContext } from "../context/CurrencyContext";
 import { supabase } from "../lib/supabase";
 import { getCachedImage, fetchFromSupabase, cache as imageCache } from "../utils/imageCache";
 import "../styles/orders.css";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { SUPABASE_ANON_KEY } from "../lib/constants";
 
 export default function Orders() {
@@ -14,11 +14,11 @@ export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const location = useLocation();
 
   // Helper: generate a unique tracking code
   const genTrackingCode = useCallback((checkoutId) => {
-    const rand = Math.random().toString(36).slice(2, 10).toUpperCase();
-    return `${checkoutId}-${rand}`;
+    return `TSB${checkoutId}`;
   }, []);
 
   const buildTrackingLink = useCallback((checkoutId) => {
@@ -125,12 +125,14 @@ export default function Orders() {
             const becameProcessing =
               oldRow?.delivery_status !== "processing" && newRow.delivery_status === "processing";
             if (becameProcessing && !newRow.tracking_link) {
-              const trackingLink = buildTrackingLink(newRow.checkout_id);
+              const trackingCode = genTrackingCode(newRow.checkout_id);
+              const trackingUrl = buildTrackingLink(newRow.checkout_id);
               await supabase
                 .from("checkouts")
-                .update({ tracking_link: trackingLink })
+                .update({ tracking_link: trackingUrl, tracking_number: trackingCode })
                 .eq("checkout_id", newRow.checkout_id);
-              newRow.tracking_link = trackingLink;
+              newRow.tracking_link = trackingUrl;
+              newRow.tracking_number = trackingCode;
             }
             setOrders((prev) => {
               const exists = prev.some((o) => o.checkout_id === newRow.checkout_id);
@@ -146,7 +148,7 @@ export default function Orders() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [profile, fetchOrders, buildTrackingLink]);
+  }, [profile, fetchOrders, buildTrackingLink, genTrackingCode]);
 
   // ---- cancel order ----
   const cancelOrder = async (orderId) => {
@@ -203,7 +205,7 @@ export default function Orders() {
   const paymentBadge = (status) => {
     switch (status) {
       case "paid":
-        return { text: "Completed", className: "badge-paid" };
+        return { text: "payment Completed", className: "badge-paid" };
       case "pending":
         return { text: "Awaiting payment", className: "badge-pending" };
       case "cancelled":
@@ -219,30 +221,93 @@ export default function Orders() {
     return steps.map((s, i) => ({ key: s, done: i <= index }));
   };
 
+  const orderStats = {
+    total: orders.length,
+    pending: orders.filter(o => o.status === 'pending').length,
+    completed: orders.filter(o => o.status === 'paid').length,
+    cancelled: orders.filter(o => o.status === 'cancelled').length,
+  };
+
   return (
     <section className="orders-container-premium">
-      <div className="ordersnav">
-        <h1 className="orders-title">My Orders</h1>
-        <div className="orderfilter">
-          <input
-            type="search"
-            name="search"
-            placeholder="enter order_id / product name"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <button onClick={() => setSearch("")}>Clear</button>
+      <header className="orders-navbar">
+        <div className="orders-nav-container">
+          <div className="orders-nav-brand">
+            <h1>Order Management</h1>
+            <span className="orders-count">{orderStats.total} {orderStats.total === 1 ? 'Order' : 'Orders'}</span>
+          </div>
+
+          <nav className="orders-nav-links">
+            <Link to="/orders" className={location.pathname === '/orders' ? 'active' : ''}>
+              Current Orders
+            </Link>
+            <Link to="/orders/history" className={location.pathname.includes('history') ? 'active' : ''}>
+              Order History
+            </Link>
+            <Link to="/orders/returns" className={location.pathname.includes('returns') ? 'active' : ''}>
+              Returns
+            </Link>
+          </nav>
+
+          <div className="orders-nav-actions">
+            <input
+              type="search"
+              placeholder="Search orders..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="orders-search"
+            />
+            <Link to="/" className="back-to-shop">
+              Back to Shop
+            </Link>
+          </div>
         </div>
-        <div className="orderLink">
-          <Link to="/">Shop</Link>
-          <Link to="/logistics">Logistics</Link>
+      </header>
+
+      {/* Order Stats */}
+      <div className="order-stats">
+        <div className="stat-card">
+          <span className="stat-icon">📊</span>
+          <div className="stat-info">
+            <span className="stat-value">{orderStats.total}</span>
+            <span className="stat-label">Total Orders</span>
+          </div>
+        </div>
+        <div className="stat-card pending">
+          <span className="stat-icon">⏳</span>
+          <div className="stat-info">
+            <span className="stat-value">{orderStats.pending}</span>
+            <span className="stat-label">Pending</span>
+          </div>
+        </div>
+        <div className="stat-card completed">
+          <span className="stat-icon">✅</span>
+          <div className="stat-info">
+            <span className="stat-value">{orderStats.completed}</span>
+            <span className="stat-label">Completed</span>
+          </div>
+        </div>
+        <div className="stat-card cancelled">
+          <span className="stat-icon">❌</span>
+          <div className="stat-info">
+            <span className="stat-value">{orderStats.cancelled}</span>
+            <span className="stat-label">Cancelled</span>
+          </div>
         </div>
       </div>
 
       {loading ? (
-        <div className="orders-loading">Loading orders…</div>
+        <div className="orders-loading">
+          <div className="loading-spinner"></div>
+          <p>Loading your orders...</p>
+        </div>
       ) : filteredOrders.length === 0 ? (
-        <div className="orders-empty">No orders match your search.</div>
+        <div className="orders-empty">
+          <span className="empty-icon">📭</span>
+          <h3>No orders found</h3>
+          <p>{search ? 'Try adjusting your search terms' : 'Start shopping to see your orders here'}</p>
+          <Link to="/" className="shop-now-btn">Start Shopping</Link>
+        </div>
       ) : (
         <div className="orders-grid-premium">
           {filteredOrders.map((order) => {
@@ -254,18 +319,16 @@ export default function Orders() {
             return (
               <article key={order.checkout_id} className="order-card-premium">
                 <header className="order-card-header">
-                  <div>
-                    <div className="order-id">Order_id: {order.checkout_id}</div>
-                    <div className="order-date">{new Date(order.created_at).toLocaleString()}</div>
+                  <div className="header-left">
+                    <div className="order-id">🔖 Order #{order.checkout_id}</div>
+                    <div className="order-date">📅 {new Date(order.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
                   </div>
                   <div className="order-badges">
                     <span className={`payment-badge ${pb.className}`}>{pb.text}</span>
-                    {order.tracking_link ? (
+                    {order.tracking_number && (
                       <a className="tracking-btn" href={order.tracking_link} target="_blank" rel="noreferrer">
-                        Track
+                        📍 {order.tracking_number}
                       </a>
-                    ) : (
-                      <span className="tracking-none">No tracking</span>
                     )}
                   </div>
                 </header>
@@ -333,8 +396,8 @@ export default function Orders() {
                       {canCancel && (
                         <button className="btn danger" onClick={() => cancelOrder(order.checkout_id)}>Cancel Order</button>
                       )}
-                      {order.tracking_link && (
-                        <a className="btn secondary" style={{background:"#FF5733", color:"white"}} href={order.tracking_link} target="_blank" rel="noreferrer">Track your order</a>
+                      {order.tracking_number && (
+                        <a className="btn secondary" style={{background:"#FF5733", color:"white"}} href={order.tracking_link} target="_blank" rel="noreferrer">Track {order.tracking_number}</a>
                       )}
                     </div>
                   </aside>

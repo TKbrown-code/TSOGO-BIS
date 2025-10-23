@@ -34,21 +34,42 @@ export default function CategoriesAside({ selectedCategory, setSelectedCategory 
     setExpanded((prev) => (prev === id ? null : id));
   };
 
+  const handleCategoryClick = (categoryId, hasSub) => {
+    setSelectedCategory(categoryId);
+    if (hasSub) {
+      toggleExpand(categoryId);
+    }
+  };
+
   return (
     <aside className="categories-aside">
-      <h3 className="aside-title">Categories</h3>
+      <div className="aside-header">
+        <h3 className="aside-title">Categories</h3>
+        {!loading && !error && (
+          <span className="category-count">{categories.length} categories</span>
+        )}
+      </div>
 
-      {loading && <p className="loading"></p>}
-      {error && <p className="error">{error}</p>}
+      {loading && (
+        <div className="loading-state">
+          <div className="skeleton-item"></div>
+          <div className="skeleton-item"></div>
+          <div className="skeleton-item"></div>
+          <div className="skeleton-item"></div>
+        </div>
+      )}
+      {error && <div className="error-state">{error}</div>}
 
       {!loading && !error && (
         <ul className="categories-list">
           {/* All Categories */}
-          <li
-            className={`category-item ${selectedCategory === "All" ? "active" : ""}`}
-            onClick={() => setSelectedCategory("All")}
-          >
-            All
+          <li className="category-item">
+            <button
+              className={`category-btn all-btn ${selectedCategory === "All" ? "active" : ""}`}
+              onClick={() => setSelectedCategory("All")}
+            >
+              <span className="category-name">All Products</span>
+            </button>
           </li>
 
           {/* Categories */}
@@ -64,31 +85,42 @@ export default function CategoriesAside({ selectedCategory, setSelectedCategory 
                 key={cat.id}
                 className={`category-group ${isExpanded ? "expanded" : ""}`}
               >
-                <button
-                  className={`category-btn ${isActive ? "active" : ""}`}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  aria-expanded={isExpanded}
-                >
-                  {cat.name}
-                  {hasSub && (
-                    <FontAwesomeIcon
-                      icon={faChevronRight}
-                      className={`chevron ${isExpanded ? "rotate" : ""}`}
-                    />
-                  )}
-                </button>
+                <div className="category-item">
+                  <button
+                    className={`category-btn ${isActive ? "active" : ""}`}
+                    onClick={() => {
+                      setSelectedCategory(cat.id);
+                      if (hasSub) toggleExpand(cat.id);
+                    }}
+                    aria-expanded={isExpanded}
+                  >
+                    <span className={`category-name ${isActive ? "active" : ""}`}>{cat.name}</span>
+                    <div className="category-meta">
+                      {hasSub && (
+                        <span className="sub-count">{cat.subcategories.length}</span>
+                      )}
+                      {hasSub && (
+                        <FontAwesomeIcon
+                          icon={faChevronRight}
+                          className={`chevron ${isExpanded ? "rotate" : ""}`}
+                        />
+                      )}
+                    </div>
+                  </button>
+                </div>
 
-                {hasSub && (
+                {hasSub && isExpanded && (
                   <ul className="subcategory-list">
                     {cat.subcategories.map((sub) => (
-                      <li key={sub.id}>
+                      <li key={sub.id} className="subcategory-item">
                         <button
                           className={`subcategory-btn ${
                             selectedCategory === sub.id ? "active" : ""
                           }`}
                           onClick={() => setSelectedCategory(sub.id)}
                         >
-                          {sub.name}
+                          <span className="subcategory-dot"></span>
+                          <span className="subcategory-name">{sub.name}</span>
                         </button>
                       </li>
                     ))}

@@ -1,94 +1,223 @@
-.formBody{
-    width: 100%;
-    height: 80svh;
-   display: flex;
-   justify-content: center;
-   align-items: center;
-}
-.formContainer{
-    width: 30%;
-    place-items: center;
-    box-shadow: 1px 4px 10px rgba(0, 0, 0, 0.205);
-    padding: 10px;
-    border: grey solid 0.5px;
-    border-radius: 20px;
-    background-color: white;
-}
-.formHeader{
-    text-align: center;
-    margin-bottom: 5px;
-}
-.formHeader p{
-    color: var(--headingColor);
-    font-weight: 600;
-    font-size: var(--font-sm);
-}
-.formContainer form{
-    width: 100%;
-    background: white;
-}
-.formContainer form fieldset{
-    margin-bottom: 5px;
-    border-radius: 15px;
-    box-shadow: rgba(0, 0, 0, 0.151) -2px -1px 6px;
-}
-.formContainer form fieldset legend{
-    color: rgb(63, 63, 63);
-    font-size: var(--font-base);
-    font-family: var(--headingFont);
-}
-.formContainer form fieldset input{
-    width: 100%;
-    height: 30px;
-    border: none;
-    padding: 5px;
-    outline: none;
-    font-size: 1rem;
-    border-radius: 15px;
-    background: none;
+/* Form Container */
+.formBody {
+  width: 100%;
+  min-height: calc(100vh - 80px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #f9fafb 0%, #e5e7eb 100%);
+  padding: 2rem 1rem;
+  margin-top: 80px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-.formContainer form .formbtn{
-    padding: 5px;
-    width: 50%;
-    transform: translate(50%);
-    margin: 5px 0;
-    background: black;
-    color: var(--headingColor);
-    cursor: pointer;
-    transition: background 0.3s ease-in-out;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-}
-.formContainer form .formbtn:hover{
-    background-color: var(--textColor);
-}
-.policy{
-    display: flex;
-    gap: 5px;
-    width: 100%;
+.formContainer {
+  width: 100%;
+  max-width: 420px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.06);
+  padding: 1.75rem;
+  border: 1px solid #e8eaed;
 }
 
-@media(max-width:600px){
-    .formContainer{
-        width: 90%;
-        box-shadow: none;  
-    }
+/* Form Header */
+.formHeader {
+  text-align: center;
+  margin-bottom: 1.25rem;
 }
 
-@media(max-width:900px) and (min-width: 600px){
-    .formContainer{
-        width: 70%;
-        box-shadow: none;  
-    }
+.formHeader h2 {
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 0.25rem 0;
+  letter-spacing: -0.025em;
 }
 
-@media(min-width:900px) and (max-width:1024px){
-    .formContainer{
-        width: 70%;
-        box-shadow: none;  
-    }
+.formHeader p {
+  color: #6b7280;
+  font-weight: 400;
+  font-size: 0.8125rem;
+  margin: 0;
+}
+
+/* Form Styles */
+.formContainer form {
+  width: 100%;
+  background: white;
+}
+
+.formContainer form fieldset {
+  margin-bottom: 0.875rem;
+  border: none;
+  padding: 0;
+}
+
+.formContainer form fieldset legend {
+  color: #374151;
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+  display: block;
+}
+
+.formContainer form fieldset input {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  transition: all 0.15s ease;
+  background: #fff;
+  color: #1f2937;
+  font-weight: 400;
+}
+
+.formContainer form fieldset input:hover {
+  border-color: #9ca3af;
+}
+
+.formContainer form fieldset input:focus {
+  border-color: var(--accentColor);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.1);
+}
+
+.formContainer form fieldset input::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+/* Submit Button */
+.formContainer form .formbtn {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  margin: 1rem 0 0.75rem 0;
+  background: var(--accentColor);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border-radius: 10px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  letter-spacing: -0.01em;
+}
+
+.formContainer form .formbtn:hover {
+  background: var(--headingColor);
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+}
+
+.formContainer form .formbtn:active {
+  transform: scale(0.98);
+}
+
+.formContainer form .formbtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Policy Checkbox */
+.policy {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.policy input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  accent-color: var(--accentColor);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.policy span {
+  font-size: 0.75rem;
+  color: #374151;
+  line-height: 1.3;
+}
+
+.policy a {
+  color: var(--accentColor);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.policy a:hover {
+  text-decoration: underline;
+  color: var(--headingColor);
+}
+
+/* Toggle Sign In/Up */
+.formContainer > span {
+  display: block;
+  text-align: center;
+  margin-top: 1rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.formContainer > span span {
+  color: var(--accentColor);
+  cursor: pointer;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.formContainer > span span:hover {
+  color: var(--headingColor);
+  text-decoration: underline;
+}
+
+/* Responsive Styles */
+@media (max-width: 600px) {
+  .formBody {
+    padding: 1rem;
+  }
+
+  .formContainer {
+    padding: 2rem 1.5rem;
+    max-width: 100%;
+  }
+
+  .formHeader h2 {
+    font-size: 1.5rem;
+  }
+
+  .formHeader p {
+    font-size: 0.875rem;
+  }
+
+  .formContainer form fieldset input {
+    padding: 0.75rem 0.875rem;
+    font-size: 0.875rem;
+  }
+
+  .formContainer form .formbtn {
+    padding: 0.875rem 1.25rem;
+    font-size: 0.9375rem;
+  }
+}
+
+@media (min-width: 601px) and (max-width: 768px) {
+  .formContainer {
+    max-width: 420px;
+    padding: 2.25rem;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .formContainer {
+    max-width: 460px;
+  }
 }

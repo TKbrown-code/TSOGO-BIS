@@ -7,7 +7,7 @@
   font-family: 'Arial', sans-serif;
   color: #333;
   background-color: aliceblue;
-  margin-top: 50px;
+  margin: 4rem 1rem 0px 1rem ;
 }
 
 .premium-details-container .right{
@@ -19,27 +19,35 @@
   flex: 1 1 400px;
   place-items: center;
   background-color: white;
-  height: auto;
+  height: 70vh !important;
 }
 
 .image-view {
   width: 100%;
-  height: 70%;
-  border-bottom: solid rgba(211, 210, 210, 0.473) 0.5px;
+  height: 86%;
+  border-bottom: 0.5px solid rgba(211, 210, 210, 0.473);
   background-color: #ffffff;
-  border-radius: 0px;
+  border-radius: 0;
   text-align: center;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 1rem;
+}
+
+/* make selector more specific so it won't be unintentionally overridden later */
+.premium-gallery .image-view img {
+  width: 100%;
+  height: 100%;
+  object-fit: fill !important;
+  display: block;
 }
 
 .zoomable-img {
   max-width: 100%;
-  border-radius: 8px;
   height: 100%;
-}
-
-.image-view img{
-  width: 100%;
-  object-fit: contain;
 }
 
 .thumb-list {
@@ -375,22 +383,27 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: 100% !important;
+  height: 100% !important;
   background-color: rgba(0,0,0,0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 2000;
+  padding: 20px;
 }
 
 .modal-content {
   background-color: #fff;
   padding: 2rem;
-  border-radius: 8px;
-  width: 90%;
+  border-radius: 0px;
+  width: 100%;
   max-width: 400px;
+  margin: 0 auto;
+  box-sizing: border-box;
   position: relative;
+  scrollbar-width: none;
+  scrollbar-color: #ccc transparent;
 }
 
 .close-btn {
@@ -441,11 +454,292 @@
   cursor: not-allowed;
 }
 
-.premium-reviews-mobile{
-  padding: 15px;
+.premium-reviews-mobile {
+  padding: 20px;
   background-color: white;
   display: none;
+  margin-top: 20px;
 }
+
+.premium-reviews-mobile h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.premium-reviews-mobile .average-rating {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1.5rem;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.premium-reviews-mobile .rating-number {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #666;
+}
+
+.premium-reviews-mobile .review-container {
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 1rem;
+}
+
+.premium-reviews-mobile .review {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.premium-reviews-mobile .review-header {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.premium-reviews-mobile .user_icon {
+  font-size: 1.5rem;
+  color: #666;
+  min-width: 30px;
+}
+
+.premium-reviews-mobile .review-comment {
+  flex: 1;
+}
+
+.premium-reviews-mobile .review-comment strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #333;
+  font-size: 1rem;
+}
+
+.premium-reviews-mobile .review-comment p {
+  margin: 5px 0;
+  color: #555;
+  line-height: 1.5;
+}
+
+.premium-reviews-mobile .review-comment small {
+  color: #999;
+  font-size: 0.85rem;
+}
+
+.premium-reviews-mobile .review-stars {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 5px;
+}
+
+.premium-reviews-mobile .stars {
+  font-size: 1rem;
+  color: #f39c12;
+}
+
+.premium-reviews-mobile .editbtn {
+  padding: 5px 15px;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.premium-reviews-mobile .editbtn:hover {
+  background: #2980b9;
+}
+
+.premium-reviews-mobile form textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 0.95rem;
+  margin: 10px 0;
+  resize: none;
+}
+
+.rating-textarea {
+  min-height: 50px !important;
+  resize: none !important;
+}
+
+.review-btn{
+  width: 100%;
+  padding: 12px;
+  background: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.review-btn:hover {
+  background: #229954;
+}
+
+.premium-reviews-mobile .form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.premium-reviews-mobile .form-actions button {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.premium-reviews-mobile .form-actions button[type="submit"] {
+  background: #27ae60 ;
+  color: white;
+}
+
+.premium-reviews-mobile .form-actions button[type="button"] {
+  background: #95a5a6;
+  color: white;
+}
+
+.premium-reviews-mobile .review-form {
+  margin-top: 2rem;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.premium-reviews-mobile .review-form h3 {
+  margin-bottom: 1rem;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.premium-reviews-mobile .rating-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.premium-reviews-mobile .rating-input span {
+  font-size: 0.95rem;
+  color: #666;
+}
+
+.premium-reviews-mobile .rating-input .star {
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #ddd;
+  transition: color 0.2s;
+}
+
+.premium-reviews-mobile .rating-input .star.filled {
+  color: #f39c12;
+}
+
+.premium-reviews-mobile .review-form button[type="submit"] {
+  width: 100%;
+  padding: 12px;
+  background: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.premium-reviews-mobile .review-form button[type="submit"]:hover {
+  background: #229954;
+}
+
+/* View Toggle Button */
+.view-toggle-btn {
+  width: 100%;
+  padding: 12px 20px;
+  margin: 20px 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.view-toggle-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.view-toggle-btn:active {
+  transform: translateY(0);
+}
+
+.premium-reviews .view-toggle-btn {
+  margin: 20px 0;
+}
+
+.premium-reviews-mobile .view-toggle-btn {
+  margin: 20px 0;
+}
+
+/* --- Carousel Styles --- */
+.carousel-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--accentColor);
+  border: 2px solid var(--accentColor);
+  padding: 12px 16px;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 50%;
+  z-index: 10;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.carousel-arrow:hover {
+  background: var(--accentColor);
+  color: white;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.carousel-arrow:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  transform: translateY(-50%);
+}
+
+.left-arrow {
+  left: 15px;
+}
+
+.right-arrow {
+  right: 15px;
+}
+
 
 /* --- Responsive --- */
 @media (max-width: 900px) {
@@ -458,7 +752,6 @@
   }
   .right{
     width: 100% !important;
-    background-color: #f1c40f;
   }
   .premium-gallery{
     width: 100%;
@@ -466,8 +759,19 @@
 }
 
 @media (max-width: 600px){
+  .premium-details-container{
+    padding-top: 0;
+  }
   .right{
     width: 100% !important;
+    margin-bottom: 20px;
+  }
+  .image-view{
+    height: 50vh !important;
+  }
+  .premium-gallery{
+    width: 100%;
+    height: 400px !important;
   }
   .premium-details-container{
     background: white;
@@ -481,4 +785,45 @@
   .premium-reviews-mobile{
     display: block;
   }
+  .premium-details-container{
+    margin: 0;
+    gap: 0;
+  }
+  .size-item{
+    flex-direction: row;
+    gap: 20px;
+  }
+.action-buttons{
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+}
+.carousel-dots {
+  position: absolute;
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  z-index: 10;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dot:hover {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.dot.active {
+  background: white;
+  border-color: var(--accentColor);
+}
 }

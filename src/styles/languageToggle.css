@@ -1,0 +1,22 @@
+/* Floating language toggle (bottom-left above currency) */
+.lang-toggle {
+  position: fixed;
+  bottom: 90px;
+  left: 20px;
+  background: #202020;
+  border-radius: 999px;
+  padding: 6px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  z-index: 1000;
+}
+.lang-select {
+  background: transparent;
+  color: white;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  font-size: 14px;
+}

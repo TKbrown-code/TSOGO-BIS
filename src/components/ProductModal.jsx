@@ -3,22 +3,18 @@ import { useNavigate } from "react-router-dom";
 import "../styles/productModal.css";
 import { fetchFromSupabase, getCachedImage, cache } from "../utils/imageCache";
 import { useCurrencyContext } from "../context/CurrencyContext";
-import { useCart } from "../context/CartContext";
-import { supabase } from "../lib/supabase";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faStar, faUser, faTruck, faTags, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faTruck, faTags } from "@fortawesome/free-solid-svg-icons";
 
 export default function ProductModal({ product, onClose, addToCart, categoriesMap = {} }) {
   const [currentImage, setCurrentImage] = useState(0);
-  const [quantity, setQuantity] = useState(1);
   const [imageUrls, setImageUrls] = useState([]);
   const [selectedOptions, setSelectedOptions] = useState({});
   const [subQuantities, setSubQuantities] = useState({});
   const [selectedShipping, setSelectedShipping] = useState(null);
   const navigate = useNavigate();
   const { convert, currency } = useCurrencyContext();
-  const { updateQuantity } = useCart();
-  const [toast, setToast] = useState("");
+
 
   // --- Load images ---
   useEffect(() => {
@@ -72,56 +68,68 @@ export default function ProductModal({ product, onClose, addToCart, categoriesMa
   };
 
   const calculateTotalPrice = () => {
-  let total = 0;
-  let totalWeight = parseFloat(product.weight || 0);
+    let total = 0;
+    let totalWeight = 0;
+    let totalQuantity = 0;
 
-  // Shipping fee
-  const shippingFee = selectedShipping
-    ? parseFloat(product.shipping_methods?.[selectedShipping] || 0)
-    : 0;
+    // Shipping fee per kg
+    const shippingFeePerKg = selectedShipping
+      ? parseFloat(product.shipping_methods?.[selectedShipping] || 0)
+      : 0;
 
-  // Loop through selected options
-  Object.entries(selectedOptions).forEach(([optType, optValue]) => {
-    const opt = product.options[optType][optValue];
-    if (!opt) return;
-
-    const addedPrice = parseFloat(opt.added_price || 0);
-    const extraWeight = parseFloat((opt.extra_weight || "0").replace("kg", "")) || 0;
-
-    totalWeight += extraWeight;
-
-    const quantities = subQuantities[optType] || {};
-
-    (opt.sizes || []).forEach((sz) => {
-      const szName = typeof sz === "string" ? sz : Object.keys(sz)[0];
-      const szData = typeof sz === "object" ? sz[szName][0] : {};
-
-      const sizePrice = parseFloat(szData?.price || 0);
-      const sizeWeight = parseFloat((szData?.weight || "0").replace("kg", "")) || 0;
-      const qty = quantities[szName] || 0;
-
-      const baseWeight = parseFloat(product.weight || 0);
-
-      // --- Formula: (base + extras) + (total weight * shipping fee)
-      const productWeight = baseWeight + extraWeight + sizeWeight;
-      const productPrice = product.price + addedPrice + sizePrice;
-      const shippingCost = productWeight * shippingFee;
-
-      total += (productPrice + shippingCost) * qty;
-      totalWeight += productWeight * qty;
-    });
-  });
-
-  // If no sizes were selected (only base product)
-  if (Object.keys(subQuantities).length === 0) {
+    const basePrice = parseFloat(product.price || 0);
     const baseWeight = parseFloat(product.weight || 0);
-    total =
-      product.price +
-      baseWeight * shippingFee;
-  }
 
-  return { total, totalWeight };
-};
+    // Check if any sizes are selected
+    let hasSizeSelections = false;
+
+    Object.entries(selectedOptions).forEach(([optType, optValue]) => {
+      const opt = product.options?.[optType]?.[optValue];
+      if (!opt) return;
+
+      const addedPrice = parseFloat(opt.added_price || 0);
+      const extraWeight = parseFloat((opt.extra_weight || "0").replace("kg", "")) || 0;
+
+      const quantities = subQuantities[optType] || {};
+
+      (opt.sizes || []).forEach((sz) => {
+        const szName = typeof sz === "string" ? sz : Object.keys(sz)[0];
+        const szData = typeof sz === "object" ? sz[szName]?.[0] : {};
+
+        const sizePrice = parseFloat(szData?.price || 0);
+        const sizeWeight = parseFloat((szData?.weight || "0").replace("kg", "")) || 0;
+        const qty = quantities[szName] || 0;
+
+        if (qty > 0) {
+          hasSizeSelections = true;
+          totalQuantity += qty;
+
+          // Calculate per-item values
+          const itemPrice = basePrice + addedPrice + sizePrice;
+          const itemWeight = baseWeight + extraWeight + sizeWeight;
+          const itemShippingCost = itemWeight * shippingFeePerKg;
+
+          // Add to totals
+          total += (itemPrice + itemShippingCost) * qty;
+          totalWeight += itemWeight * qty;
+        }
+      });
+    });
+
+    // If no sizes were selected, calculate for base product only
+    if (!hasSizeSelections) {
+      totalQuantity = 1;
+      const itemShippingCost = baseWeight * shippingFeePerKg;
+      total = basePrice + itemShippingCost;
+      totalWeight = baseWeight;
+    }
+
+    return { 
+      total: Math.max(0, total), 
+      totalWeight: Math.max(0, totalWeight),
+      totalQuantity 
+    };
+  };
 
 
   const handleAddToCart = () => {
@@ -201,21 +209,35 @@ export default function ProductModal({ product, onClose, addToCart, categoriesMa
         {/* --- Product Info --- */}
         <div className="modal-right">
           <h2>{product.name}</h2>
-          <p className="product-Details">{product.description}</p>
-          <p className="price">
-          <span style={{color:"black"}}>Base price:</span> {convert(product.price, currency)} {currency}
-          </p>
-          <p className="base"><span style={{color:"black"}}><strong>Base weight:</strong></span> {product.weight}kg</p>
-          <p className="base"><span><FontAwesomeIcon icon={faTruck} /> <strong>Shipped from:</strong> </span> {product.shipped_from}</p>
-          <p className="category-label"><span style={{color:"black"}}><FontAwesomeIcon icon={faTags} /> Category:</span> {getCategoryName(product.category_id)}</p>
+          <p className="product-description">{product.description}</p>
+          
+          <div className="product-meta">
+            <div className="meta-item">
+              <span className="meta-label">Base Price:</span>
+              <span className="meta-value price-value">{convert(product.price, currency)} {currency}</span>
+            </div>
+            <div className="meta-item">
+              <span className="meta-label">Base Weight:</span>
+              <span className="meta-value">{product.weight} kg</span>
+            </div>
+            <div className="meta-item">
+              <FontAwesomeIcon icon={faTruck} className="meta-icon" />
+              <span className="meta-label">Shipped From:</span>
+              <span className="meta-value">{product.shipped_from}</span>
+            </div>
+            <div className="meta-item">
+              <FontAwesomeIcon icon={faTags} className="meta-icon" />
+              <span className="meta-label">Category:</span>
+              <span className="meta-value">{getCategoryName(product.category_id)}</span>
+            </div>
+          </div>
 
           {/* --- Dynamic Options --- */}
           {product.options &&
             Object.entries(product.options).map(([optionName, optionValues]) => (
               <div key={optionName} className="modal-product-options">
-                <div className="options-btn-container">
-                  <h4 className="option-title">
-                  {optionName.charAt(0).toUpperCase() + optionName.slice(1)}:
+                <h4 className="option-title">
+                  {optionName.charAt(0).toUpperCase() + optionName.slice(1)}
                 </h4>
 
                 <div className="option-buttons">
@@ -223,7 +245,7 @@ export default function ProductModal({ product, onClose, addToCart, categoriesMa
                     <button
                       key={optionValue}
                       className={`option-btn ${
-                        selectedOptions[optionName] === optionValue ? "activebtn" : ""
+                        selectedOptions[optionName] === optionValue ? "active" : ""
                       }`}
                       onClick={() => handleOptionSelect(optionName, optionValue)}
                     >
@@ -231,102 +253,120 @@ export default function ProductModal({ product, onClose, addToCart, categoriesMa
                     </button>
                   ))}
                 </div>
-                </div>
                 
-                <div className="modal-option-sizes">
-                {selectedOptions[optionName] &&
-                  optionValues[selectedOptions[optionName]]?.sizes?.map((sz, idx) => {
-                    const szName = typeof sz === "string" ? sz : Object.keys(sz)[0];
-                    const szData = typeof sz === "object" ? sz[szName][0] : {};
-                    const addedPrice =
-                      parseFloat(
+                {selectedOptions[optionName] && (
+                  <div className="modal-option-sizes">
+                    {optionValues[selectedOptions[optionName]]?.sizes?.map((sz, idx) => {
+                      const szName = typeof sz === "string" ? sz : Object.keys(sz)[0];
+                      const szData = typeof sz === "object" ? sz[szName]?.[0] : {};
+                      const addedPrice = parseFloat(
                         optionValues[selectedOptions[optionName]]?.added_price || 0
-                      ) || 0;
-                    const extraWeight =
-                      parseFloat(
-                        (
-                          optionValues[selectedOptions[optionName]]?.extra_weight || "0"
-                        ).replace("kg", "")
-                      ) || 0;
+                      );
+                      const extraWeight = parseFloat(
+                        (optionValues[selectedOptions[optionName]]?.extra_weight || "0").replace("kg", "")
+                      );
 
-                    const sizePrice = parseFloat(szData?.price || 0);
-                    const sizeWeight =
-                      parseFloat((szData?.weight || "0").replace("kg", "")) || 0;
+                      const sizePrice = parseFloat(szData?.price || 0);
+                      const sizeWeight = parseFloat((szData?.weight || "0").replace("kg", ""));
 
-                    const finalPrice = (product.price || 0) + addedPrice + sizePrice;
-                    const finalWeight = (parseFloat(product.weight) || 0) + extraWeight + sizeWeight;
+                      const finalPrice = (product.price || 0) + addedPrice + sizePrice;
+                      const finalWeight = (parseFloat(product.weight) || 0) + extraWeight + sizeWeight;
 
-                    return (
-                      <div key={idx} className="size-item">
-                        <div className="valueSection">
-                          <span className="size-name">{szName}</span>
-                          <span className="unit-price">
-                          {convert(finalPrice, currency)} {currency}
-                          </span>
-                          <span className="unit-weight">{finalWeight.toFixed(2)} kg</span>
+                      return (
+                        <div key={idx} className="size-item">
+                          <div className="size-info">
+                            <span className="size-name">{szName}</span>
+                            <div className="size-details">
+                              <span className="size-price">
+                                {convert(finalPrice, currency)} {currency}
+                              </span>
+                              <span className="size-weight">{finalWeight.toFixed(2)} kg</span>
+                            </div>
+                          </div>
+                          <div className="quantity-controls">
+                            <button 
+                              className="qty-btn"
+                              onClick={() => handleSubQtyChange(optionName, szName, -1)}
+                              disabled={(subQuantities[optionName]?.[szName] || 0) === 0}
+                            >
+                              −
+                            </button>
+                            <span className="qty-display">{subQuantities[optionName]?.[szName] || 0}</span>
+                            <button 
+                              className="qty-btn"
+                              onClick={() => handleSubQtyChange(optionName, szName, 1)}
+                            >
+                              +
+                            </button>
+                          </div>
                         </div>
-                        <div className="buttonsq">
-                          <button onClick={() => handleSubQtyChange(optionName, szName, -1)}>
-                            -
-                          </button>
-                          <span>{subQuantities[optionName]?.[szName] || 0}</span>
-                          <button onClick={() => handleSubQtyChange(optionName, szName, 1)}>
-                            +
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
+                      );
+                    })}
+                  </div>
+                )}
             </div>
             ))}
 
           {/* --- Shipping Methods --- */}
-{product.shipping_methods && (
-  <div className="shipping-methods">
-    <h4 className="option-title">Shipping Method:</h4>
-    <select
-      className="shipping-select"
-      value={selectedShipping || ""}
-      onChange={(e) => setSelectedShipping(e.target.value)}
-    >
-      <option value="">
-        Select a shipping method
-      </option>
-      {Object.entries(product.shipping_methods).map(([method, cost]) => (
-        <option key={method} value={method}>
-          {method} ({convert(cost, currency)} {currency})
-        </option>
-      ))}
-    </select>
-  </div>
-)}
+          {product.shipping_methods && (
+            <div className="shipping-section">
+              <h4 className="option-title">Shipping Method</h4>
+              <select
+                className="shipping-select"
+                value={selectedShipping || ""}
+                onChange={(e) => setSelectedShipping(e.target.value)}
+              >
+                <option value="">Select shipping method</option>
+                {Object.entries(product.shipping_methods).map(([method, cost]) => (
+                  <option key={method} value={method}>
+                    {method} - {convert(cost, currency)} {currency}/kg
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
-<div className="total">
- <span><strong>Total:</strong></span> {calculateTotalPrice().total.toFixed(2)} {currency}
-</div>
-
-          {/* --- Buttons --- */}
-          <div className="product-modal-buttons">
-            <button className="modal-add-to-cart" onClick={handleAddToCart}>
-              Add to Cart
-            </button>
-            <button
-              className="modal-view-btn"
-              onClick={() =>
-                navigate(`/ProductDetails/${encodeURIComponent(product.id)}/${product.name}`)
-              }
-            >
-              View Product
-            </button>
+          {/* --- Total Summary --- */}
+          <div className="order-summary">
+            <div className="summary-row">
+              <span className="summary-label">Total Quantity:</span>
+              <span className="summary-value">{calculateTotalPrice().totalQuantity}</span>
+            </div>
+            <div className="summary-row">
+              <span className="summary-label">Total Weight:</span>
+              <span className="summary-value">{calculateTotalPrice().totalWeight.toFixed(2)} kg</span>
+            </div>
+            <div className="summary-row total-row">
+              <span className="summary-label">Total Price:</span>
+              <span className="summary-value total-price">
+                {convert(calculateTotalPrice().total, currency)} {currency}
+              </span>
+            </div>
           </div>
 
-          <button className="modal-checkout-btn" onClick={handleCheckout}>
-            Checkout ({calculateTotalPrice().total.toFixed(2)} {currency})
-          </button>
+          {/* --- Action Buttons --- */}
+          <div className="modal-actions">
+            <div className="action-buttons">
+              <button className="btn-add-cart" onClick={handleAddToCart}>
+                Add to Cart
+              </button>
+              <button
+                className="btn-view-details"
+                onClick={() =>
+                  navigate(`/ProductDetails/${encodeURIComponent(product.id)}/${product.name}`)
+                }
+              >
+                View Details
+              </button>
+            </div>
+
+            <button className="btn-checkout" onClick={handleCheckout}>
+              Checkout - {convert(calculateTotalPrice().total, currency)} {currency}
+            </button>
+          </div>
         </div>
 
-        {toast && <div className="cart-toast">{toast}</div>}
+
       </div>
     </div>
   );

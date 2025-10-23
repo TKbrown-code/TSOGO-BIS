@@ -7,6 +7,7 @@ import "@fortawesome/fontawesome-free/css/all.min.css";
 import "./index.css";
 import { UserProvider } from "./context/useUserContext.jsx";
 import { CurrencyProvider } from "./context/CurrencyContext";
+import { SiteSettingsProvider } from "./context/SiteSettingsContext";
 import "./i18n/i18n";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -15,7 +16,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <UserProvider>
       <CartProvider>
           <CurrencyProvider>
-        <App />
+            <SiteSettingsProvider>
+              <App />
+            </SiteSettingsProvider>
           </CurrencyProvider>
       </CartProvider>
     </UserProvider>

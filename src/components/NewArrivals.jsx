@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { useCart } from "../context/CartContext";
 import { useCurrencyContext } from "../context/CurrencyContext";
+import { Link } from "react-router-dom";
 import ProductModal from "./ProductModal";
 import "../styles/newArrivals.css";
 import { preloadAllImages, getCachedImage } from "../utils/imageCache";
@@ -40,16 +41,36 @@ export default function NewArrivals({ initialLimit = 8 }) {
       const to = from + limit - 1;
 
       // fetch only new arrivals, newest first
+      // First, get products with new_arrival tag
+      const { data: taggedProducts, error: tagError } = await supabase
+        .from("product_tags")
+        .select("product_id")
+        .eq("tag", "new_arrival");
+
+      if (tagError) throw tagError;
+
+      const productIds = taggedProducts?.map(t => t.product_id) || [];
+
+      // If no tagged products, return empty
+      if (productIds.length === 0) {
+        if (p === 0) setItems([]);
+        setHasMore(false);
+        setLoading(false);
+        setLoadingMore(false);
+        return;
+      }
+
+      // Now fetch products with those IDs
       const { data, error: fetchError } = await supabase
-  .from("products")
-  .select(`
-    *,
-    product_images(image_path, is_primary),
-    product_tags(tag)
-  `, { count: "exact" })
-  .eq("product_tags.tag", "new_arrival")
-  .order("created_at", { ascending: false })
-  .range(from, to);
+        .from("products")
+        .select(`
+          *,
+          product_images(image_path, is_primary),
+          categories(name)
+        `)
+        .in("id", productIds)
+        .order("created_at", { ascending: false })
+        .range(from, to);
 
 
       if (fetchError) throw fetchError;
@@ -108,14 +129,19 @@ export default function NewArrivals({ initialLimit = 8 }) {
     }
   };
 
-  // Skeleton placeholder repeated
+  // Skeleton placeholder
   const SkeletonCard = () => (
-    <div className="na-card skeleton" aria-hidden>
-      <div className="na-image skeleton-box" />
+    <div className="na-card skeleton-card" aria-hidden>
+      <div className="skeleton-image" />
       <div className="na-body">
-        <div className="s-line short" />
-        <div className="s-line" />
-        <div className="s-line tiny" />
+        <div className="skeleton-text skeleton-title" />
+        <div className="skeleton-text skeleton-desc" />
+        <div className="skeleton-text skeleton-desc" />
+        <div className="skeleton-text skeleton-price" />
+        <div className="skeleton-footer">
+          <div className="skeleton-text skeleton-category" />
+          <div className="skeleton-text skeleton-date" />
+        </div>
       </div>
     </div>
   );
@@ -139,7 +165,7 @@ useEffect(() => {
   loadImages();
 }, [items]);
 
-useEffect(() => {
+  useEffect(() => {
     const fetchCategories = async () => {
       const { data, error } = await supabase.from("categories").select("*");
       if (!error) {
@@ -150,6 +176,16 @@ useEffect(() => {
     };
     fetchCategories();
   }, []);
+
+  const getCategoryName = (categoryId) => {
+    if (!categoryId) return "Uncategorized";
+    const cat = categoriesMap[categoryId];
+    if (!cat) return "Unknown";
+    if (cat.parent_id && categoriesMap[cat.parent_id]) {
+      return `${categoriesMap[cat.parent_id].name} > ${cat.name}`;
+    }
+    return cat.name;
+  };
 
   return (
     <section className="new-arrivals" aria-labelledby="new-arrivals-heading">
@@ -175,66 +211,37 @@ useEffect(() => {
       {!loading && !error && items.length > 0 && (
         <>
           <div className="na-grid">
-            {items.map((p) => {
-              const img = p.image_urls?.[0] || "";
-              return (
-                <article
-                  key={p.id}
-                  className="na-card"
-                  tabIndex={0}
-                  aria-labelledby={`na-title-${p.id}`}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") setSelectedProduct(p);
-                  }}
-                >
-                  <div className="na-image-wrapper" role="img" aria-label={p.name}>
-                    <img
-                        src={imageUrls[p.id] || "/placeholder.png"}
-                        alt={p.name}
-                        className="product-image"
-                    />
-                    <span className="na-badge">New</span>
-                    <div className="na-overlay">
-                      <button
-                        className="na-quickview"
-                        aria-label={`Quick view ${p.name}`}
-                        onClick={(e) => { e.stopPropagation(); setSelectedProduct(p); }}
-                      >
-                        Quick View
-                      </button>
-                    </div>
-                  </div>
+            {items.map((p) => (
+              <Link
+                to={`/ProductDetails/${p.id}/${p.name.replace(/\s+/g, '-')}`}
+                className="na-card"
+                key={p.id}
+              >
+                <div className="na-image-wrapper">
+                  <img
+                    src={imageUrls[p.id] || "/placeholder.png"}
+                    alt={p.name}
+                    className="na-image"
+                  />
+                  <span className="na-badge">New</span>
+                </div>
 
-                  <div className="na-body">
-                    <h3 id={`na-title-${p.id}`} className="na-title">{p.name}</h3>
-                    <p className="na-desc">{p.description ? p.description.slice(0, 100) + (p.description.length > 100 ? "…" : "") : "—"}</p>
-                    <div className="na-meta">
-                      <span className="na-price">
-                        {convert(Number(p.price || 0), currency)} {currency}
-                      </span>
-                      <div className="na-actions">
-                        <button
-                          className="btn na-add"
-                          onClick={(e) => { e.stopPropagation(); handleAddToCart(p, 1); }}
-                          aria-label={`Add ${p.name} to cart`}
-                        >
-                          Add
-                        </button>
-                        <a className="btn na-view" href={`/ProductDetails/${p.product_tags?.[0]?.tag || "no-tag"}/${p.id}/${p.name}`} onClick={(e) => e.stopPropagation()}>
-                          View
-                        </a>
-                      </div>
-                    </div>
+                <div className="na-body">
+                  <h3 className="na-title">{p.name}</h3>
+                  <p className="na-desc">
+                    {p.description ? p.description.slice(0, 100) + (p.description.length > 100 ? "…" : "") : "—"}
+                  </p>
+                  <div className="na-price">
+                    {convert(Number(p.price || 0), currency)} {currency}
                   </div>
-                </article>
-              );
-            })}
-          </div>
-
-          <div className="na-footer">
-            {loadingMore ? <div className="loader">Loading more…</div> : null}
-            {!hasMore && <div className="na-end">End of new arrivals</div>}
-            <div ref={observerRef} className="na-sentinel" aria-hidden />
+                  
+                  <div className="card-footer">
+                    <span className="category-label">{getCategoryName(p.category_id)}</span>
+                    <span className="category-label">{new Date(p.created_at).toISOString().split("T")[0]}</span>
+                  </div>
+                </div>
+              </Link>
+            ))}
           </div>
         </>
       )}

@@ -1,36 +1,346 @@
 {
-  "featured_products": "Nos produits vedettes",
-  "no_image": "Aucune image",
-  "add_to_cart": "Ajouter au panier",
-  "old_price": "Ancien prix",
-  "current_price": "Prix actuel",
-  "category": "Catégorie",
-  "uncategorized": "Non catégorisé",
-  "unknown": "Inconnu",
-  "click_to_order": "Cliquez sur la carte pour passer une commande",
-  "loading": "Chargement…",
-  "end_of_products": "Fin des produits",
-  "new_price": "Nouveau prix",
-  "product_details": "Détails du produit",
-  "view_details": "Voir les détails",
-  "products_empty": "Aucun produit disponible pour le moment",
-  "page": "Page",
-  "currency": "Devise",
-  "product_placeholder": "Pas d’image disponible",
-  "featured_subtitle": "Découvrez nos produits les plus populaires et les plus récents",
-  "price": "Prix",
-  "description": "Description",
-  "add": "Ajouter",
-  "view": "Voir",
-  "added_to_cart": "Ajouté au panier avec succès",
-  "error_loading_products": "Erreur lors du chargement des produits",
-  "load_more": "Charger plus",
-  "previous": "Précédent",
-  "next": "Suivant",
-  "quick_view": "Aperçu rapide",
-  "product_category": "Catégorie du produit",
-  "out_of_stock": "Rupture de stock",
-  "in_stock": "En stock",
-  "quantity": "Quantité",
-  "all_categories": "Toutes les catégories"
+  "nav": {
+    "home": "Accueil",
+    "shop": "Boutique",
+    "about": "À propos",
+    "contact": "Contact",
+    "track": "Suivre commande",
+    "dashboard": "Tableau de bord",
+    "admin": "Admin",
+    "cart": "Panier",
+    "logout": "Déconnexion",
+    "login": "Connexion",
+    "signup": "S'inscrire"
+  },
+  "hero": {
+    "welcome": "Bienvenue chez TSOGO",
+    "subtitle": "Découvrez des produits incroyables",
+    "shop_now": "Acheter maintenant",
+    "learn_more": "En savoir plus"
+  },
+  "products": {
+    "featured": "Nos Produits en Vedette",
+    "featured_subtitle": "Découvrez nos produits les plus populaires et les plus récents",
+    "new_arrivals": "Nouveautés",
+    "new_arrivals_subtitle": "Nouveaux articles ajoutés récemment — sélectionnés pour vous",
+    "shop_all": "Tous les produits",
+    "shop_subtitle": "Découvrez notre collection complète",
+    "no_products": "Aucun produit trouvé",
+    "try_adjusting": "Essayez d'ajuster vos filtres ou votre recherche",
+    "showing": "Affichage",
+    "of": "de",
+    "products": "produits",
+    "search_placeholder": "Rechercher des produits...",
+    "sort_by": "Trier par",
+    "name_az": "Nom (A-Z)",
+    "price_low": "Prix (croissant)",
+    "price_high": "Prix (décroissant)",
+    "all_categories": "Toutes les catégories",
+    "loading": "Chargement des produits...",
+    "end_of_products": "Fin des produits"
+  },
+  "product": {
+    "details": "Détails du produit",
+    "add_to_cart": "Ajouter au panier",
+    "view_details": "Voir les détails",
+    "quick_view": "Aperçu rapide",
+    "out_of_stock": "Rupture de stock",
+    "in_stock": "En stock",
+    "quantity": "Quantité",
+    "price": "Prix",
+    "description": "Description",
+    "category": "Catégorie",
+    "uncategorized": "Non catégorisé",
+    "select_option": "Sélectionner une option",
+    "added_to_cart": "Ajouté au panier avec succès"
+  },
+  "cart": {
+    "title": "Panier",
+    "empty": "Votre panier est vide",
+    "subtotal": "Sous-total",
+    "total": "Total",
+    "checkout": "Passer la commande",
+    "continue_shopping": "Continuer les achats",
+    "remove": "Retirer",
+    "update": "Mettre à jour"
+  },
+  "checkout": {
+    "title": "Paiement",
+    "customer_info": "Informations client",
+    "name": "Nom complet",
+    "phone": "Numéro de téléphone",
+    "address": "Adresse de livraison",
+    "payment_method": "Mode de paiement",
+    "order_summary": "Résumé de la commande",
+    "place_order": "Passer la commande",
+    "processing": "Traitement en cours..."
+  },
+  "tracking": {
+    "title": "Suivre votre commande",
+    "subtitle": "Entrez votre numéro de suivi pour voir le statut de votre commande",
+    "tracking_number": "Numéro de suivi",
+    "track_button": "Suivre la commande",
+    "customer": "Client",
+    "amount": "Montant",
+    "from": "Expédié de",
+    "location": "Emplacement actuel",
+    "status": "Statut",
+    "estimated_delivery": "Livraison estimée",
+    "notes": "Notes",
+    "track_another": "Suivre une autre commande",
+    "not_found": "Numéro de suivi introuvable",
+    "statuses": {
+      "pending": "En attente",
+      "in_transit": "En transit",
+      "out_for_delivery": "En cours de livraison",
+      "delivered": "Livré",
+      "failed": "Échec"
+    }
+  },
+  "dashboard": {
+    "title": "Mon tableau de bord",
+    "overview": "Aperçu",
+    "orders": "Mes commandes",
+    "cart": "Panier",
+    "cart_history": "Historique du panier",
+    "reviews": "Mes avis",
+    "settings": "Paramètres",
+    "total_orders": "Commandes totales",
+    "completed": "Terminé",
+    "pending": "En attente",
+    "total_spent": "Total dépensé"
+  },
+  "common": {
+    "loading": "Chargement…",
+    "error": "Erreur",
+    "success": "Succès",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "create": "Créer",
+    "update": "Mettre à jour",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "clear": "Effacer",
+    "submit": "Soumettre",
+    "close": "Fermer",
+    "yes": "Oui",
+    "no": "Non",
+    "confirm": "Confirmer"
+  },
+  "footer": {
+    "about": "À propos de nous",
+    "contact": "Contactez-nous",
+    "terms": "Conditions générales",
+    "privacy": "Politique de confidentialité",
+    "follow_us": "Suivez-nous",
+    "copyright": "© 2025 TSOGO. Tous droits réservés."
+  },
+  "cookie": {
+    "title": "Nous utilisons des cookies",
+    "message": "Nous utilisons des cookies pour améliorer votre expérience de navigation, proposer du contenu personnalisé et analyser notre trafic. En cliquant sur \"Tout accepter\", vous consentez à notre utilisation des cookies.",
+    "accept": "Tout accepter",
+    "decline": "Refuser",
+    "learn_more": "En savoir plus sur les cookies",
+    "essential": "Cookies essentiels",
+    "essential_desc": "Nécessaires au bon fonctionnement du site.",
+    "functional": "Cookies fonctionnels",
+    "functional_desc": "Mémorisent vos préférences (langue, devise).",
+    "analytics": "Cookies analytiques",
+    "analytics_desc": "Nous aident à comprendre comment vous utilisez notre site."
+  },
+  "cta": {
+    "badge": "Offre limitée",
+    "title": "Ne manquez pas nos dernières offres",
+    "subtitle": "Découvrez les nouveautés, les réductions exclusives et les collections sélectionnées spécialement pour vous.",
+    "shop_now": "Acheter maintenant",
+    "learn_more": "En savoir plus",
+    "stats": {
+      "happy_customers": "Clients satisfaits",
+      "products_sold": "Produits vendus",
+      "average_rating": "Note moyenne"
+    },
+    "features": {
+      "authentic": "Produits authentiques",
+      "quality": "Qualité garantie",
+      "trusted": "Approuvé par des milliers"
+    }
+  },
+  "quiz": {
+    "title": "Trouvez votre produit parfait",
+    "subtitle": "Répondez à quelques questions pour obtenir des recommandations personnalisées",
+    "questions": {
+      "product_type": "Quel type de produit recherchez-vous ?",
+      "budget": "Quelle est votre gamme de prix ?",
+      "priority": "Qu'est-ce qui est le plus important pour vous ?"
+    },
+    "options": {
+      "electronics": "Électronique",
+      "fashion": "Mode",
+      "home_living": "Maison et décoration",
+      "sports_outdoors": "Sport et plein air",
+      "under": "Moins de",
+      "over": "Plus de",
+      "quality": "Qualité",
+      "price": "Prix",
+      "brand": "Marque",
+      "features": "Fonctionnalités"
+    },
+    "progress": "Question {current} sur {total}",
+    "result": {
+      "title": "Correspondance parfaite trouvée !",
+      "recommendation": "Basé sur vos préférences, nous recommandons de consulter notre collection premium !",
+      "category": "Catégorie recommandée",
+      "browse_products": "Parcourir les produits",
+      "retake": "Refaire le quiz"
+    },
+    "previous": "Question précédente"
+  },
+  "whatsapp": {
+    "message": "Bonjour ! J'aimerais en savoir plus sur vos produits.",
+    "aria_label": "Chat sur WhatsApp"
+  },
+  "admin": {
+    "dashboard": {
+      "title": "Tableau de bord",
+      "subtitle": "Bienvenue sur votre tableau de bord administrateur",
+      "loading": "Chargement du tableau de bord...",
+      "stats": {
+        "total_revenue": "Chiffre d'affaires total",
+        "total_orders": "Commandes totales",
+        "total_users": "Utilisateurs totaux",
+        "total_products": "Produits totaux",
+        "pending_orders": "Commandes en attente",
+        "completed_orders": "Commandes terminées"
+      }
+    },
+    "settings": {
+      "title": "Paramètres administrateur",
+      "subtitle": "Gérer les utilisateurs administrateurs et la configuration du site",
+      "admin_users": "Utilisateurs administrateurs",
+      "add_admin": "Ajouter un administrateur",
+      "cancel": "Annuler",
+      "admin_email": "Adresse e-mail de l'administrateur",
+      "moderator": "Modérateur",
+      "admin": "Administrateur",
+      "super_admin": "Super administrateur",
+      "adding": "Ajout en cours...",
+      "form_hint": "L'utilisateur doit avoir un compte dans le système pour être ajouté comme administrateur.",
+      "remove": "Supprimer",
+      "site_settings": "Paramètres du site",
+      "site_name": "Nom du site",
+      "contact_email": "E-mail de contact",
+      "contact_phone": "Téléphone de contact",
+      "currency": "Devise",
+      "tax_rate": "Taux de taxe (%)",
+      "xaf": "XAF (Franc CFA)",
+      "usd": "USD ($)",
+      "eur": "EUR (€)",
+      "save_settings": "Enregistrer les paramètres du site"
+    }
+  },
+  "faq": {
+    "title": "Questions fréquemment posées",
+    "subtitle": "Trouvez des réponses aux questions courantes sur notre service",
+    "questions": {
+      "place_order": "Comment passer une commande ?",
+      "payment_methods": "Quels modes de paiement acceptez-vous ?",
+      "delivery_time": "Combien de temps prend la livraison ?",
+      "track_order": "Puis-je suivre ma commande ?",
+      "customer_support": "Offrez-vous un support client ?",
+      "authentic_products": "Les produits sont-ils authentiques ?"
+    },
+    "answers": {
+      "place_order": "Parcourez nos produits, ajoutez des articles à votre panier et procédez au paiement. Suivez les étapes simples pour finaliser votre achat en toute sécurité.",
+      "payment_methods": "Nous acceptons toutes les principales cartes de crédit, cartes de débit, mobile money et virements bancaires pour votre commodité.",
+      "delivery_time": "La livraison prend généralement 2-5 jours ouvrables selon votre emplacement. Nous fournirons les informations de suivi une fois votre commande expédiée.",
+      "track_order": "Oui ! Une fois votre commande expédiée, vous recevrez un numéro de suivi par e-mail pour surveiller le statut de votre livraison en temps réel.",
+      "customer_support": "Absolument ! Notre équipe de support client est disponible 24h/24 et 7j/7 pour vous aider avec toute question ou préoccupation.",
+      "authentic_products": "Oui, nous garantissons des produits 100% authentiques de marques de confiance. Tous les articles sont accompagnés de garanties du fabricant."
+    }
+  },
+  "testimonials": {
+    "title": "Ce que disent nos clients",
+    "subtitle": "De vrais avis de vrais clients qui aiment nos produits",
+    "loading": "Chargement des témoignages...",
+    "error": "Échec du chargement des témoignages",
+    "reviewed": "Avis sur :",
+    "previous": "Témoignages précédents",
+    "next": "Témoignages suivants",
+    "go_to_slide": "Aller au diaporama {number}"
+  },
+  "after_hero": {
+    "title": "Pourquoi faire ses achats chez nous ?",
+    "subtitle": "Nous allons au-delà des simples produits. Notre objectif est de livrer confiance, style et service inégalé.",
+    "features": {
+      "fast_delivery": {
+        "heading": "Livraison rapide",
+        "text": "Recevez vos commandes rapidement avec des mises à jour de suivi en temps réel."
+      },
+      "premium_quality": {
+        "heading": "Qualité premium",
+        "text": "Seuls les meilleurs matériaux et savoir-faire arrivent jusqu'à vous."
+      },
+      "secure_payments": {
+        "heading": "Paiements sécurisés",
+        "text": "Vos données et paiements sont cryptés pour votre tranquillité d'esprit."
+      }
+    }
+  },
+  "contact_page": {
+    "hero_title": "Entrer en contact",
+    "hero_subtitle": "Nous sommes là pour vous aider et répondre à toutes vos questions.",
+    "contact_options": "Options de contact",
+    "contact_subtitle": "Choisissez votre méthode préférée pour nous contacter",
+    "methods": {
+      "phone": "Téléphone",
+      "whatsapp": "WhatsApp",
+      "email": "E-mail",
+      "location": "Localisation",
+      "hours": "Heures"
+    },
+    "actions": {
+      "call_us": "Nous appeler",
+      "chat_with_us": "Chatter avec nous",
+      "email_us": "Nous envoyer un e-mail",
+      "get_directions": "Obtenir les directions"
+    },
+    "details": {
+      "business_hours": "Heures d'ouverture",
+      "key_contacts": "Contacts clés",
+      "connect_with_us": "Connectez-vous avec nous",
+      "customer_support": "Support client",
+      "sales_inquiries": "Demandes de vente"
+    },
+    "form": {
+      "title": "Contactez-nous",
+      "name_placeholder": "Votre nom",
+      "email_placeholder": "Votre e-mail",
+      "subject_placeholder": "Sujet",
+      "message_placeholder": "Votre message",
+      "send_button": "Envoyer le message"
+    },
+    "office": "Notre bureau de Yaoundé"
+  },
+  "auth": {
+    "signup_title": "S'inscrire sur TSOGO-BIS",
+    "signin_title": "Se connecter à TSOGO-BIS",
+    "subtitle": "Pour un service plus rapide et efficace",
+    "full_name": "Votre nom complet",
+    "full_name_placeholder": "Entrez votre nom complet...",
+    "email": "Votre email",
+    "email_placeholder": "exemple@email.com",
+    "phone": "Votre numéro de téléphone",
+    "phone_placeholder": "+(237) 678 554 120",
+    "password": "Votre mot de passe",
+    "password_placeholder": "Le mot de passe doit contenir au moins 6 caractères",
+    "verify_password": "Vérifiez votre mot de passe",
+    "agree_policy": "J'accepte les",
+    "policies": "politiques de TSOGO-BIS",
+    "signup": "S'inscrire",
+    "signin": "Se connecter",
+    "have_account": "Vous avez déjà un compte ?",
+    "no_account": "Vous n'avez pas de compte ?"
+  }
 }

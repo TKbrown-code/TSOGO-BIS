@@ -1,8 +1,9 @@
 // utils/campay.js
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_KEY;
+const CAMPAY_API_URL = import.meta.env.VITE_CAMPAY_API_URL || 'https://ebnjqpqegwmbalufhpqk.supabase.co/functions/v1/create-campay-order';
 
 export async function createCampayOrder(payload) {
-  const url = 'https://ebnjqpqegwmbalufhpqk.supabase.co/functions/v1/create-campay-order';
+  const url = CAMPAY_API_URL;
   const res = await fetch(url, {
     method: 'POST',
     headers: {

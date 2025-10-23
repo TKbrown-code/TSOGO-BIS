@@ -2,10 +2,12 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Globe } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import '../styles/languagebtn.css';
 
 export default function FloatingLangButton() {
   const { i18n } = useTranslation();
   const [userId, setUserId] = useState(null);
+  const [isOpen, setIsOpen] = useState(false);
 
   // Initialize language on mount
   useEffect(() => {
@@ -42,6 +44,7 @@ export default function FloatingLangButton() {
     const newLang = e.target.value;
     i18n.changeLanguage(newLang);
     localStorage.setItem("appLanguage", newLang);
+    setIsOpen(false);
 
     if (userId) {
       // Save language to DB
@@ -54,39 +57,36 @@ export default function FloatingLangButton() {
     }
   };
 
+  const toggleDropdown = () => setIsOpen(!isOpen);
+
   return (
-    <div
-      style={{
-        position: "fixed",
-        bottom: "80px",
-        left: "20px",
-        background: "#202020ff",
-        borderRadius: "50px",
-        padding: "5px 10px",
-        display: "flex",
-        alignItems: "center",
-        gap: "5px",
-        boxShadow: "0 4px 8px rgba(0,0,0,0.2)",
-        zIndex: 1000,
-      }}
-    >
-      <Globe size={24} color="white" />
-      <select
-        value={i18n.language}
-        onChange={handleChange}
-        style={{
-          background: "transparent",
-          color: "white",
-          border: "none",
-          outline: "none",
-          cursor: "pointer",
-          fontSize: "16px",
-        }}
+    <div className="language-btn-container">
+      <button 
+        className="language-btn" 
+        onClick={toggleDropdown}
+        aria-label="Change language"
+        aria-expanded={isOpen}
       >
-        <option value="en">English</option>
-        <option value="fr">Français</option>
-        <option value="zh">中文</option>
-      </select>
+        <Globe size={20} className="globe-icon" />
+        <span className="current-lang">
+          {i18n.language === 'en' ? 'EN' : i18n.language === 'fr' ? 'FR' : '中文'}
+        </span>
+      </button>
+
+      {isOpen && (
+        <div className="language-dropdown">
+          <select
+            value={i18n.language}
+            onChange={handleChange}
+            className="language-select"
+            aria-label="Select language"
+          >
+            <option value="en">English</option>
+            <option value="fr">Français</option>
+            <option value="zh">中文</option>
+          </select>
+        </div>
+      )}
     </div>
   );
 }

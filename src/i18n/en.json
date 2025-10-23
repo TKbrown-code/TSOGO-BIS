@@ -1,34 +1,386 @@
 {
-  "featured_products": "Our Featured Products",
-  "featured_subtitle": "Discover our most popular and newest products",
-  "no_image": "No Image",
-  "add_to_cart": "Add to Cart",
-  "old_price": "Old Price",
-  "current_price": "Current Price",
-  "category": "Category",
-  "uncategorized": "Uncategorized",
-  "unknown": "Unknown",
-  "click_to_order": "Click on card to place an order",
-  "loading": "Loading…",
-  "end_of_products": "End of products",
-  "new_price": "New Price",
-  "product_details": "Product Details",
-  "view_details": "View Details",
-  "products_empty": "No products available at the moment",
-  "page": "Page",
-  "currency": "Currency",
-  "product_placeholder": "No image available",
-  "add": "Add",
-  "view": "View",
-  "added_to_cart": "Added to cart successfully",
-  "error_loading_products": "Error loading products",
-  "load_more": "Load More",
-  "previous": "Previous",
-  "next": "Next",
-  "quick_view": "Quick View",
-  "product_category": "Product Category",
-  "out_of_stock": "Out of Stock",
-  "in_stock": "In Stock",
-  "quantity": "Quantity",
-  "all_categories": "All Categories"
+  "nav": {
+    "home": "Home",
+    "shop": "Shop",
+    "about": "About",
+    "contact": "Contact",
+    "track": "Track Order",
+    "dashboard": "Dashboard",
+    "admin": "Admin",
+    "cart": "Cart",
+    "logout": "Logout",
+    "login": "Login",
+    "signup": "Sign Up"
+  },
+  "hero": {
+    "welcome": "Welcome to TSOGO",
+    "subtitle": "Discover Amazing Products",
+    "shop_now": "Shop Now",
+    "learn_more": "Learn More"
+  },
+  "products": {
+    "featured": "Our Featured Products",
+    "featured_subtitle": "Discover our most popular and newest products",
+    "new_arrivals": "New Arrivals",
+    "new_arrivals_subtitle": "Fresh picks added recently — handpicked for you",
+    "shop_all": "Shop All Products",
+    "shop_subtitle": "Discover our complete collection",
+    "no_products": "No products found",
+    "try_adjusting": "Try adjusting your filters or search query",
+    "showing": "Showing",
+    "of": "of",
+    "products": "products",
+    "search_placeholder": "Search products...",
+    "sort_by": "Sort By",
+    "name_az": "Name (A-Z)",
+    "price_low": "Price (Low to High)",
+    "price_high": "Price (High to Low)",
+    "all_categories": "All Categories",
+    "loading": "Loading products...",
+    "end_of_products": "End of products"
+  },
+  "product": {
+    "details": "Product Details",
+    "add_to_cart": "Add to Cart",
+    "view_details": "View Details",
+    "quick_view": "Quick View",
+    "out_of_stock": "Out of Stock",
+    "in_stock": "In Stock",
+    "quantity": "Quantity",
+    "price": "Price",
+    "description": "Description",
+    "category": "Category",
+    "uncategorized": "Uncategorized",
+    "select_option": "Select Option",
+    "added_to_cart": "Added to cart successfully"
+  },
+  "cart": {
+    "title": "Shopping Cart",
+    "empty": "Your cart is empty",
+    "subtotal": "Subtotal",
+    "total": "Total",
+    "checkout": "Checkout",
+    "continue_shopping": "Continue Shopping",
+    "remove": "Remove",
+    "update": "Update"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "customer_info": "Customer Information",
+    "name": "Full Name",
+    "phone": "Phone Number",
+    "address": "Delivery Address",
+    "payment_method": "Payment Method",
+    "order_summary": "Order Summary",
+    "place_order": "Place Order",
+    "processing": "Processing..."
+  },
+  "tracking": {
+    "title": "Track Your Order",
+    "subtitle": "Enter your tracking number to see your order status",
+    "tracking_number": "Tracking Number",
+    "track_button": "Track Order",
+    "customer": "Customer",
+    "amount": "Amount",
+    "from": "Shipping From",
+    "location": "Current Location",
+    "status": "Status",
+    "estimated_delivery": "Estimated Delivery",
+    "notes": "Notes",
+    "track_another": "Track Another Order",
+    "not_found": "Tracking number not found",
+    "statuses": {
+      "pending": "Pending",
+      "in_transit": "In Transit",
+      "out_for_delivery": "Out for Delivery",
+      "delivered": "Delivered",
+      "failed": "Failed"
+    }
+  },
+  "dashboard": {
+    "title": "My Dashboard",
+    "overview": "Overview",
+    "orders": "My Orders",
+    "cart": "Shopping Cart",
+    "cart_history": "Cart History",
+    "reviews": "My Reviews",
+    "settings": "Settings",
+    "total_orders": "Total Orders",
+    "completed": "Completed",
+    "pending": "Pending",
+    "total_spent": "Total Spent"
+  },
+  "common": {
+    "loading": "Loading…",
+    "error": "Error",
+    "success": "Success",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "update": "Update",
+    "search": "Search",
+    "filter": "Filter",
+    "clear": "Clear",
+    "submit": "Submit",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "confirm": "Confirm"
+  },
+  "footer": {
+    "about": "About Us",
+    "contact": "Contact Us",
+    "terms": "Terms & Conditions",
+    "privacy": "Privacy Policy",
+    "follow_us": "Follow Us",
+    "copyright": "© 2025 TSOGO. All rights reserved."
+  },
+  "cookie": {
+    "title": "We use cookies",
+    "message": "We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic. By clicking \"Accept All\", you consent to our use of cookies.",
+    "accept": "Accept All",
+    "decline": "Decline",
+    "learn_more": "Learn more about cookies",
+    "essential": "Essential Cookies",
+    "essential_desc": "Required for the website to function properly.",
+    "functional": "Functional Cookies",
+    "functional_desc": "Remember your preferences (language, currency).",
+    "analytics": "Analytics Cookies",
+    "analytics_desc": "Help us understand how you use our site."
+  },
+  "about": {
+    "hero_title": "Connecting Cameroon to Global Quality",
+    "hero_subtitle": "TSOGO-BIS is your trusted partner for premium products from China, delivered right to your doorstep in Cameroon.",
+    "based_in": "Based in Cameroon",
+    "sourced_from": "Sourced from China",
+    "happy_customers": "Happy Customers",
+    "our_story": "Our Story",
+    "why_choose": "Why Choose TSOGO-BIS?",
+    "why_subtitle": "We're not just another online store - we're your gateway to global quality",
+    "easy_payments": "Easy & Secure Payments",
+    "payment_subtitle": "We accept the payment methods you already use and trust",
+    "mobile_money": "Mobile Money",
+    "orange_money": "Orange Money",
+    "secure_note": "All transactions are encrypted and secure",
+    "our_values": "Our Values",
+    "values_subtitle": "The principles that guide everything we do",
+    "cta_title": "Ready to Experience the Difference?",
+    "cta_text": "Join thousands of satisfied customers who trust TSOGO-BIS for quality products at unbeatable prices.",
+    "start_shopping": "Start Shopping",
+    "contact_us": "Contact Us"
+  },
+  "contact": {
+    "title": "Get in Touch",
+    "subtitle": "We'd love to hear from you",
+    "name": "Your Name",
+    "email": "Your Email",
+    "subject": "Subject",
+    "message": "Your Message",
+    "send": "Send Message",
+    "sending": "Sending...",
+    "success": "Message sent successfully!",
+    "error": "Failed to send message"
+  },
+  "hero": {
+    "badge": "Welcome to TSOGO-BIS",
+    "title": "Discover Amazing Products",
+    "subtitle": "Shop from thousands of quality products with fast delivery, secure payment, and exceptional customer service. Your trusted destination for online shopping.",
+    "shop_now": "Shop Now",
+    "learn_more": "Learn More"
+  },
+  "cta": {
+    "badge": "Limited Time Offer",
+    "title": "Don't Miss Out on Our Latest Deals",
+    "subtitle": "Discover fresh arrivals, exclusive discounts, and handpicked collections tailored for you.",
+    "shop_now": "Shop Now",
+    "learn_more": "Learn More",
+    "stats": {
+      "happy_customers": "Happy Customers",
+      "products_sold": "Products Sold",
+      "average_rating": "Average Rating"
+    },
+    "features": {
+      "authentic": "Authentic Products",
+      "quality": "Quality Guaranteed",
+      "trusted": "Trusted by Thousands"
+    }
+  },
+  "quiz": {
+    "title": "Find Your Perfect Product",
+    "subtitle": "Answer a few questions to get personalized recommendations",
+    "questions": {
+      "product_type": "What type of product are you looking for?",
+      "budget": "What's your budget range?",
+      "priority": "What's most important to you?"
+    },
+    "options": {
+      "electronics": "Electronics",
+      "fashion": "Fashion",
+      "home_living": "Home & Living",
+      "sports_outdoors": "Sports & Outdoors",
+      "under": "Under",
+      "over": "Over",
+      "quality": "Quality",
+      "price": "Price",
+      "brand": "Brand",
+      "features": "Features"
+    },
+    "progress": "Question {current} of {total}",
+    "result": {
+      "title": "Perfect Match Found!",
+      "recommendation": "Based on your preferences, we recommend checking out our premium collection!",
+      "category": "Recommended Category",
+      "browse_products": "Browse Products",
+      "retake": "Retake Quiz"
+    },
+    "previous": "Previous Question"
+  },
+  "whatsapp": {
+    "message": "Hello! I'd like to know more about your products.",
+    "aria_label": "Chat on WhatsApp"
+  },
+  "admin": {
+    "dashboard": {
+      "title": "Dashboard",
+      "subtitle": "Welcome to your admin dashboard",
+      "loading": "Loading dashboard...",
+      "stats": {
+        "total_revenue": "Total Revenue",
+        "total_orders": "Total Orders",
+        "total_users": "Total Users",
+        "total_products": "Total Products",
+        "pending_orders": "Pending Orders",
+        "completed_orders": "Completed Orders"
+      }
+    },
+    "settings": {
+      "title": "Admin Settings",
+      "subtitle": "Manage admin users and site configuration",
+      "admin_users": "Admin Users",
+      "add_admin": "Add Admin",
+      "cancel": "Cancel",
+      "admin_email": "Admin email address",
+      "moderator": "Moderator",
+      "admin": "Admin",
+      "super_admin": "Super Admin",
+      "adding": "Adding...",
+      "form_hint": "The user must have an account in the system to be added as an admin.",
+      "remove": "Remove",
+      "site_settings": "Site Settings",
+      "site_name": "Site Name",
+      "contact_email": "Contact Email",
+      "contact_phone": "Contact Phone",
+      "currency": "Currency",
+      "tax_rate": "Tax Rate (%)",
+      "xaf": "XAF (CFA Franc)",
+      "usd": "USD ($)",
+      "eur": "EUR (€)",
+      "save_settings": "Save Site Settings"
+    }
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "subtitle": "Find answers to common questions about our service",
+    "questions": {
+      "place_order": "How do I place an order?",
+      "payment_methods": "What payment methods do you accept?",
+      "delivery_time": "How long does delivery take?",
+      "track_order": "Can I track my order?",
+      "customer_support": "Do you offer customer support?",
+      "authentic_products": "Are the products authentic?"
+    },
+    "answers": {
+      "place_order": "Browse our products, add items to your cart, and proceed to checkout. Follow the simple steps to complete your purchase securely.",
+      "payment_methods": "We accept all major credit cards, debit cards, mobile money, and bank transfers for your convenience.",
+      "delivery_time": "Delivery typically takes 2-5 business days depending on your location. We'll provide tracking information once your order ships.",
+      "track_order": "Yes! Once your order ships, you'll receive a tracking number via email to monitor your delivery status in real-time.",
+      "customer_support": "Absolutely! Our customer support team is available 24/7 to assist you with any questions or concerns.",
+      "authentic_products": "Yes, we guarantee 100% authentic products from trusted brands. All items come with manufacturer warranties."
+    }
+  },
+  "testimonials": {
+    "title": "What Our Customers Say",
+    "subtitle": "Real reviews from real customers who love our products",
+    "loading": "Loading testimonials...",
+    "error": "Failed to fetch testimonials",
+    "reviewed": "Reviewed:",
+    "previous": "Previous testimonials",
+    "next": "Next testimonials",
+    "go_to_slide": "Go to slide {number}"
+  },
+  "after_hero": {
+    "title": "Why Shop With Us?",
+    "subtitle": "We go beyond just products. Our goal is to deliver trust, style, and unmatched service.",
+    "features": {
+      "fast_delivery": {
+        "heading": "Fast Delivery",
+        "text": "Get your orders quickly with real-time tracking updates."
+      },
+      "premium_quality": {
+        "heading": "Premium Quality",
+        "text": "Only the best materials and craftsmanship make it to you."
+      },
+      "secure_payments": {
+        "heading": "Secure Payments",
+        "text": "Your data and payments are encrypted for peace of mind."
+      }
+    }
+  },
+  "contact_page": {
+    "hero_title": "Get in Touch",
+    "hero_subtitle": "We're here to help and answer any questions you might have.",
+    "contact_options": "Contact Options",
+    "contact_subtitle": "Choose your preferred way to reach us",
+    "methods": {
+      "phone": "Phone",
+      "whatsapp": "WhatsApp",
+      "email": "Email",
+      "location": "Location",
+      "hours": "Hours"
+    },
+    "actions": {
+      "call_us": "Call us",
+      "chat_with_us": "Chat with us",
+      "email_us": "Email us",
+      "get_directions": "Get directions"
+    },
+    "details": {
+      "business_hours": "Business Hours",
+      "key_contacts": "Key Contacts",
+      "connect_with_us": "Connect With Us",
+      "customer_support": "Customer Support",
+      "sales_inquiries": "Sales Inquiries"
+    },
+    "form": {
+      "title": "Contact Us",
+      "name_placeholder": "Your Name",
+      "email_placeholder": "Your Email",
+      "subject_placeholder": "Subject",
+      "message_placeholder": "Your Message",
+      "send_button": "Send Message"
+    },
+    "office": "Our Yaoundé Office"
+  },
+  "auth": {
+    "signup_title": "Sign Up For TSOGO-BIS",
+    "signin_title": "Sign Into TSOGO-BIS",
+    "subtitle": "For a faster and efficient service",
+    "full_name": "Your Full Name",
+    "full_name_placeholder": "Enter your full name...",
+    "email": "Your Email",
+    "email_placeholder": "example@email.com",
+    "phone": "Your Phone Number",
+    "phone_placeholder": "+(237) 678 554 120",
+    "password": "Your Password",
+    "password_placeholder": "Password must be 6 characters long",
+    "verify_password": "Verify Your Password",
+    "agree_policy": "I agree to TSOGO-BIS",
+    "policies": "policies",
+    "signup": "Sign Up",
+    "signin": "Sign In",
+    "have_account": "Already have an account?",
+    "no_account": "Don't have an account?"
+  }
 }

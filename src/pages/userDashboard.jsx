@@ -1,7 +1,7 @@
 import { useUserContext } from "../context/useUserContext";
 import { SignOut } from "../hooks/useUserInfo";
-import { useNavigate, Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useNavigate, Link, Navigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import "../styles/dashboard.css";
 
@@ -83,7 +83,7 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-container">
-      <h1 className="heading">Welcome to TSOGO-BIS, {profile.full_name} 🎉</h1>
+      <h1 className="heading">Welcome to TSOGO-BIS, {profile.full_name}!</h1>
 
       {/* Profile Info */}
       <section className="profile-section">

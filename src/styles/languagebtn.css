@@ -1,0 +1,69 @@
+.language-btn-container {
+  position: fixed;
+  bottom: 80px;
+  left: 20px;
+  z-index: 1000;
+}
+
+.language-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--primaryColor);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  transition: all 0.2s ease;
+}
+
+.language-btn:hover {
+  background: var(--accentColor);
+  transform: translateY(-2px);
+}
+
+.language-btn:active {
+  transform: translateY(0);
+}
+
+.globe-icon {
+  color: white;
+}
+
+.current-lang {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.language-dropdown {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 10px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  overflow: hidden;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.language-select {
+  padding: 10px 15px;
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.language-select option {
+  padding: 8px;
+}

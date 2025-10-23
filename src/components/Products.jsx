@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useCart } from "../context/CartContext";
 import { supabase } from "../lib/supabase";
+import { Link } from "react-router-dom";
 import ProductModal from "./ProductModal";
 import "../styles/products.css";
 import { useCurrencyContext } from "../context/CurrencyContext";
@@ -15,6 +16,7 @@ export default function Products({ selectedCategory }) {
   const [products, setProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [categoriesMap, setCategoriesMap] = useState({});
+  const [subcategoriesMap, setSubcategoriesMap] = useState({});
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const limit = 20;
@@ -27,6 +29,12 @@ export default function Products({ selectedCategory }) {
       const map = {};
       data.forEach(cat => (map[cat.id] = cat));
       setCategoriesMap(map);
+      
+      // Fetch subcategories
+      const { data: subData = [] } = await supabase.from("subcategories").select("*");
+      const subMap = {};
+      subData.forEach(sub => (subMap[sub.id] = sub));
+      setSubcategoriesMap(subMap);
     };
     fetchCategories();
   }, []);
@@ -48,7 +56,16 @@ export default function Products({ selectedCategory }) {
         .eq("product_tags.tag", "featured");
 
       if (selectedCategory && selectedCategory !== "All") {
-        query = query.eq("category_id", selectedCategory);
+        // Check if selectedCategory is a subcategory ID
+        const isSubcategory = subcategoriesMap[selectedCategory];
+        
+        if (isSubcategory) {
+          // Filter by subcategory
+          query = query.eq("subcategory_id", selectedCategory);
+        } else {
+          // Filter by category
+          query = query.eq("category_id", selectedCategory);
+        }
       }
 
       const { data: productsData = [], count, error } = await query.range(
@@ -136,36 +153,38 @@ export default function Products({ selectedCategory }) {
           const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
 
           return (
-            <div className="product-card" key={product.id} onClick={() => setSelectedProduct(product)}>
-              <div className="product-image-wrapper">
-                <img src={images[product.id] || "/placeholder.png"} alt={product.name} className="product-image" />
-              </div>
+            <Link key={product.id} to={`/ProductDetails/${product.id}/${product.name}`} className="product-link">
+              <div className="product-card">
+                <div className="product-image-wrapper">
+                  <img src={images[product.id] || "/placeholder.png"} alt={product.name} className="product-image" />
+                </div>
 
-              <div className="product-info">
-                <h3>{product.name}</h3>
-                <p className="product-Details">{product.description}</p>
+                <div className="product-info">
+                  <h3>{product.name}</h3>
+                  <p className="product-Details">{product.description}</p>
 
-                <div className="price-rating">
-                  <div className="price">
-                  {product.new_price && <span className="new-price">{convert(product.new_price, currency)} {currency}</span>}
-                    <span style={product.new_price && {color:"grey",textDecoration:"line-through",fontSize:"0.75rem"}} className="current-price">{convert(product.price, currency)} {currency}</span>
+                  <div className="price-rating">
+                    <div className="price">
+                    {product.new_price && <span className="new-price">{convert(product.new_price, currency)} {currency}</span>}
+                      <span style={product.new_price && {color:"grey",textDecoration:"line-through",fontSize:"0.75rem"}} className="current-price">{convert(product.price, currency)} {currency}</span>
+                    </div>
+                    <span className="product-rating">
+                      {[...Array(fullStars)].map((_, i) => <span key={`f-${i}`}>★</span>)}
+                      {halfStar && <span>★</span>}
+                      {[...Array(emptyStars)].map((_, i) => <span key={`e-${i}`}>☆</span>)}
+                      
+                      <span className="avg"> {avg > 0 ? avg.toFixed(1) : ""}</span>
+                      <span className="count"> ({avg})</span>
+                    </span>
                   </div>
-                  <span className="product-rating">
-                    {[...Array(fullStars)].map((_, i) => <span key={`f-${i}`}>★</span>)}
-                    {halfStar && <span>★</span>}
-                    {[...Array(emptyStars)].map((_, i) => <span key={`e-${i}`}>☆</span>)}
-                    
-                    <span className="avg"> {avg > 0 ? avg.toFixed(1) : ""}</span>
-                    <span className="count"> ({avg})</span>
-                  </span>
-                </div>
 
-                <div className="card-footer">
-                  <span className="category-label">{getCategoryName(product.category_id)}</span>
-                  <span className="category-label">{new Date(product.created_at).toISOString().split("T")[0]}</span>
+                  <div className="card-footer">
+                    <span className="category-label">{getCategoryName(product.category_id)}</span>
+                    <span className="category-label">{new Date(product.created_at).toISOString().split("T")[0]}</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            </Link>
           );
         })}
       </div>

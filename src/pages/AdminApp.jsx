@@ -1,100 +1,143 @@
 // src/pages/AdminApp.jsx
-import React, { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
+import React, { useState } from "react";
+import { AdminProvider, useAdmin } from "../context/AdminContext";
+import AdminDashboard from "../admin/AdminDashboard";
 import AdminProducts from "../admin/AdminProducts";
-import AdminCheckouts from "../admin/AdminCheckouts";
+import AdminOrders from "../admin/AdminOrders";
+import AdminUsers from "../admin/AdminUsers";
 import AdminCategories from "../admin/AdminCategories";
+import AdminSubcategories from "../admin/AdminSubcategories";
+import AdminReviews from "../admin/AdminReviews";
+import AdminAnalytics from "../admin/AdminAnalytics";
+import AdminSettings from "../admin/AdminSettings";
+import AdminTracking from "../admin/AdminTracking";
 import AdminAuth from "../admin/AdminAuth";
+import AdminSignIn from "../components/AdminSignIn";
+import { BarChart3, TrendingUp, Package, ShoppingCart, MapPin, Users, Folder, FolderTree, Star, Settings, Wrench, XCircle, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
+import "../styles/AdminAppComplete.css";
 
-export default function AdminApp() {
-  const [user, setUser] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
+function AdminContent() {
+  const { user, isAdmin, loading, signOut, adminRole } = useAdmin();
+  const [activeSection, setActiveSection] = useState("dashboard");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // ✅ Centralized admin check
-  const checkAdmin = async (uid) => {
-    if (!uid) {
-      setIsAdmin(false);
-      setLoading(false);
-      return;
-    }
-    const { data, error } = await supabase
-      .from("admins")
-      .select("id")
-      .eq("id", uid)
-      .single();
-
-    if (error) {
-      console.error("Admin check error:", error);
-      setIsAdmin(false);
-    } else {
-      setIsAdmin(!!data);
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    // ✅ Auth listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null);
-        checkAdmin(session?.user?.id);
-      }
-    );
-
-    // ✅ Initial session load
-    supabase.auth.getSession().then(({ data, error }) => {
-      if (error) {
-        console.error("Error getting session:", error);
-        setUser(null);
-        setIsAdmin(false);
-        setLoading(false);
-        return;
-      }
-      const session = data?.session;
-      setUser(session?.user ?? null);
-      checkAdmin(session?.user?.id);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  // ✅ UI states
-  if (loading) return <div>Loading admin...</div>;
-  if (!user) return <AdminAuth />;
-  if (!isAdmin)
+  // Loading state
+  if (loading) {
     return (
-      <div style={{ padding: 32 }}>
-        <h2>Access denied</h2>
-        <p>Your account is not an admin. Sign out and sign in with an admin account.</p>
-        <button onClick={() => supabase.auth.signOut()}>Sign out</button>
+      <div className="admin-loading">
+        <div className="loading-spinner"></div>
+        <p>Loading admin panel...</p>
       </div>
     );
+  }
 
-  // ✅ Main Admin Layout
-  return (
-    <div className="admin-layout" style={{ padding: 16 }}>
-      <header
-        style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}
-      >
-        <h1>TSOGO-BIS Admin</h1>
-        <div>
-          <button onClick={() => supabase.auth.signOut()}>Sign out</button>
+  // Not authenticated - use new simplified sign in
+  if (!user) return <AdminSignIn />;
+
+  // Not admin
+  if (!isAdmin) {
+    return (
+      <div className="admin-access-denied">
+        <div className="access-denied-card">
+          <h2><XCircle className="inline-block mr-2" size={28} /> Access Denied</h2>
+          <p>Your account does not have admin privileges.</p>
+          <p>Please sign out and sign in with an admin account.</p>
+          <button onClick={signOut} className="btn-primary">Sign Out</button>
         </div>
-      </header>
+      </div>
+    );
+  }
 
-      <main
-        style={{ display: "grid", gridTemplateColumns: "1fr 420px", gap: 16 }}
-      >
-        <section>
-          <AdminProducts />
-          <AdminCheckouts />
-        </section>
+  const menuItems = [
+    { id: "dashboard", icon: <BarChart3 size={20} />, label: "Dashboard" },
+    { id: "analytics", icon: <TrendingUp size={20} />, label: "Analytics" },
+    { id: "products", icon: <Package size={20} />, label: "Products" },
+    { id: "orders", icon: <ShoppingCart size={20} />, label: "Orders" },
+    { id: "tracking", icon: <MapPin size={20} />, label: "Tracking" },
+    { id: "users", icon: <Users size={20} />, label: "Users" },
+    { id: "categories", icon: <Folder size={20} />, label: "Categories" },
+    { id: "subcategories", icon: <FolderTree size={20} />, label: "Subcategories" },
+    { id: "reviews", icon: <Star size={20} />, label: "Reviews" },
+    { id: "settings", icon: <Settings size={20} />, label: "Settings" }
+  ];
 
-        <aside>
-          <AdminCategories />
-        </aside>
+  return (
+    <div className="admin-container">
+      {/* Sidebar */}
+      <aside className={`admin-sidebar ${sidebarCollapsed ? "collapsed" : ""}`}>
+        <div className="sidebar-header">
+          <div className="logo">
+            <span className="logo-icon"><Wrench size={28} /></span>
+            {!sidebarCollapsed && <span className="logo-text">TSOGO Admin</span>}
+          </div>
+          <button 
+            className="collapse-btn" 
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            title={sidebarCollapsed ? "Expand" : "Collapse"}
+          >
+            {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </button>
+        </div>
+
+        <nav className="sidebar-nav">
+          {menuItems.map(item => (
+            <button
+              key={item.id}
+              className={`nav-item ${activeSection === item.id ? "active" : ""}`}
+              onClick={() => setActiveSection(item.id)}
+              title={sidebarCollapsed ? item.label : ""}
+            >
+              <span className="nav-icon">{item.icon}</span>
+              {!sidebarCollapsed && <span className="nav-label">{item.label}</span>}
+            </button>
+          ))}
+        </nav>
+
+        <div className="sidebar-footer">
+          <div className="admin-info">
+            <div className="admin-avatar">
+              {user.email?.charAt(0).toUpperCase()}
+            </div>
+            {!sidebarCollapsed && (
+              <div className="admin-details">
+                <div className="admin-role-badge">{adminRole}</div>
+                <div className="admin-email-text">{user.email}</div>
+              </div>
+            )}
+          </div>
+          <button 
+            onClick={signOut} 
+            className="btn-signout-sidebar"
+            title="Sign Out"
+          >
+            {sidebarCollapsed ? <LogOut size={18} /> : <><LogOut size={16} className="inline-block mr-2" /> Sign Out</>}
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="admin-content">
+        <div className="content-wrapper">
+          {activeSection === "dashboard" && <AdminDashboard />}
+          {activeSection === "analytics" && <AdminAnalytics />}
+          {activeSection === "products" && <AdminProducts />}
+          {activeSection === "orders" && <AdminOrders />}
+          {activeSection === "tracking" && <AdminTracking />}
+          {activeSection === "users" && <AdminUsers />}
+          {activeSection === "categories" && <AdminCategories />}
+          {activeSection === "subcategories" && <AdminSubcategories />}
+          {activeSection === "reviews" && <AdminReviews />}
+          {activeSection === "settings" && <AdminSettings />}
+        </div>
       </main>
     </div>
+  );
+}
+
+export default function AdminApp() {
+  return (
+    <AdminProvider>
+      <AdminContent />
+    </AdminProvider>
   );
 }

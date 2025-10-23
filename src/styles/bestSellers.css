@@ -1,0 +1,253 @@
+/* Best Sellers Section */
+.best-sellers-section {
+  padding: 4rem 2rem;
+  background: #fff;
+}
+
+.best-sellers-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Section Header */
+.section-header {
+  text-align: center !important;
+  margin: 0 !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.header-badge {
+  display: inline-flex;
+  align-items: center !important;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  color: #1f2937;
+  padding: 0.5rem 1.25rem;
+  border-radius: 50px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+
+.section-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #1f2937;
+  margin: 0 0 0.75rem 0;
+  letter-spacing: -0.02em;
+}
+
+.section-subtitle {
+  font-size: 1.125rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Grid */
+.best-sellers-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  padding:  1rem 0;
+}
+
+/* Card */
+.bestseller-card {
+  position: relative;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  max-height: 380px;
+}
+
+.bestseller-card:hover {
+  transform: translateY(0px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+}
+
+/* Rank Badge */
+.rank-badge {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  color: #1f2937;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 800;
+  z-index: 2;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+}
+
+/* Image */
+.product-image-container {
+  width: 100%;
+  height: 280px;
+  overflow: hidden;
+  background: #f9fafb;
+}
+
+.product-image {
+  width: 100%;
+  height: 100%;
+  object-fit: fill !important;
+  transition: transform 0.4s ease;
+}
+
+.bestseller-card:hover .product-image {
+  transform: scale(1.08);
+}
+
+/* Details */
+.product-details {
+  padding: 5px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.product-name {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.product-rating {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+.star-icon {
+  font-size: 1rem;
+}
+
+.product-price {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.old-price {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+
+.current-price {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accentColor);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .best-sellers-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .best-sellers-section {
+    padding: 3rem 1rem;
+  }
+
+  .section-title {
+    font-size: 2rem;
+  }
+
+  .section-subtitle {
+    font-size: 1rem;
+  }
+
+  .best-sellers-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .bestseller-card {
+    min-width: 0;
+  }
+
+  .product-image-container {
+    height: 200px;
+  }
+
+  .product-name {
+    font-size: 1rem;
+  }
+
+  .current-price {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .best-sellers-section {
+    padding: 2rem 0.5rem;
+  }
+
+  .section-title {
+    font-size: 1.75rem;
+  }
+
+  .best-sellers-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .bestseller-card {
+    padding: 0;
+  }
+
+  .product-details {
+    padding: 1rem;
+  }
+
+  .product-image-container {
+    height: 180px;
+  }
+
+  .rank-badge {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+    top: 0.75rem;
+    left: 0.75rem;
+  }
+
+  .product-name {
+    font-size: 0.9375rem;
+  }
+
+  .current-price {
+    font-size: 1.125rem;
+  }
+
+  .old-price {
+    font-size: 0.8125rem;
+  }
+}

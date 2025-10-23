@@ -1,34 +1,353 @@
 {
-  "featured_products": "我们的特色产品",
-  "featured_subtitle": "发现我们最受欢迎和最新的产品",
-  "no_image": "无图片",
-  "add_to_cart": "加入购物车",
-  "old_price": "原价",
-  "current_price": "现价",
-  "category": "类别",
-  "uncategorized": "未分类",
-  "unknown": "未知",
-  "click_to_order": "点击卡片下单",
-  "loading": "加载中…",
-  "end_of_products": "产品已加载完",
-  "new_price": "新价格",
-  "product_details": "产品详情",
-  "view_details": "查看详情",
-  "products_empty": "暂时没有可用产品",
-  "page": "页码",
-  "currency": "货币",
-  "product_placeholder": "无可用图片",
-  "add": "添加",
-  "view": "查看",
-  "added_to_cart": "成功加入购物车",
-  "error_loading_products": "加载产品出错",
-  "load_more": "加载更多",
-  "previous": "上一页",
-  "next": "下一页",
-  "quick_view": "快速预览",
-  "product_category": "产品类别",
-  "out_of_stock": "缺货",
-  "in_stock": "有货",
-  "quantity": "数量",
-  "all_categories": "所有类别"
+  "nav": {
+    "home": "首页",
+    "shop": "商店",
+    "about": "关于",
+    "contact": "联系",
+    "track": "追踪订单",
+    "dashboard": "仪表板",
+    "admin": "管理",
+    "cart": "购物车",
+    "logout": "登出",
+    "login": "登录",
+    "signup": "注册"
+  },
+  "hero": {
+    "welcome": "欢迎来到TSOGO",
+    "subtitle": "发现精彩产品",
+    "shop_now": "立即购物",
+    "learn_more": "了解更多"
+  },
+  "products": {
+    "featured": "我们的特色产品",
+    "featured_subtitle": "发现我们最受欢迎和最新的产品",
+    "new_arrivals": "新品上市",
+    "new_arrivals_subtitle": "最近添加的新品——为您精心挑选",
+    "shop_all": "所有产品",
+    "shop_subtitle": "探索我们的完整系列",
+    "no_products": "未找到产品",
+    "try_adjusting": "尝试调整您的筛选或搜索条件",
+    "showing": "显示",
+    "of": "共",
+    "products": "产品",
+    "search_placeholder": "搜索产品...",
+    "sort_by": "排序方式",
+    "name_az": "名称（A-Z）",
+    "price_low": "价格（从低到高）",
+    "price_high": "价格（从高到低）",
+    "all_categories": "所有类别",
+    "loading": "加载产品中...",
+    "end_of_products": "产品已加载完"
+  },
+  "product": {
+    "details": "产品详情",
+    "add_to_cart": "加入购物车",
+    "view_details": "查看详情",
+    "quick_view": "快速预览",
+    "out_of_stock": "缺货",
+    "in_stock": "有货",
+    "quantity": "数量",
+    "price": "价格",
+    "description": "描述",
+    "category": "类别",
+    "uncategorized": "未分类",
+    "select_option": "选择选项",
+    "added_to_cart": "成功加入购物车"
+  },
+  "cart": {
+    "title": "购物车",
+    "empty": "您的购物车是空的",
+    "subtotal": "小计",
+    "total": "总计",
+    "checkout": "结账",
+    "continue_shopping": "继续购物",
+    "remove": "移除",
+    "update": "更新"
+  },
+  "checkout": {
+    "title": "结账",
+    "customer_info": "客户信息",
+    "name": "全名",
+    "phone": "电话号码",
+    "address": "送货地址",
+    "payment_method": "付款方式",
+    "order_summary": "订单摘要",
+    "place_order": "下单",
+    "processing": "处理中..."
+  },
+  "tracking": {
+    "title": "追踪您的订单",
+    "subtitle": "输入您的追踪号码查看订单状态",
+    "tracking_number": "追踪号码",
+    "track_button": "追踪订单",
+    "customer": "客户",
+    "amount": "金额",
+    "from": "发货地",
+    "location": "当前位置",
+    "status": "状态",
+    "estimated_delivery": "预计送达",
+    "notes": "备注",
+    "track_another": "追踪其他订单",
+    "not_found": "未找到追踪号码",
+    "statuses": {
+      "pending": "待处理",
+      "in_transit": "运输中",
+      "out_for_delivery": "派送中",
+      "delivered": "已送达",
+      "failed": "失败"
+    }
+  },
+  "dashboard": {
+    "title": "我的仪表板",
+    "overview": "概览",
+    "orders": "我的订单",
+    "cart": "购物车",
+    "cart_history": "购物车历史",
+    "reviews": "我的评价",
+    "settings": "设置",
+    "total_orders": "总订单数",
+    "completed": "已完成",
+    "pending": "待处理",
+    "total_spent": "总消费"
+  },
+  "common": {
+    "loading": "加载中…",
+    "error": "错误",
+    "success": "成功",
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "edit": "编辑",
+    "create": "创建",
+    "update": "更新",
+    "search": "搜索",
+    "filter": "筛选",
+    "clear": "清除",
+    "submit": "提交",
+    "close": "关闭",
+    "yes": "是",
+    "no": "否",
+    "confirm": "确认"
+  },
+  "footer": {
+    "about": "关于我们",
+    "contact": "联系我们",
+    "terms": "条款与条件",
+    "privacy": "隐私政策",
+    "follow_us": "关注我们",
+    "copyright": "© 2025 TSOGO. 版权所有。"
+  },
+  "cookie": {
+    "title": "我们使用Cookie",
+    "message": "我们使用Cookie来增强您的浏览体验、提供个性化内容并分析我们的流量。点击\"全部接受\"即表示您同意我们使用Cookie。",
+    "accept": "全部接受",
+    "decline": "拒绝",
+    "learn_more": "了解更多关于Cookie的信息",
+    "essential": "必要Cookie",
+    "essential_desc": "网站正常运行所必需的。",
+    "functional": "功能Cookie",
+    "functional_desc": "记住您的偏好设置（语言、货币）。",
+    "analytics": "分析Cookie",
+    "analytics_desc": "帮助我们了解您如何使用我们的网站。"
+  },
+  "hero": {
+    "badge": "欢迎来到TSOGO-BIS",
+    "title": "发现精彩产品",
+    "subtitle": "从数千种优质产品中选购，享受快速配送、安全支付和卓越的客户服务。您值得信赖的在线购物目的地。",
+    "shop_now": "立即购物",
+    "learn_more": "了解更多"
+  },
+  "cta": {
+    "badge": "限时优惠",
+    "title": "不要错过我们的最新优惠",
+    "subtitle": "发现新鲜到货、独家折扣和为您精心挑选的系列。",
+    "shop_now": "立即购物",
+    "learn_more": "了解更多",
+    "stats": {
+      "happy_customers": "满意客户",
+      "products_sold": "已售产品",
+      "average_rating": "平均评分"
+    },
+    "features": {
+      "authentic": "正品保证",
+      "quality": "质量保证",
+      "trusted": "深受信赖"
+    }
+  },
+  "quiz": {
+    "title": "找到您的完美产品",
+    "subtitle": "回答几个问题即可获得个性化推荐",
+    "questions": {
+      "product_type": "您在寻找什么类型的产品？",
+      "budget": "您的预算范围是多少？",
+      "priority": "对您来说最重要的是什么？"
+    },
+    "options": {
+      "electronics": "电子产品",
+      "fashion": "时尚",
+      "home_living": "家居生活",
+      "sports_outdoors": "运动户外",
+      "under": "低于",
+      "over": "超过",
+      "quality": "质量",
+      "price": "价格",
+      "brand": "品牌",
+      "features": "功能"
+    },
+    "progress": "第{current}题，共{total}题",
+    "result": {
+      "title": "找到完美匹配！",
+      "recommendation": "根据您的偏好，我们推荐您查看我们的精品系列！",
+      "category": "推荐类别",
+      "browse_products": "浏览产品",
+      "retake": "重新测试"
+    },
+    "previous": "上一题"
+  },
+  "whatsapp": {
+    "message": "您好！我想了解更多关于您的产品。",
+    "aria_label": "WhatsApp聊天"
+  },
+  "admin": {
+    "dashboard": {
+      "title": "仪表板",
+      "subtitle": "欢迎来到您的管理仪表板",
+      "loading": "加载仪表板中...",
+      "stats": {
+        "total_revenue": "总收入",
+        "total_orders": "总订单",
+        "total_users": "总用户",
+        "total_products": "总产品",
+        "pending_orders": "待处理订单",
+        "completed_orders": "已完成订单"
+      }
+    },
+    "settings": {
+      "title": "管理员设置",
+      "subtitle": "管理管理员用户和网站配置",
+      "admin_users": "管理员用户",
+      "add_admin": "添加管理员",
+      "cancel": "取消",
+      "admin_email": "管理员邮箱地址",
+      "moderator": "版主",
+      "admin": "管理员",
+      "super_admin": "超级管理员",
+      "adding": "添加中...",
+      "form_hint": "用户必须在系统中拥有账户才能被添加为管理员。",
+      "remove": "移除",
+      "site_settings": "网站设置",
+      "site_name": "网站名称",
+      "contact_email": "联系邮箱",
+      "contact_phone": "联系电话",
+      "currency": "货币",
+      "tax_rate": "税率 (%)",
+      "xaf": "XAF (中非法郎)",
+      "usd": "USD ($)",
+      "eur": "EUR (€)",
+      "save_settings": "保存网站设置"
+    }
+  },
+  "faq": {
+    "title": "常见问题",
+    "subtitle": "找到关于我们服务的常见问题答案",
+    "questions": {
+      "place_order": "如何下单？",
+      "payment_methods": "您接受哪些付款方式？",
+      "delivery_time": "配送需要多长时间？",
+      "track_order": "我可以追踪我的订单吗？",
+      "customer_support": "您提供客户支持吗？",
+      "authentic_products": "产品是正品吗？"
+    },
+    "answers": {
+      "place_order": "浏览我们的产品，将商品添加到购物车，然后进行结账。按照简单的步骤安全地完成购买。",
+      "payment_methods": "我们接受所有主要的信用卡、借记卡、移动支付和银行转账，为您提供便利。",
+      "delivery_time": "配送通常需要2-5个工作日，具体取决于您的位置。您的订单发货后，我们将提供跟踪信息。",
+      "track_order": "是的！您的订单发货后，您将通过电子邮件收到跟踪号码，以实时监控您的配送状态。",
+      "customer_support": "当然！我们的客户支持团队24/7全天候为您提供帮助，解答任何问题或疑虑。",
+      "authentic_products": "是的，我们保证100%正品，来自值得信赖的品牌。所有商品均附带制造商保修。"
+    }
+  },
+  "testimonials": {
+    "title": "客户评价",
+    "subtitle": "来自真正喜爱我们产品的真实客户的真实评价",
+    "loading": "加载评价中...",
+    "error": "获取评价失败",
+    "reviewed": "评价：",
+    "previous": "上一个评价",
+    "next": "下一个评价",
+    "go_to_slide": "转到第{number}张幻灯片"
+  },
+  "after_hero": {
+    "title": "为什么选择我们？",
+    "subtitle": "我们不仅仅是产品。我们的目标是提供信任、风格和无与伦比的服务。",
+    "features": {
+      "fast_delivery": {
+        "heading": "快速配送",
+        "text": "通过实时跟踪更新快速收到您的订单。"
+      },
+      "premium_quality": {
+        "heading": "优质品质",
+        "text": "只有最好的材料和工艺才能到达您手中。"
+      },
+      "secure_payments": {
+        "heading": "安全支付",
+        "text": "您的数据和支付都经过加密，让您安心。"
+      }
+    }
+  },
+  "contact_page": {
+    "hero_title": "联系我们",
+    "hero_subtitle": "我们在这里为您提供帮助并回答您可能遇到的任何问题。",
+    "contact_options": "联系方式",
+    "contact_subtitle": "选择您喜欢的联系方式",
+    "methods": {
+      "phone": "电话",
+      "whatsapp": "WhatsApp",
+      "email": "邮箱",
+      "location": "位置",
+      "hours": "营业时间"
+    },
+    "actions": {
+      "call_us": "致电我们",
+      "chat_with_us": "与我们聊天",
+      "email_us": "发送邮件",
+      "get_directions": "获取路线"
+    },
+    "details": {
+      "business_hours": "营业时间",
+      "key_contacts": "主要联系人",
+      "connect_with_us": "关注我们",
+      "customer_support": "客户支持",
+      "sales_inquiries": "销售咨询"
+    },
+    "form": {
+      "title": "联系我们",
+      "name_placeholder": "您的姓名",
+      "email_placeholder": "您的邮箱",
+      "subject_placeholder": "主题",
+      "message_placeholder": "您的消息",
+      "send_button": "发送消息"
+    },
+    "office": "我们在雅温得的办公室"
+  },
+  "auth": {
+    "signup_title": "注册TSOGO-BIS",
+    "signin_title": "登录TSOGO-BIS",
+    "subtitle": "为了更快捷高效的服务",
+    "full_name": "您的全名",
+    "full_name_placeholder": "请输入您的全名...",
+    "email": "您的邮箱",
+    "email_placeholder": "example@email.com",
+    "phone": "您的电话号码",
+    "phone_placeholder": "+(237) 678 554 120",
+    "password": "您的密码",
+    "password_placeholder": "密码必须至少6个字符",
+    "verify_password": "验证您的密码",
+    "agree_policy": "我同意TSOGO-BIS的",
+    "policies": "政策",
+    "signup": "注册",
+    "signin": "登录",
+    "have_account": "已有账户？",
+    "no_account": "还没有账户？"
+  }
 }
