@@ -72,7 +72,7 @@
   font-size: 16px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: none;
 }
 
 .btn-primary:hover {
@@ -93,7 +93,7 @@
   color: white;
   display: flex;
   flex-direction: column;
-  transition: width 0.3s ease;
+  transition: none;
   position: fixed;
   height: 100vh;
   left: 0;
@@ -144,7 +144,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: none;
   flex-shrink: 0;
 }
 
@@ -170,7 +170,7 @@
   color: #9ca3af;
   font-size: 15px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: none;
   text-align: left;
   border-left: 3px solid transparent;
 }
@@ -267,7 +267,7 @@
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -291,7 +291,7 @@
 .admin-content {
   flex: 1;
   margin-left: 260px;
-  transition: margin-left 0.3s ease;
+  transition: none;
   min-height: 100vh;
   overflow-x: hidden;
   width: calc(100% - 260px);

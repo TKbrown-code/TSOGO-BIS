@@ -141,9 +141,9 @@ export default function Checkout() {
       });
       
       // Open payment URL in new window
-      console.log("Payment URL:", data.paymentUrl);
-      if (data.paymentUrl) {
-        window.open(data.paymentUrl, "_blank", "width=600,height=700");
+      console.log("Payment URL:", paymentData?.url);
+      if (paymentData?.url) {
+        window.open(paymentData.url, "_blank", "width=600,height=700");
       }
       
       setShowModal(true);
