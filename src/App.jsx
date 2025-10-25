@@ -26,6 +26,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import CookieConsent from "./components/CookieConsent";
 import LanguageCurrencySwitcher from "./components/LanguageCurrencySwitcher";
 import BackToTop from "./components/BackToTop";
+import Fapshi from "./pages/Fapshi";
 
 function AppContent() {
   const location = useLocation();
@@ -76,7 +77,11 @@ function AppContent() {
           }
         />
         <Route path="/checkout" element={<Checkout cartItems={cartItems} />} />
-        <Route path="/admin/*" element={<AdminApp />} />
+        <Route path="/admin/*" element={
+          <ProtectedRoute>
+            <AdminApp />
+          </ProtectedRoute>
+          } />
         <Route path="/logistics" element={<Logistics/>}/>
         {<Route path="/SignUp" element={<Form/>}/>}
         <Route 
@@ -94,6 +99,7 @@ function AppContent() {
         <Route path="/contact" element={<Contact/>}/>
         <Route path="/track" element={<TrackOrder/>}/>
         <Route path="/track/:trackingId" element={<TrackOrder/>}/>
+        <Route path="/fapshi" element={<Fapshi/>}/>
       </Routes>
       
       {/* Only show Cart, Footer, Language button, and WhatsApp on non-admin and non-dashboard routes */}

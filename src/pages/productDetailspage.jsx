@@ -9,6 +9,7 @@ import "../styles/productDetails.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faStar, faUser, faTruck, faTags, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { motion } from "framer-motion";
+import { verifyCampayPayment } from "../utils/fapshi";
 
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_KEY;
 const X_WEBHOOK_SECRET = import.meta.env.VITE_X_WEBHOOK_SECRET;
@@ -516,12 +517,9 @@ export default function ProductDetailsPage() {
       if (!res.ok || !data.success || !data.reference)
         throw new Error(data?.error || "Payment initialization failed");
 
-      setPaymentData({
-        url: data.paymentUrl,
-        checkoutId: data.checkout_id,
-        reference: data.reference,
-      });
-      setPaymentModalOpen(true);
+      // Pass the create-order response to the Fapshi page so it can handle/display it.
+      // We use react-router navigation state to send the payload as props-like state.
+      navigate("/fapshi", { state: data });
     } catch (err) {
       console.error("Checkout error:", err);
       alert(err.message || "Failed to process checkout");
@@ -553,6 +551,45 @@ export default function ProductDetailsPage() {
   }, []);
 
   /*
+  // Verify payment
+  const verifyPayment = async () => {
+    if (!paymentData?.checkoutId) return;
+    setLoading(true);
+    
+    try {
+      const res = await fetch(
+        "https://gidifmqzolmrqpywpimw.supabase.co/functions/v1/verify-campay-payment",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            "x-webhook-secret": X_WEBHOOK_SECRET,
+          },
+          body: JSON.stringify({
+            reference: paymentData.reference,
+            checkout_id: paymentData.checkoutId,
+          }),
+        }
+      );
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data?.error || "Payment verification failed");
+      }
+
+      alert(`Payment ${data.status.toUpperCase()}`);
+      clearCart();
+      navigate("/orders");
+    } catch (err) {
+      console.error("Payment verification error:", err);
+      alert(err.message || "Failed to verify payment");
+    } finally {
+      setLoading(false);
+      setPaymentModalOpen(false);
+    }
+  };
+*/  /*
   // Verify payment
   const verifyPayment = async () => {
     if (!paymentData?.checkoutId) return;
@@ -1421,13 +1458,6 @@ export default function ProductDetailsPage() {
                   <p><strong>Reference:</strong> {paymentData.reference}</p>
                   <p><strong>Amount:</strong> {convert(totalPrice + shippingFee, currency)} {currency}</p>
                 </div>
-                <button
-                  onClick={verifyPayment}
-                  disabled={loading}
-                  className="verify-btn"
-                >
-                  {loading ? "Verifying..." : "I've Made Payment"}
-                </button>
                 <button
                   onClick={() => window.open(paymentData.url, "_blank")}
                   className="pay-now-btn"

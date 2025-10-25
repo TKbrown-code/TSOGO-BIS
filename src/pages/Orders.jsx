@@ -46,7 +46,7 @@ export default function Orders() {
       .select(`
         *,
         checkout_items!checkout_items_checkout_id_fkey(
-          id, checkout_id, product_id, quantity, price, created_at
+          id, checkout_id, product_id, quantity, price, created_at, shipping_method, shipping_fee
         )
       `)
       .eq("user_id", profile.user_id)
@@ -62,18 +62,26 @@ export default function Orders() {
     const enriched = await Promise.all(
       (data || []).map(async (order) => {
         const items = order.checkout_items || [];
-        const productIds = [...new Set(items.map((it) => it.product_id).filter(Boolean))];
+        const productIds = [...new Set(items.map((it) => it.product_id).filter(Boolean))].filter(id => typeof id === 'number' || (typeof id === 'string' && !isNaN(Number(id)))).map(id => Number(id));
         let productsById = {};
 
         if (productIds.length) {
-          const { data: productsData } = await supabase
-            .from("products")
-            .select(`id, name, price, weight, shipping_fee, category_id, options, description`)
-            .in("id", productIds);
-          productsById = (productsData || []).reduce((acc, p) => {
-            acc[p.id] = p;
-            return acc;
-          }, {});
+          try {
+            const { data: productsData, error: productsError } = await supabase
+              .from("products")
+              .select(`id, name, price, weight, category_id(id, name), options, description`)
+              .in("id", productIds);
+            if (!productsError) {
+              productsById = (productsData || []).reduce((acc, p) => {
+                acc[p.id] = p;
+                return acc;
+              }, {});
+            } else {
+              console.error("Error fetching products:", productsError);
+            }
+          } catch (err) {
+            console.error("Exception fetching products:", err);
+          }
         }
 
         let imagesByProduct = {};
@@ -100,7 +108,9 @@ export default function Orders() {
           })
         );
 
-        return { ...order, checkout_items: itemsWithProducts };
+        const totalShippingFee = items.reduce((sum, item) => sum + (item.shipping_fee || 0), 0);
+
+        return { ...order, checkout_items: itemsWithProducts, total_shipping_fee: totalShippingFee };
       })
     );
 
@@ -349,11 +359,11 @@ export default function Orders() {
                             <span>Weight: {it.product?.weight ?? "—"}</span>
                             <span>
                               Shipping:{" "}
-                              {it.product?.shipping_fee
-                                ? `${convert(it.product.shipping_fee, currency)} ${currency}`
+                              {it.shipping_fee
+                                ? `${convert(it.shipping_fee, currency)} ${currency} ${it.shipping_method ? `(${it.shipping_method})` : ''}`
                                 : "—"}
                             </span>
-                            <span>Category: {it.product?.category_id ?? "—"}</span>
+                            <span>Category: {it.product?.category_id?.name ?? "—"}</span>
                           </div>
                         </div>
                         <div className="order-item-pricing">
@@ -369,6 +379,14 @@ export default function Orders() {
                       <div className="summary-row">
                         <div>Total payment...</div>
                         <div className="summary-value">{convert(order.total, currency)} {currency}</div>
+                      </div>
+                      <div className="summary-row">
+                        <div>Shipping Fee...</div>
+                        <div className="summary-value">{convert(order.total_shipping_fee || 0, currency)} {currency}</div>
+                      </div>
+                      <div className="summary-row">
+                        <div>Shipping Method...</div>
+                        <div className="muted">{order['method of shipping'] || order.method_of_shipping || 'Standard'}</div>
                       </div>
                       <div className="summary-row">
                         <div>Shipping Address...</div>
