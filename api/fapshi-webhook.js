@@ -39,6 +39,7 @@ export default async function handler(req, res) {
       headers: {
         "Content-Type": "application/json",
         // Optionally include your own secret if you want double protection
+        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
         "x-proxy-secret": process.env.VERCEL_PROXY_SECRET || "",
       },
       body: JSON.stringify(jsonBody),
