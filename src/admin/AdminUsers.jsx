@@ -39,13 +39,8 @@ export default function AdminUsers() {
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
 
-    // Load user cart history
-    const { data: cartHistory } = await supabase
-      .from("cart_history")
-      .select("*")
-      .eq("user_id", userId)
-      .order("action_at", { ascending: false })
-      .limit(20);
+    // Load user cart history - table doesn't exist yet
+    const cartHistory = [];
 
     setUserOrders(orders || []);
     setUserCartHistory(cartHistory || []);

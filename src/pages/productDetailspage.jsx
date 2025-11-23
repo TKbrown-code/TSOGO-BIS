@@ -517,9 +517,12 @@ export default function ProductDetailsPage() {
       if (!res.ok || !data.success || !data.reference)
         throw new Error(data?.error || "Payment initialization failed");
 
-      // Pass the create-order response to the Fapshi page so it can handle/display it.
-      // We use react-router navigation state to send the payload as props-like state.
-      navigate("/fapshi", { state: data });
+      setPaymentData({
+        url: data.paymentUrl,
+        checkoutId: data.checkout_id,
+        reference: data.reference,
+      });
+      setPaymentModalOpen(true);
     } catch (err) {
       console.error("Checkout error:", err);
       alert(err.message || "Failed to process checkout");

@@ -98,19 +98,7 @@ export default function About() {
           <div className="story-content">
             <h2 className="section-title">{t('about.our_story')}</h2>
             <p className="story-text">
-              TSOGO-BIS was born from a simple vision: to make quality products accessible 
-              to every Cameroonian. We recognized that many people wanted access to the vast 
-              selection and competitive prices available from Chinese manufacturers, but faced 
-              barriers like complicated payment systems and unreliable shipping.
-            </p>
-            <p className="story-text">
-              Today, we've built a platform that bridges this gap. By sourcing directly from 
-              China and accepting Mobile Money and Orange Money payments, we've made international 
-              shopping as easy as buying from your local market.
-            </p>
-            <p className="story-text">
-              Our commitment goes beyond just selling products - we're building trust, creating 
-              opportunities, and empowering Cameroonians to access the global marketplace with confidence.
+              Our Story TSOGO-BIS was created from a simple but powerful vision: to make trusted, high-quality products from China accessible to everyone in Africa. As an African student living in China, I witnessed the challenges many face when trying to shop online—language barriers, complicated payments, unreliable suppliers, and scams. So I decided to build a bridge. TSOGO-BIS is not just an online store. It is a connection between China’s manufacturing power and Africa’s rising demand for quality and reliability. Every product you order goes through a strict process of verification, secure packaging, and responsible delivery. We stand for transparency, trust, and service. Our mission is simple: “Delivering global quality to Africa — with honesty and confidence.”
             </p>
           </div>
         </div>
