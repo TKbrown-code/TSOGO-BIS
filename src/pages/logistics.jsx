@@ -137,36 +137,6 @@ export default function Logistics() {
         </div>
       </section>
 
-      {/* Tracking Section */}
-      <section className="tracking-section">
-        <div className="tracking-container">
-          <div className="tracking-icon">
-            <FontAwesomeIcon icon={faMapMarkedAlt} />
-          </div>
-          <h2 className="section-title">Track Your Order</h2>
-          <p className="section-subtitle">Enter your tracking number to check real-time delivery status</p>
-          <div className="tracking-form">
-            <input
-              type="text"
-              value={trackingNumber}
-              onChange={(e) => setTrackingNumber(e.target.value)}
-              placeholder="Enter your tracking number (e.g., TSG123456789)"
-              className="tracking-input"
-            />
-            <button onClick={handleTrack} className="tracking-button">
-              <FontAwesomeIcon icon={faMapMarkedAlt} />
-              Track Order
-            </button>
-          </div>
-          {trackingResult && (
-            <div className="tracking-result">
-              <FontAwesomeIcon icon={faCheckCircle} />
-              {trackingResult}
-            </div>
-          )}
-        </div>
-      </section>
-
       {/* Policy Section */}
       <section className="shipping-policy">
         <h2 className="section-title">Shipping Information</h2>

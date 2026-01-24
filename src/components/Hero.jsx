@@ -5,6 +5,7 @@ import SVG from "../assets/shop-svgrepo-com.svg";
 import SVG1 from "../assets/bell-svgrepo-com.svg";
 import SVG2 from "../assets/camera-svgrepo-com.svg";
 import SVG3 from "../assets/bag-1-svgrepo-com.svg";
+import "../styles/hero.css";
 
 export default function Hero() {
   const svgs = [SVG, SVG1, SVG2, SVG3];

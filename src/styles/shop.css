@@ -33,11 +33,11 @@
 .shop-filters-bar {
   display: flex;
   gap: 16px;
-  margin-bottom: 24px;
+  margin: 24px 0;
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  background-color: var(--primaryColor);
+  background-color: var(--mutedColor);
   padding: 10px 16px;
 }
 
@@ -75,7 +75,7 @@
 /* Results Info */
 .shop-results-info {
   text-align: center;
-  margin-bottom: 32px;
+  margin: 24px 0;
 }
 
 .shop-results-info .results-count {
@@ -95,11 +95,11 @@
 }
 
 .filter-section {
-  margin-bottom: 32px;
+  margin: 24px 0;
 }
 
 .filter-section:last-child {
-  margin-bottom: 0;
+  margin: 0;
 }
 
 .filter-section h3 {

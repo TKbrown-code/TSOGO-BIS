@@ -4,25 +4,24 @@ import { supabase } from "../lib/supabase";
 import { useCart } from "../context/CartContext";
 import { useUserContext } from "../context/useUserContext";
 import { useCurrencyContext } from "../context/CurrencyContext";
-import { preloadAllImages, getCachedImage } from "../utils/imageCache";
 import "../styles/productDetails.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faStar, faUser, faTruck, faTags, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faUser, faTruck, faTags, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { motion } from "framer-motion";
-import { verifyCampayPayment } from "../utils/fapshi";
+import FallBackImage from "../assets/imagefallback.jpg";
 
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_KEY;
-const X_WEBHOOK_SECRET = import.meta.env.VITE_X_WEBHOOK_SECRET;
 
 export default function ProductDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart, clearCart } = useCart();
-  const { profile } = useUserContext();
+  const { profile, user } = useUserContext();
   const { currency, convert } = useCurrencyContext();
 
   const [product, setProduct] = useState(null);
   const [images, setImages] = useState([]);
+  const [imageStates, setImageStates] = useState({});
   const [currentImage, setCurrentImage] = useState(0);
   const [selectedColor, setSelectedColor] = useState("");
   const [quantities, setQuantities] = useState({});
@@ -51,7 +50,7 @@ export default function ProductDetailsPage() {
     async function fetchProduct() {
       const { data, error } = await supabase
         .from("products")
-        .select("*, product_images(*), category_id(name)")
+        .select("*, product_images(image_path), category_id(name)")
         .eq("id", id)
         .single();
 
@@ -74,16 +73,20 @@ export default function ProductDetailsPage() {
         parsedOptions = {};
       }
 
-      const imgs = data.product_images || [];
-      await preloadAllImages(imgs);
-      const urls = imgs.map((img) => getCachedImage(img.image_path));
+      const imgs = (data.product_images || []).map(img => {
+        return {
+          url: img.image_path || img.path || img.image_url,
+          path: img.image_path || img.path || img.image_url
+        };
+      });
+      setImages(imgs);
 
       setProduct({
         ...data,
         options: parsedOptions,
         shipped_from: data.shipped_from || "Unknown",
       });
-      setImages(urls);
+      
 
       // Set default selection - get first option type and first option value
       const firstOptionType = Object.keys(parsedOptions)[0];
@@ -128,7 +131,7 @@ export default function ProductDetailsPage() {
 
   // Check if user has purchased this product
   useEffect(() => {
-    if (!id || !profile?.user_id) {
+    if (!id || !user?.id) {
       setCheckingPurchase(false);
       setHasPurchased(false);
       return;
@@ -137,11 +140,11 @@ export default function ProductDetailsPage() {
     async function checkPurchaseHistory() {
       setCheckingPurchase(true);
       try {
-        // Fetch user's checkouts
+        // Fetch user's checkouts that contain this product
         const { data: checkouts, error } = await supabase
           .from("checkouts")
           .select("items")
-          .eq("user_id", profile.user_id)
+          .eq("user_id", user.id)
           .eq("status", "paid");
 
         if (error) {
@@ -152,13 +155,11 @@ export default function ProductDetailsPage() {
 
         // Check if any checkout contains this product
         const purchased = checkouts?.some(checkout => {
-          const items = typeof checkout.items === "string" 
-            ? JSON.parse(checkout.items) 
-            : checkout.items;
-          return items?.some(item => item.product_id === id);
+          const items = checkout.items || [];
+          return items.some(item => item.product_id === parseInt(id));
         });
 
-        setHasPurchased(purchased || false);
+        setHasPurchased(purchased);
       } catch (err) {
         console.error("Error checking purchase:", err);
         setHasPurchased(false);
@@ -168,7 +169,7 @@ export default function ProductDetailsPage() {
     }
 
     checkPurchaseHistory();
-  }, [id, profile?.user_id]);
+  }, [id, user?.id]);
 
   // Toggle show all reviews
   const toggleReviews = () => {
@@ -378,8 +379,7 @@ export default function ProductDetailsPage() {
       return alert("Please select at least one option and quantity");
     }
 
-    console.log('Adding items to cart:', cartItems.length, 'items');
-
+    
     // Add all items to cart
     for (const item of cartItems) {
       const success = await addToCart(item.product, item.quantity, {
@@ -493,7 +493,7 @@ export default function ProductDetailsPage() {
       }
 
       const res = await fetch(
-        "https://gidifmqzolmrqpywpimw.supabase.co/functions/v1/create-campay-order",
+        "https://bompysyuamyalbzmubzo.supabase.co/functions/v1/create-campay-order",
         {
           method: "POST",
           headers: {
@@ -538,11 +538,11 @@ export default function ProductDetailsPage() {
         (payload) => {
           const updatedCheckout = payload.new;
           if (updatedCheckout.status === "paid") {
-            alert("✅ Payment confirmed!");
+            alert("Payment confirmed!");
             clearCart();
             navigate("/orders");
           } else if (updatedCheckout.status === "failed") {
-            alert("❌ Payment failed. Please try again.");
+            alert("Payment failed. Please try again.");
           }
         }
       )
@@ -553,88 +553,25 @@ export default function ProductDetailsPage() {
     };
   }, []);
 
-  /*
-  // Verify payment
-  const verifyPayment = async () => {
-    if (!paymentData?.checkoutId) return;
-    setLoading(true);
-    
-    try {
-      const res = await fetch(
-        "https://gidifmqzolmrqpywpimw.supabase.co/functions/v1/verify-campay-payment",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            "x-webhook-secret": X_WEBHOOK_SECRET,
-          },
-          body: JSON.stringify({
-            reference: paymentData.reference,
-            checkout_id: paymentData.checkoutId,
-          }),
-        }
-      );
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data?.error || "Payment verification failed");
-      }
-
-      alert(`Payment ${data.status.toUpperCase()}`);
-      clearCart();
-      navigate("/orders");
-    } catch (err) {
-      console.error("Payment verification error:", err);
-      alert(err.message || "Failed to verify payment");
-    } finally {
-      setLoading(false);
-      setPaymentModalOpen(false);
-    }
-  };
-*/  /*
-  // Verify payment
-  const verifyPayment = async () => {
-    if (!paymentData?.checkoutId) return;
-    setLoading(true);
-    
-    try {
-      const res = await fetch(
-        "https://gidifmqzolmrqpywpimw.supabase.co/functions/v1/verify-campay-payment",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            "x-webhook-secret": X_WEBHOOK_SECRET,
-          },
-          body: JSON.stringify({
-            reference: paymentData.reference,
-            checkout_id: paymentData.checkoutId,
-          }),
-        }
-      );
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data?.error || "Payment verification failed");
-      }
-
-      alert(`Payment ${data.status.toUpperCase()}`);
-      clearCart();
-      navigate("/orders");
-    } catch (err) {
-      console.error("Payment verification error:", err);
-      alert(err.message || "Failed to verify payment");
-    } finally {
-      setLoading(false);
-      setPaymentModalOpen(false);
-    }
-  };
-*/
   if (!product) {
     return <p>Loading product...</p>;
   }
+
+  // Image loading handlers
+  const handleImageLoad = (imagePath) => {
+    setImageStates(prev => ({
+      ...prev,
+      [imagePath]: { loaded: true, error: false }
+    }));
+  };
+
+  const handleImageError = (imagePath, e) => {
+    setImageStates(prev => ({
+      ...prev,
+      [imagePath]: { loaded: true, error: true }
+    }));
+    e.target.src = FallBackImage;
+  };
 
   // Helper functions for reviews
   const canEdit = (createdAt) => {
@@ -674,9 +611,12 @@ export default function ProductDetailsPage() {
               transition={{ duration: 0.3 }}
             >
               <img 
-                src={images[currentImage]} 
+                src={images[currentImage]?.url} 
                 alt={product.name} 
-                className="zoomable-img" 
+                className={`zoomable-img ${imageStates[images[currentImage]?.path]?.loaded ? 'loaded' : 'loading'} ${imageStates[images[currentImage]?.path]?.error ? 'error' : ''}`}
+                onLoad={() => handleImageLoad(images[currentImage]?.path)}
+                onError={(e) => handleImageError(images[currentImage]?.path, e)}
+                onClick={(e) => { window.open(images[currentImage]?.path, '_blank'); }}
               />
             </motion.div>
             
@@ -699,10 +639,10 @@ export default function ProductDetailsPage() {
           
           {/* Dots Indicator */}
           <div className="carousel-dots">
-            {images.map((_, idx) => (
+            {images.map((img, idx) => (
               <button
                 key={idx}
-                className={`dot ${idx === currentImage ? "active" : ""}`}
+                className={`dot ${idx === currentImage ? "active" : ""} ${imageStates[img.path]?.loaded && 'loaded'} ${imageStates[img.path]?.error ? 'error' : ''}`}
                 onClick={() => setCurrentImage(idx)}
               />
             ))}
@@ -944,7 +884,7 @@ export default function ProductDetailsPage() {
             <FontAwesomeIcon icon={faTruck} /> Shipped from:{" "}
             <strong>{product.shipped_from}</strong>
           </p>
-          <p>Base Weight: {product.weight && product.weight.toFixed(2)} kg</p>
+          <p>Base Weight: {product.weight && parseFloat(product.weight).toFixed(2)} kg</p>
           <p>Base Price: {convert(product.price, currency)} {currency}</p>
           {product.category_id?.name && (
             <p>
@@ -1129,7 +1069,7 @@ export default function ProductDetailsPage() {
           </button>
           <button
             className="buy-btn"
-            onClick={() => setPaymentModalOpen(true)}
+            onClick={handleCheckout}
             disabled={Object.values(quantities).every(qty => qty === 0)}
           >
             Buy Now
@@ -1137,341 +1077,6 @@ export default function ProductDetailsPage() {
         </div>
       </div>
 
-      {/* Mobile Reviews Section */}
-      <div className="premium-reviews-mobile">
-        <h2>Customer Reviews</h2>
-        {rating ? (
-          <div className="average-rating">
-            <span>{renderStars(rating)}</span>
-            <span className="rating-number">({rating && rating.toFixed(1)})</span>
-          </div>
-        ) : (
-          <p>No ratings yet</p>
-        )}
-
-        {/* Existing reviews */}
-        {reviews.length > 0 ? (
-          reviews.map((review) => (
-            <div key={review.id} className="review-container">
-              <div className="review">
-                <div className="review-header">
-                  <FontAwesomeIcon icon={faUser} className="user_icon" />
-                  <div className="review-comment">
-                    <strong>{review.username}</strong>
-                    <p>{review.comment}</p>
-                    <small>{new Date(review.created_at).toLocaleDateString()}</small>
-                  </div>
-                </div>
-                <div className="review-stars">
-                  <span className="stars">⭐ {review.rating}</span>
-                  {profile?.user_id === review.user_id && canEdit(review.created_at) && (
-                    <button
-                      className="editbtn"
-                      onClick={() => {
-                        if (editingReviewId !== review.id) {
-                          setEditingReviewId(review.id);
-                          setReviewUpdates(prev => ({
-                            ...prev,
-                            [review.id]: review.comment
-                          }));
-                        } else {
-                          setEditingReviewId(null);
-                        }
-                      }}
-                    >
-                      {editingReviewId === review.id ? "Cancel" : "Edit"}
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {editingReviewId === review.id && (
-                <form
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    const updateText = reviewUpdate[review.id]?.trim();
-                    if (!updateText) {
-                      alert("Please enter a valid review");
-                      return;
-                    }
-
-                    const { data, error } = await supabase
-                      .from("product_reviews")
-                      .update({ 
-                        comment: updateText,
-                        updated_at: new Date().toISOString()
-                      })
-                      .eq("id", review.id)
-                      .select();
-
-                    if (error) {
-                      console.error("Error updating review:", error);
-                      alert("Failed to update review");
-                    } else if (data && data.length > 0) {
-                      setReviews(prev =>
-                        prev.map((r) =>
-                          r.id === review.id ? { ...r, ...data[0] } : r
-                        )
-                      );
-                      setEditingReviewId(null);
-                      alert("Review updated successfully!");
-                    }
-                  }}
-                >
-                  <textarea
-                    value={reviewUpdate[review.id] || ""}
-                    onChange={(e) =>
-                      setReviewUpdates(prev => ({
-                        ...prev,
-                        [review.id]: e.target.value
-                      }))
-                    }
-                    placeholder="Edit your review..."
-                    required
-                  />
-                  <div className="form-actions">
-                    <button
-                      type="button"
-                      onClick={() => setEditingReviewId(null)}
-                    >
-                      Cancel
-                    </button>
-                    <button type="submit">Update</button>
-                  </div>
-                </form>
-              )}
-            </div>
-          ))
-        ) : (
-          <p>No reviews yet.</p>
-        )}
-
-        {/* View More/Less Toggle */}
-        {allReviews.length > 5 && (
-          <button 
-            className="view-toggle-btn"
-            onClick={toggleReviews}
-          >
-            {showAllReviews ? `View Less (Show 5)` : `View All ${allReviews.length} Reviews`}
-          </button>
-        )}
-
-        {/* Add Review Form */}
-        {profile && (
-          <form
-            className="review-form"
-            onSubmit={async (e) => {
-              e.preventDefault();
-              if (!newReview.comment.trim()) {
-                alert("Please write a review");
-                return;
-              }
-
-              const { data, error } = await supabase
-                .from("product_reviews")
-                .insert([
-                  {
-                    product_id: product.id,
-                    user_id: profile.user_id,
-                    username: profile.full_name || "Anonymous",
-                    rating: newReview.rating,
-                    comment: newReview.comment.trim(),
-                  },
-                ])
-                .select();
-
-              if (error) {
-                console.error("Error adding review:", error);
-                alert("Failed to add review");
-              } else if (data && data.length > 0) {
-                setAllReviews((prev) => [data[0], ...prev]);
-                setReviews((prev) => {
-                  const newReviews = [data[0], ...prev];
-                  return showAllReviews ? newReviews : newReviews.slice(0, 5);
-                });
-                setNewReview({ rating: 5, comment: "" });
-                alert("Review added successfully!");
-
-                // Update product rating
-                const { data: reviewsData } = await supabase
-                  .from("product_reviews")
-                  .select("rating")
-                  .eq("product_id", product.id);
-
-                if (reviewsData && reviewsData.length > 0) {
-                  const avgRating =
-                    reviewsData.reduce((sum, r) => sum + r.rating, 0) /
-                    reviewsData.length;
-                  await supabase
-                    .from("products")
-                    .update({ avg_rating: parseFloat(avgRating.toFixed(2)) })
-                    .eq("id", product.id);
-                  setRating(parseFloat(avgRating.toFixed(2)));
-                }
-              }
-            }}
-          >
-            <h3>Write a Review</h3>
-            <div className="rating-input">
-              <span>Rating: </span>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <span
-                  key={star}
-                  className={`star ${star <= newReview.rating ? "filled" : ""}`}
-                  onClick={() =>
-                    setNewReview({ ...newReview, rating: star })
-                  }
-                >
-                  ★
-                </span>
-              ))}
-            </div>
-            <textarea
-              value={newReview.comment}
-              onChange={(e) =>
-                setNewReview({ ...newReview, comment: e.target.value })
-              }
-              placeholder="Share your thoughts about this product..."
-              required
-            />
-            <button type="submit">Submit Review</button>
-          </form>
-        )}
-      </div>
-
-      {/* Payment Modal */}
-      {paymentModalOpen && (
-        <div className="payment-modal">
-          <div className="modal-content">
-            <button
-              className="close-btn"
-              onClick={() => setPaymentModalOpen(false)}
-            >
-              <FontAwesomeIcon icon={faXmark} />
-            </button>
-            
-            {!paymentData ? (
-              <div className="checkout-form">
-                <h3>Checkout Details</h3>
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const form = e.target;
-                    handleCheckout(
-                      form.name.value,
-                      form.phone.value,
-                      form.address.value
-                    );
-                  }}
-                >
-                  <input
-                    type="text"
-                    name="name"
-                    placeholder="Full Name"
-                    required
-                    defaultValue={profile?.full_name || ""}
-                  />
-                  <input
-                    type="tel"
-                    name="phone"
-                    placeholder="Phone Number"
-                    required
-                    title="Please enter a valid phone number"
-                  />
-                  <textarea
-                    name="address"
-                    placeholder="Shipping Address"
-                    required
-                    rows="3"
-                  ></textarea>
-                  
-                  <div className="order-summary">
-                    <h4>Order Summary</h4>
-                    {Object.entries(product.options || {}).map(([optionType, optionValues]) => 
-                      Object.entries(optionValues).map(([optionValue, optionData]) => {
-                        const basePrice = parseFloat(product.price || 0);
-                        const extraPrice = parseFloat(optionData?.extraPrice || optionData?.added_price || 0);
-                        
-                        // Find any array property in optionData
-                        let subOptionsArray = null;
-                        for (const value of Object.values(optionData)) {
-                          if (Array.isArray(value)) {
-                            subOptionsArray = value;
-                            break;
-                          }
-                        }
-                        
-                        // If we found a sub-options array
-                        if (subOptionsArray && subOptionsArray.length > 0) {
-                          return subOptionsArray.map((item) => {
-                            const itemName = typeof item === "string" ? item : Object.keys(item)[0];
-                            const itemData = typeof item === "object" ? item[itemName]?.[0] : null;
-                            const qty = quantities[`${optionValue}-${itemName}`] || 0;
-                            
-                            if (qty === 0) return null;
-                            
-                            const itemPrice = itemData?.price ? parseFloat(itemData.price) : 0;
-                            const unitPrice = basePrice + extraPrice + itemPrice;
-                            
-                            return (
-                              <div key={`${optionValue}-${itemName}`} className="order-item">
-                                <span>{product.name} - {optionValue} - {itemName} (x{qty})</span>
-                                <span>{convert(unitPrice * qty, currency)} {currency}</span>
-                              </div>
-                            );
-                          });
-                        } else {
-                          // No sub-options, treat as single item
-                          const qty = quantities[`${optionValue}-default`] || 0;
-                          
-                          if (qty === 0) return null;
-                          
-                          const unitPrice = basePrice + extraPrice;
-                          
-                          return (
-                            <div key={`${optionValue}-default`} className="order-item">
-                              <span>{product.name} - {optionValue} (x{qty})</span>
-                              <span>{convert(unitPrice * qty, currency)} {currency}</span>
-                            </div>
-                          );
-                        }
-                      })
-                    )}
-                    
-                    <div className="order-total">
-                      <span>Shipping:</span>
-                      <span>{convert(shippingFee, currency)} {currency}</span>
-                    </div>
-                    <div className="order-total">
-                      <strong>Total:</strong>
-                      <strong>{convert(totalPrice + shippingFee, currency)} {currency}</strong>
-                    </div>
-                  </div>
-                  
-                  <button type="submit" disabled={loading}>
-                    {loading ? "Processing..." : "Proceed to Payment"}
-                  </button>
-                </form>
-              </div>
-            ) : (
-              <div className="verify-payment">
-                <h3>Complete Your Payment</h3>
-                <p>Please complete your payment using the following details:</p>
-                <div className="payment-details">
-                  <p><strong>Reference:</strong> {paymentData.reference}</p>
-                  <p><strong>Amount:</strong> {convert(totalPrice + shippingFee, currency)} {currency}</p>
-                </div>
-                <button
-                  onClick={() => window.open(paymentData.url, "_blank")}
-                  className="pay-now-btn"
-                >
-                  Pay Now
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

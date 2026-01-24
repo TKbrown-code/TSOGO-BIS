@@ -266,7 +266,7 @@ export default function AdminProductFormEnhanced({ product = {}, onSaved, onCanc
         subcategory_id: resolvedSubcategory ? parseInt(resolvedSubcategory) : null,
         weight: weight ? parseFloat(weight) : null,
         shipped_from: shippedFrom || null,
-        in_Stock: inStock,
+        in_Stock: inStock ? true : false,
         options: buildOptionsJson(),
         shipping_methods: buildShippingMethodsJson()
       };

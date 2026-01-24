@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { supabase } from "../lib/supabase";
+import { signUpUser, sendOtp } from "../hooks/functions";
+import Swal from "sweetalert2";
 
 const AdminContext = createContext();
 
@@ -88,13 +90,76 @@ export const AdminProvider = ({ children }) => {
     setAdminRole(null);
   };
 
+  const login = async (credentials) => {
+    const {data, error} = await supabase.auth.signInWithPassword
+      ({
+        email: credentials.email,
+        password: credentials.password,
+      })
+    if (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error.message,
+      });
+    }
+    return data;
+  }
+
+  const signUp = async (credentials) => {
+    Swal.fire({
+      tile:"Signing Up.....",
+      allowOutsideClick:false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+    const response = await signUpUser(credentials);
+    const res = await response.json();
+    if (response.ok) {
+     await login(credentials);
+     Swal.fire({
+      icon: "success",
+      title: "Success",
+      text: "User signed up successfully",
+    });
+    } else {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: res.error,
+      });
+    }
+  };
+
+  const sentOtp = async (credentials) => {
+    const responds = await sendOtp(credentials);
+    const res = await responds.json();
+    if (responds.ok) {
+      Swal.fire({
+        icon: "success",
+        title: "Success",
+        text: "OTP sent successfully",
+      });
+    }else{
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: res.error,
+      });
+    }
+  };
+
   const value = {
     user,
     isAdmin,
     adminRole,
     loading,
     checkAdmin,
-    signOut
+    signOut,
+    login,
+    signUp,
+    sentOtp
   };
 
   return (

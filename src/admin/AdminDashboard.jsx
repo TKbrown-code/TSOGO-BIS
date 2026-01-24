@@ -85,51 +85,52 @@ export default function AdminDashboard() {
 
       {/* Statistics Cards */}
       <div className="stats-grid">
-        <div className="stat-card primary">
+        <div className="stat-card">
           <div className="stat-icon"><DollarSign size={24} /></div>
           <div className="stat-content">
+            <div className="stat-value">{stats.totalRevenue.toLocaleString()}</div>
             <div className="stat-label">{t('admin.dashboard.stats.total_revenue')}</div>
-            <div className="stat-value">{stats.totalRevenue.toLocaleString()} XAF</div>
           </div>
         </div>
 
-        <div className="stat-card success">
+        <div className="stat-card ">
           <div className="stat-icon"><ShoppingCart size={24} /></div>
           <div className="stat-content">
-            <div className="stat-label">{t('admin.dashboard.stats.total_orders')}</div>
             <div className="stat-value">{stats.totalOrders}</div>
+            <div className="stat-label">{t('admin.dashboard.stats.total_orders')}</div>
           </div>
         </div>
 
-        <div className="stat-card info">
+        <div className="stat-card ">
           <div className="stat-icon"><Users size={24} /></div>
           <div className="stat-content">
-            <div className="stat-label">{t('admin.dashboard.stats.total_users')}</div>
             <div className="stat-value">{stats.totalUsers}</div>
+            <div className="stat-label">{t('admin.dashboard.stats.total_users')}</div>
           </div>
         </div>
 
-        <div className="stat-card warning">
+        <div className="stat-card ">
           <div className="stat-icon"><Package size={24} /></div>
           <div className="stat-content">
+            <div className="stat-value">{stats.totalProducts}</div> 
             <div className="stat-label">{t('admin.dashboard.stats.total_products')}</div>
-            <div className="stat-value">{stats.totalProducts}</div>
+            
           </div>
         </div>
 
-        <div className="stat-card pending">
+        <div className="stat-card ">
           <div className="stat-icon"><Clock size={24} /></div>
           <div className="stat-content">
-            <div className="stat-label">{t('admin.dashboard.stats.pending_orders')}</div>
             <div className="stat-value">{stats.pendingOrders}</div>
+            <div className="stat-label">{t('admin.dashboard.stats.pending_orders')}</div>
           </div>
         </div>
 
-        <div className="stat-card completed">
+        <div className="stat-card ">
           <div className="stat-icon"><CheckCircle size={24} /></div>
           <div className="stat-content">
-            <div className="stat-label">{t('admin.dashboard.stats.completed_orders')}</div>
             <div className="stat-value">{stats.completedOrders}</div>
+            <div className="stat-label">{t('admin.dashboard.stats.completed_orders')}</div>
           </div>
         </div>
       </div>
@@ -161,10 +162,10 @@ export default function AdminDashboard() {
                 recentOrders.map(order => (
                   <tr key={order.checkout_id}>
                     <td>#{order.checkout_id}</td>
-                    <td>{order.user_name}</td>
+                    <td>{order.username}</td>
                     <td>{parseFloat(order.total).toLocaleString()} XAF</td>
                     <td>
-                      <span className={`status-badge ${order.status}`}>
+                      <span className={`status-badge-mobile ${order.status}`}>
                         {order.status}
                       </span>
                     </td>

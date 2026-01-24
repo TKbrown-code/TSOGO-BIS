@@ -21,7 +21,6 @@ export default function Testimonials() {
           .from("product_reviews")
           .select(`
             id,
-            username,
             rating,
             comment,
             created_at,
@@ -31,6 +30,9 @@ export default function Testimonials() {
                 image_path,
                 is_primary
               )
+            ),
+            profiles (
+              username
             )
           `)
           .order("created_at", { ascending: false })
@@ -192,7 +194,7 @@ export default function Testimonials() {
                     <FontAwesomeIcon icon={faUser} />
                   </div>
                   <div className="user-info">
-                    <h4 className="user-name">{review.username}</h4>
+                    <h4 className="user-name">{review.profiles?.username || 'Anonymous'}</h4>
                     <p className="review-date">{formatDate(review.created_at)}</p>
                   </div>
                 </div>

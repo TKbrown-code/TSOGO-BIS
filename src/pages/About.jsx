@@ -14,6 +14,8 @@ import {
   faBolt
 } from "@fortawesome/free-solid-svg-icons";
 import "../styles/about.css";
+import FAQ from "../components/FAQ";
+import Testimonial from "../components/Testimonials";
 
 export default function About() {
   const { t } = useTranslation();
@@ -155,6 +157,9 @@ export default function About() {
         </div>
       </section>
 
+      {/* Testimonials */}
+      <Testimonial />
+
       {/* Our Values */}
       <section className="our-values">
         <div className="values-container">
@@ -176,24 +181,8 @@ export default function About() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="about-cta">
-        <div className="cta-container">
-          <h2 className="cta-title">{t('about.cta_title')}</h2>
-          <p className="cta-text">
-            {t('about.cta_text')}
-          </p>
-          <div className="cta-buttons">
-            <Link to="/shop" className="cta-btn primary">
-              {t('about.start_shopping')}
-              <FontAwesomeIcon icon={faShippingFast} />
-            </Link>
-            <Link to="/contact" className="cta-btn secondary">
-              {t('about.contact_us')}
-            </Link>
-          </div>
-        </div>
-      </section>
+      {/* FAQ */}
+      <FAQ />
     </div>
   );
 }

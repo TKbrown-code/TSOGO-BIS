@@ -110,9 +110,10 @@
   margin-bottom: 4px;
 }
 
-.stat-label {
+.stat-content .stat-label {
   font-size: 14px;
   opacity: 0.9;
+  color: #1f2937 !important;
 }
 
 /* Dashboard Section */
@@ -174,7 +175,7 @@
 }
 
 .data-table td {
-  padding: 16px;
+  padding: 10px;
   border-top: 1px solid #e5e7eb;
   font-size: 14px;
   color: #1f2937;
@@ -190,30 +191,30 @@
   padding: 40px 16px;
 }
 
-.status-badge {
-  padding: 4px 12px;
+.status-badge-mobile {
   border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
   text-transform: capitalize;
+  padding: 4px 12px;
 }
 
-.status-badge.pending {
+.status-badge-mobile.pending {
   background: #fef3c7;
   color: #92400e;
 }
 
-.status-badge.processing {
+.status-badge-mobile.processing {
   background: #dbeafe;
   color: #1e40af;
 }
 
-.status-badge.completed {
+.status-badge-mobile.completed {
   background: #d1fae5;
   color: #065f46;
 }
 
-.status-badge.cancelled {
+.status-badge-mobile.cancelled {
   background: #fee2e2;
   color: #991b1b;
 }

@@ -37,10 +37,8 @@ export default function AdminProducts() {
       // Get public URLs for images
       const productsWithImages = data?.map(product => {
         const images = product.product_images?.map(img => {
-          const { data: urlData } = supabase.storage
-            .from("products-images")
-            .getPublicUrl(img.image_path);
-          return { ...img, publicUrl: urlData.publicUrl };
+          const url = img.image_path;
+          return { ...img, publicUrl: url };
         });
         return { ...product, images };
       });
@@ -219,6 +217,8 @@ export default function AdminProducts() {
                       <img 
                         src={primaryImage?.publicUrl || "/placeholder.png"} 
                         alt={p.name}
+                        onError={(e) => (e.target.src = "/placeholder.png")}
+                        onClick={() => {open(primaryImage?.publicUrl)}}
                         className="table-product-image"
                       />
                     </td>

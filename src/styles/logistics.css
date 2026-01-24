@@ -34,6 +34,9 @@
   border: 2px solid rgba(255, 255, 255, 0.3);
   position: relative;
   z-index: 1;
+  color:  #fff;
+  font-family: 'Montserrat', sans-serif;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .hero-title {
@@ -43,6 +46,9 @@
   letter-spacing: -0.02em;
   position: relative;
   z-index: 1;
+  color:  #fff;
+  font-family: 'Montserrat', sans-serif;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .hero-subtitle {
@@ -55,6 +61,9 @@
   line-height: 1.7;
   position: relative;
   z-index: 1;
+  color:  #fff;
+  font-family: 'Montserrat', sans-serif;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .hero-stats {
@@ -64,6 +73,9 @@
   flex-wrap: wrap;
   position: relative;
   z-index: 1;
+  color:  #fff !important;
+  font-family: 'Montserrat', sans-serif;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .stat-item {
@@ -71,25 +83,32 @@
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
+  color:  #fff !important;
+  font-family: 'Montserrat', sans-serif;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .stat-number {
   font-size: 2.5rem;
   font-weight: 800;
   line-height: 1;
+  color:  #fff !important;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .stat-label {
   font-size: 0.9375rem;
   opacity: 0.9;
   font-weight: 500;
+  color:  #fff !important;
+  font-family: 'Montserrat', sans-serif;
 }
 
 /* Common Section Styles */
 .section-title {
   font-size: 2.5rem;
   font-weight: 800;
-  color: #1f2937;
+  color: #fff;
   margin: 0 0 1rem 0;
   text-align: center;
   letter-spacing: -0.02em;
@@ -97,7 +116,7 @@
 
 .section-subtitle {
   font-size: 1.125rem;
-  color: #6b7280;
+  color: #fff;
   text-align: center;
   margin: 0 0 3rem 0;
 }

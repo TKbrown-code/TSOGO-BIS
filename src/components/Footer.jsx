@@ -89,17 +89,13 @@ export default function Footer() {
               <span>info@tsogo-bis.com</span>
             </li>
           </ul>
-          <div className="payment-methods">
-            <FontAwesomeIcon icon={faCreditCard} />
-            <FontAwesomeIcon icon={faShoppingBag} />
-            <FontAwesomeIcon icon={faTruck} />
-          </div>
+          
         </div>
       </div>
 
       {/* Bottom Bar */}
       <div className="footer-bottom">
-        <p>&copy; {new Date().getFullYear()} TSOGO-BIS. All Rights Reserved. Made with ❤️ in Cameroon</p>
+        <p>&copy; {new Date().getFullYear()} TSOGO-BIS. All Rights Reserved.</p>
       </div>
     </footer>
   );

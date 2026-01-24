@@ -15,6 +15,7 @@ export default function UserDashboardNew() {
   const [activeSection, setActiveSection] = useState("overview");
   const [dataLoading, setDataLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [productNames, setProductNames] = useState({});
 
   // User data from all tables
   const [userData, setUserData] = useState({
@@ -103,24 +104,32 @@ export default function UserDashboardNew() {
         `)
         .eq("user_id", user.id);
 
-      // 4. Load Cart History with product details
+      // 4. Load Cart History (basic data first)
       const { data: cartHistoryData } = await supabase
         .from("cart_history")
-        .select(`
-          *,
-          product_id (
-            id,
-            name,
-            price,
-            product_images (
-              image_path,
-              is_primary
-            )
-          )
-        `)
+        .select("*")
         .eq("user_id", user.id)
         .order("action_at", { ascending: false })
         .limit(20);
+      
+      // Fetch product names for cart history
+      if (cartHistoryData && cartHistoryData.length > 0) {
+        const productIds = [...new Set(cartHistoryData.map(item => item.product_id))];
+        const { data: productsData } = await supabase
+          .from("products")
+          .select("id, name")
+          .in("id", productIds);
+        
+        const nameMap = {};
+        if (productsData) {
+          productsData.forEach(product => {
+            nameMap[product.id] = product.name;
+          });
+        }
+        setProductNames(nameMap);
+      }
+      
+      console.log("Cart History Data:", cartHistoryData);
 
       // 5. Load Reviews with product details
       const { data: reviewsData } = await supabase
@@ -283,6 +292,25 @@ export default function UserDashboardNew() {
     );
   }
 
+const fetchproduct = async (id) => {
+  if (!id) return null;
+
+  try {
+    const { data, error } = await supabase
+      .from("products")
+      .select("name")
+      .eq("id", id)
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.error("fetchProduct failed:", err.message);
+    return null;
+  }
+};
+
+
   return (
     <div className="user-dashboard-container">
       {/* Mobile Menu Toggle */}
@@ -306,9 +334,9 @@ export default function UserDashboardNew() {
       <aside className={`user-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <div className="user-avatar">
-            {userData.profile?.full_name?.charAt(0).toUpperCase() || "U"}
+            {userData.profile?.username?.charAt(0).toUpperCase() || "U"}
           </div>
-          <h3>{userData.profile?.full_name || "User"}</h3>
+          <h3>{userData.profile?.username || "User"}</h3>
           <p>{userData.profile?.email}</p>
         </div>
 
@@ -458,7 +486,7 @@ export default function UserDashboardNew() {
               ) : (
                 <div className="orders-list">
                   {userData.orders.slice(0, 5).map(order => (
-                    <div key={order.checkout_id} className="order-card-mini">
+                    <div onClick={() => navigate(`/order/${order.checkout_id}`)} key={order.checkout_id} className="order-card-mini">
                       <div className="order-header">
                         <strong>Order #{order.checkout_id}</strong>
                         <span className={`status-badge ${order.status}`}>
@@ -642,7 +670,7 @@ export default function UserDashboardNew() {
                 {userData.reviews.map(review => (
                   <div key={review.id} className="review-card">
                     <div className="review-header">
-                      <h3>{review.products?.name}</h3>
+                      <h3>{review.product_id?.name || 'Unknown Product'}</h3>
                       <div className="review-rating">
                         {"⭐".repeat(review.rating)}
                       </div>
@@ -672,11 +700,11 @@ export default function UserDashboardNew() {
                 {userData.cartHistory.map(history => (
                   <div key={history.history_id} className="history-item">
                     <div className="history-icon">
-                      {history.action === "added" ? <Plus size={20} /> : <Minus size={20} />}
+                      {history.action === "INSERT" ? <Plus size={20} /> : <Minus size={20} />}
                     </div>
                     <div className="history-info">
-                      <strong>{history.action === "added" ? "Added to cart" : "Removed from cart"}</strong>
-                      <p>Product ID: {history.product_id} | Quantity: {history.quantity}</p>
+                      <strong>{history.action === "INSERT" ? "Added to cart" : "Removed from cart"}</strong>
+                      <p>{productNames[history.product_id] || history.product_id} | Quantity: {history.quantity}</p>
                       <span className="history-date">{formatDate(history.action_at)}</span>
                     </div>
                   </div>

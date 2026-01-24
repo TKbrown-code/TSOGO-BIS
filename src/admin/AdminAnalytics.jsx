@@ -79,6 +79,7 @@ export default function AdminAnalytics() {
     const completedOrders = orders.filter(o => o.status === "paid").length;
     const pendingOrders = orders.filter(o => o.status === "pending").length;
     const cancelledOrders = orders.filter(o => o.status === "cancelled").length;
+    const processingOrders = orders.filter(o => o.status === "processing").length;
 
     // Top products (items are stored as JSONB array)
     const productSales = {};
@@ -122,9 +123,10 @@ export default function AdminAnalytics() {
       topProducts,
       revenueByDay: revenueByDayArray,
       ordersByStatus: [
-        { status: "paid", count: completedOrders, color: "#10b981" },
-        { status: "Pending", count: pendingOrders, color: "#f59e0b" },
-        { status: "Cancelled", count: cancelledOrders, color: "#ef4444" }
+        { status: "completed", count: completedOrders, color: "#10b981" },
+        { status: "pending", count: pendingOrders, color: "#f59e0b" },
+        { status: "cancelled", count: cancelledOrders, color: "#ef4444" },
+        {status: "processing", count: processingOrders, color: "#f59e0b"}
       ]
     });
 

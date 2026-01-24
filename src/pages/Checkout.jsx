@@ -110,7 +110,7 @@ export default function Checkout() {
       const totalAmount = itemsToCheckout.reduce((sum, item) => sum + item.price, 0);
 
       const res = await fetch(
-        "https://gidifmqzolmrqpywpimw.supabase.co/functions/v1/create-campay-order",
+        "https://bompysyuamyalbzmubzo.supabase.co/functions/v1/create-campay-order",
         {
           method: "POST",
           headers: {
