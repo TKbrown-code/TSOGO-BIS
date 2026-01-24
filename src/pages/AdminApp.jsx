@@ -15,7 +15,7 @@ import AdminAuth from "../admin/AdminAuth";
 import AdminSignIn from "../components/AdminSignIn";
 import { BarChart3, TrendingUp, Package, ShoppingCart, MapPin, Users, Folder, FolderTree, Star, Settings, Wrench, XCircle, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 import "../styles/AdminAppComplete.css";
-import Logo from "../assets/Logo.png";
+import Logo from "../assets/logo.png";
 
 function AdminContent() {
   const { user, isAdmin, loading, signOut, adminRole } = useAdmin();
