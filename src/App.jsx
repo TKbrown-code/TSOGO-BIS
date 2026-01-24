@@ -7,7 +7,7 @@ import Checkout from "./pages/Checkout"; // create Checkout page
 import AdminApp from "./pages/AdminApp";
 import Cart from "./components/CartSidebar";
 import Logistics from "./pages/logistics";
-import  Form  from "./pages/form";
+import  Form  from "./pages/form"
 import AppModal from './hooks/AppModal'
 import { ModalMessageProvider } from "./context/ModalMessageContext";
 import Userdashboard from "./pages/userDashboard";
