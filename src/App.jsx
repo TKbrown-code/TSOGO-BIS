@@ -20,7 +20,7 @@ import Orders from "./pages/Orders";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import TrackOrder from "./pages/TrackOrder";
-import Languagebtn from "../../TSOGOBIS/src/components/languagebtn";
+import Languagebtn from "./components/languagebtn";
 import WhatsAppButton from "./components/whatsappbtn";
 import ErrorBoundary from "./components/ErrorBoundary";
 import CookieConsent from "./components/CookieConsent";
