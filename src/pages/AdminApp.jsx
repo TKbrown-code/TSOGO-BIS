@@ -15,6 +15,7 @@ import AdminAuth from "../admin/AdminAuth";
 import AdminSignIn from "../components/AdminSignIn";
 import { BarChart3, TrendingUp, Package, ShoppingCart, MapPin, Users, Folder, FolderTree, Star, Settings, Wrench, XCircle, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 import "../styles/AdminAppComplete.css";
+import Logo from "../assets/Logo.png";
 
 function AdminContent() {
   const { user, isAdmin, loading, signOut, adminRole } = useAdmin();
@@ -67,7 +68,7 @@ function AdminContent() {
       <aside className={`admin-sidebar ${sidebarCollapsed ? "collapsed" : ""}`}>
         <div className="sidebar-header">
           <div className="logo">
-            <span className="logo-icon"><Wrench size={28} /></span>
+            <span className="logo-icon"><img src={Logo} alt="Logo" className="logo-img" /></span>
             {!sidebarCollapsed && <span className="logo-text">TSOGO Admin</span>}
           </div>
           <button 

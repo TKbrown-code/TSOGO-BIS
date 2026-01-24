@@ -55,9 +55,9 @@ export default function AdminUsers() {
   const filteredUsers = users.filter(user => {
     const searchLower = searchQuery.toLowerCase();
     return (
-      user.full_name.toLowerCase().includes(searchLower) ||
-      user.email.toLowerCase().includes(searchLower) ||
-      user.phone.includes(searchQuery)
+      (user.full_name?.toLowerCase().includes(searchLower) || false) ||
+      (user.email?.toLowerCase().includes(searchLower) || false) ||
+      (user.phone?.includes(searchQuery) || false)
     );
   });
 
@@ -147,9 +147,9 @@ export default function AdminUsers() {
                   <td>
                     <div className="user-name">
                       <div className="user-avatar">
-                        {user.full_name.charAt(0).toUpperCase()}
+                        {user.username?.charAt(0)?.toUpperCase() || '?'}
                       </div>
-                      {user.full_name}
+                      {user.username || 'Unknown'}
                     </div>
                   </td>
                   <td>{user.email}</td>
@@ -193,8 +193,8 @@ export default function AdminUsers() {
                 <h4><FileText className="inline-block mr-2" size={20} /> User Information</h4>
                 <div className="info-grid">
                   <div className="info-item">
-                    <span className="label">Full Name:</span>
-                    <span className="value">{selectedUser.full_name}</span>
+                    <span className="label">Username:</span>
+                    <span className="value">{selectedUser.username}</span>
                   </div>
                   <div className="info-item">
                     <span className="label">Email:</span>

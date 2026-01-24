@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../../../TSOGOBIS/src/lib/supabase";
 import { useCurrencyContext } from "../context/CurrencyContext";
 
 export default function AdvancedFilters({ 

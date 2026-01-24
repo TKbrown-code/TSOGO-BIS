@@ -18,22 +18,20 @@ export default function Orders() {
 
   // Helper: generate a unique tracking code
   const genTrackingCode = useCallback((checkoutId) => {
-    return `TSB${checkoutId}`;
+    const randomNumbers = Math.floor(1000 + Math.random() * 9000);
+    return `TSB${randomNumbers}${checkoutId}`;
   }, []);
 
-  const buildTrackingLink = useCallback((checkoutId) => {
-    const code = genTrackingCode(checkoutId);
-    return `${window.location.origin}/track/${code}`;
-  }, [genTrackingCode]);
+  const buildTrackingLink = useCallback((trackingCode) => {
+    return `${window.location.origin}/track/${trackingCode}`;
+  }, []);
 
   const ensureImageUrl = async (product, product_images = []) => {
     const primary = product_images.find((img) => img.is_primary) || product_images[0];
     if (!primary?.image_path) return "/placeholder.png";
     const cached = getCachedImage(primary.image_path);
     if (cached && cached !== "/placeholder.png") return cached;
-    const url = await fetchFromSupabase(primary.image_path);
-    imageCache[primary.image_path] = url;
-    localStorage.setItem("imageCache", JSON.stringify(imageCache));
+    const url = primary.image_path;  
     return url;
   };
 
@@ -134,15 +132,43 @@ export default function Orders() {
           if (newRow && newRow.user_id === profile.user_id) {
             const becameProcessing =
               oldRow?.delivery_status !== "processing" && newRow.delivery_status === "processing";
+            
+            console.log("Order update received:", {
+              checkout_id: newRow.checkout_id,
+              oldStatus: oldRow?.delivery_status,
+              newStatus: newRow.delivery_status,
+              becameProcessing,
+              hasTrackingLink: !!newRow.tracking_link,
+              userId: profile.user_id
+            });
+            
             if (becameProcessing && !newRow.tracking_link) {
               const trackingCode = genTrackingCode(newRow.checkout_id);
-              const trackingUrl = buildTrackingLink(newRow.checkout_id);
-              await supabase
-                .from("checkouts")
-                .update({ tracking_link: trackingUrl, tracking_number: trackingCode })
-                .eq("checkout_id", newRow.checkout_id);
-              newRow.tracking_link = trackingUrl;
-              newRow.tracking_number = trackingCode;
+              const trackingUrl = buildTrackingLink(trackingCode);
+              console.log("Attempting to update tracking:", {
+                checkout_id: newRow.checkout_id,
+                trackingCode,
+                trackingUrl
+              });
+              
+              try {
+                const { error } = await supabase
+                  .from("checkouts")
+                  .update({ tracking_link: trackingUrl, tracking_number: trackingCode })
+                  .eq("checkout_id", newRow.checkout_id);
+                
+                if (error) {
+                  console.error("Failed to update tracking info:", error);
+                } else {
+                  console.log("Successfully updated tracking info");
+                  newRow.tracking_link = trackingUrl;
+                  newRow.tracking_number = trackingCode;
+                  // Refresh orders to get the latest data from database
+                  fetchOrders();
+                }
+              } catch (err) {
+                console.error("Exception during tracking update:", err);
+              }
             }
             setOrders((prev) => {
               const exists = prev.some((o) => o.checkout_id === newRow.checkout_id);
@@ -336,7 +362,7 @@ export default function Orders() {
                   <div className="order-badges">
                     <span className={`payment-badge ${pb.className}`}>{pb.text}</span>
                     {order.tracking_number && (
-                      <a className="tracking-btn" href={order.tracking_link} target="_blank" rel="noreferrer">
+                      <a className="tracking-btn" href={order.tracking_link} target="_blank" rel="noreferrer" onClick={(e) => console.log("Tracking link clicked:", order.tracking_link)}>
                         📍 {order.tracking_number}
                       </a>
                     )}
@@ -415,7 +441,7 @@ export default function Orders() {
                         <button className="btn danger" onClick={() => cancelOrder(order.checkout_id)}>Cancel Order</button>
                       )}
                       {order.tracking_number && (
-                        <a className="btn secondary" style={{background:"#FF5733", color:"white"}} href={order.tracking_link} target="_blank" rel="noreferrer">Track {order.tracking_number}</a>
+                        <a className="btn secondary" style={{background:"#FF5733", color:"white"}} href={order.tracking_link} target="_blank" rel="noreferrer" onClick={(e) => console.log("Track button clicked:", order.tracking_link)}>Track {order.tracking_number}</a>
                       )}
                     </div>
                   </aside>

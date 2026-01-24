@@ -37,7 +37,8 @@ export default function Shop() {
         .from("products")
         .select(`
           *,
-          categories(id, name)
+          categories(id, name),
+          product_images(image_path)
         `);
 
       if (productError) {
@@ -45,6 +46,19 @@ export default function Shop() {
         setLoading(false);
         return;
       }
+
+      // Process images and products
+      const processedProducts = productData.map(product => {
+        // Get the first image from product_images array
+        const firstImage = product.product_images && product.product_images.length > 0 
+          ? product.product_images[0].image_path 
+          : null;
+        
+        return {
+          ...product,
+          image: firstImage
+        };
+      });
       
       // Try to fetch subcategories separately to avoid breaking if column doesn't exist
       let productsWithSubcategories = productData || [];
@@ -59,7 +73,7 @@ export default function Shop() {
         
         if (productsWithSubs) {
           // Merge subcategory data into products
-          productsWithSubcategories = productData.map(product => {
+          productsWithSubcategories = processedProducts.map(product => {
             const subData = productsWithSubs.find(p => p.id === product.id);
             return {
               ...product,
@@ -67,12 +81,23 @@ export default function Shop() {
               subcategories: subData?.subcategories
             };
           });
+        } else {
+          productsWithSubcategories = processedProducts;
         }
       } catch (err) {
         console.warn("Subcategories not available:", err);
         // Continue without subcategories
       }
 
+      // Create image mapping for easy lookup
+      const imageMap = {};
+      productsWithSubcategories.forEach(product => {
+        if (product.image) {
+          imageMap[product.id] = product.image;
+        }
+      });
+      setImages(imageMap);
+      
       setProducts(productsWithSubcategories);
 
       // Fetch categories
@@ -93,24 +118,6 @@ export default function Shop() {
 
       if (!subcategoryError) {
         setSubcategories(subcategoryData || []);
-      }
-
-      // Fetch product images
-      const { data: imageData, error: imageError } = await supabase
-        .from("product_images")
-        .select("product_id, image_path, is_primary");
-
-      if (!imageError) {
-        const urls = {};
-        await Promise.all(
-          (imageData || []).map(async (img) => {
-            if (!urls[img.product_id] || img.is_primary) {
-              const url = await getDownloadUrl(img.image_path);
-              urls[img.product_id] = url;
-            }
-          })
-        );
-        setImages(urls);
       }
 
       setLoading(false);

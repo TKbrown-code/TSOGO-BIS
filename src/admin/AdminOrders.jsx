@@ -82,6 +82,12 @@ export default function AdminOrders() {
     if (error) {
       alert("Error updating tracking link: " + error.message);
     } else {
+      const trackingNumber = trackingLink.split('/track/')[1] || '';
+      const {error} = await supabase.from("order_tracking").update({tracking_number: trackingNumber}).eq("order_id", orderId);
+      if(error){
+        alert("Error updating tracking number: " + error.message);
+        return;
+      }
       setOrders(orders.map(o => 
         o.checkout_id === orderId ? { ...o, tracking_link: trackingLink } : o
       ));
@@ -93,8 +99,8 @@ export default function AdminOrders() {
   // Filter orders
   const filteredOrders = orders.filter(order => {
     const matchesSearch = 
-      order.user_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.phone_number.includes(searchQuery) ||
+      (order.username?.toLowerCase().includes(searchQuery.toLowerCase()) || false) ||
+      (order.phone_number?.includes(searchQuery) || false) ||
       order.checkout_id.toString().includes(searchQuery);
     const matchesStatus = !filterStatus || order.status === filterStatus;
     const matchesDelivery = !filterDelivery || order.delivery_status === filterDelivery;
@@ -243,31 +249,31 @@ export default function AdminOrders() {
 
               <div className="order-body">
                 <div className="order-info">
-                  <div className="info-row">
-                    <span className="label"><User className="inline-block mr-1" size={16} /> Customer:</span>
-                    <span className="value">{order.user_name}</span>
+                  <div className="info-rowt">
+                    <p className="label"><User className="inline-block mr-1" size={16} /> Customer:</p>
+                    <p className="value">{order.username}</p>
                   </div>
-                  <div className="info-row">
-                    <span className="label"><Phone className="inline-block mr-1" size={16} /> Phone:</span>
-                    <span className="value">{order.phone_number}</span>
+                  <div className="info-rowt">
+                    <p className="label"><Phone className="inline-block mr-1" size={16} /> Phone:</p>
+                    <p className="value">{order.phone_number}</p>
                   </div>
-                  <div className="info-row">
-                    <span className="label"><MapPin className="inline-block mr-1" size={16} /> Address:</span>
-                    <span className="value">{order.address}</span>
+                  <div className="info-rowt">
+                    <p className="label"><MapPin className="inline-block mr-1" size={16} /> Address:</p>
+                    <p className="value">{order.address}</p>
                   </div>
                   {order.method_of_shipping && (
-                    <div className="info-row">
-                      <span className="label"><Truck className="inline-block mr-1" size={16} /> Shipping:</span>
-                      <span className="value">{order.method_of_shipping}</span>
+                    <div className="info-rowt">
+                      <p className="label"><Truck className="inline-block mr-1" size={16} /> Shipping:</p>
+                      <p className="value">{order.method_of_shipping}</p>
                     </div>
                   )}
-                  <div className="info-row">
-                    <span className="label"><DollarSign className="inline-block mr-1" size={16} /> Total:</span>
-                    <span className="value total">{parseFloat(order.total).toLocaleString()} XAF</span>
+                  <div className="info-rowt">
+                    <p className="label"><DollarSign className="inline-block mr-1" size={16} /> Total:</p>
+                    <p className="value total">{parseFloat(order.total).toLocaleString()} XAF</p>
                   </div>
                   {order.tracking_link && (
-                    <div className="info-row">
-                      <span className="label"><Link className="inline-block mr-1" size={16} /> Tracking:</span>
+                    <div className="info-rowt">
+                      <p className="label"><Link className="inline-block mr-1" size={16} /> Tracking:</p>
                       <a href={order.tracking_link} target="_blank" rel="noopener noreferrer" className="tracking-link">
                         View Tracking
                       </a>
@@ -282,9 +288,9 @@ export default function AdminOrders() {
                     <div className="items-list">
                       {order.checkout_items.map(item => (
                         <div key={item.id} className="item-row">
-                          <span className="item-qty">×{item.quantity}</span>
-                          <span className="item-name">Product ID: {item.product_id}</span>
-                          <span className="item-price">{parseFloat(item.price).toLocaleString()} XAF</span>
+                          <p className="item-qty">×{item.quantity}</p>
+                          <p className="item-name">Product ID: {item.product_id}</p>
+                          <p className="item-price">{parseFloat(item.price).toLocaleString()} XAF</p>
                         </div>
                       ))}
                     </div>

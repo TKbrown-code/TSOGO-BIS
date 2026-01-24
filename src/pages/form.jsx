@@ -22,13 +22,20 @@ export default function Form (){
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        if(isSignUp) {
             if (!validateForm()) {
                 return;
             } 
             setLoading(true);
-            if(isSignUp)
-                SignUP();
-        };
+            SignUP();
+        } else {
+            if (!validateFormSignIn()) {
+                return;
+            } 
+            setLoading(true);
+            SignIn();
+        }
+    };
 
    const handleSignIn = (e) => {
         e.preventDefault();

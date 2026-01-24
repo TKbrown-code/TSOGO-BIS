@@ -139,11 +139,18 @@
 
 .status-badge {
   display: inline-block;
-  padding: 6px 12px;
   border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 12px !important;
   color: white;
+  width: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
+}
+
+.tracking-table .tracking-status {
+  text-align: center !important;
 }
 
 .actions {
@@ -165,23 +172,23 @@
   display: inline-block;
 }
 
-.btn-edit:hover {
-  background: #3b82f6;
-  transform: scale(1.1);
+
+
+.btn-edit {
+  background: #3b83f681;
+  color: white;
 }
 
-.btn-delete:hover {
-  background: #ef4444;
-  transform: scale(1.1);
+.btn-delete {
+  background: #ef44448f;
 }
 
-.btn-view:hover {
-  background: #10b981;
-  transform: scale(1.1);
+.btn-view {
+  background: #10b9818a;
 }
 
 .no-data {
-  text-align: center;
+  text-align: center !important;
   padding: 48px !important;
   color: #9ca3af;
   font-size: 16px;
@@ -217,9 +224,11 @@
   width: 92%;
   max-height: 92vh;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  scroll-behavior: smooth;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   animation: slideUp 0.4s ease;
-  border: 3px solid #FFD700;
 }
 
 .admin-tracking .modal-header {
@@ -227,8 +236,6 @@
   justify-content: space-between;
   align-items: center;
   padding: 28px 36px;
-  border-bottom: 3px solid #FFD700;
-  background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
 }
 
 .admin-tracking .modal-header h2 {

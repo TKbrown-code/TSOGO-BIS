@@ -73,7 +73,7 @@
 .metric-card {
   background: white;
   padding: 24px;
-  border-radius: 12px;
+   border-radius: 5px;
   border: 1px solid #e5e7eb;
   display: flex;
   align-items: center;
@@ -87,27 +87,23 @@
 }
 
 .metric-card.revenue {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
+  border-left: #667eea 5px solid;
+  color: rgb(63, 63, 63);
 }
 
 .metric-card.orders {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: white;
-  border: none;
+  border-left: #f5576c 5px solid;
+  color: rgb(63, 63, 63);
 }
 
 .metric-card.avg {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  color: white;
-  border: none;
+  border-left: #4facfe 5px solid;
+  color: rgb(63, 63, 63);
 }
 
 .metric-card.completed {
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-  color: white;
-  border: none;
+  border-left: #43e97b 5px solid;
+  color: rgb(63, 63, 63);
 }
 
 .metric-icon {
@@ -117,8 +113,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
+  background: rgba(223, 157, 103, 0.158);
+  border-radius: 5px;
 }
 
 .metric-content {
@@ -132,7 +128,7 @@
 }
 
 .metric-value {
-  font-size: 28px;
+  font-size: 20px;
   font-weight: 700;
 }
 
@@ -153,10 +149,10 @@
 
 /* Revenue Chart */
 .revenue-chart {
-  height: 300px;
+  height: 200px;
   display: flex;
   align-items: flex-end;
-  padding: 20px;
+  padding: 10px;
   background: #f9fafb;
   border-radius: 8px;
 }
@@ -203,7 +199,7 @@
   width: 100%;
   text-align: center;
   color: #9ca3af;
-  padding: 60px 20px;
+  padding: 10px 20px;
 }
 
 /* Status Breakdown */
@@ -218,9 +214,9 @@
   grid-template-columns: 150px 80px 1fr;
   align-items: center;
   gap: 16px;
-  padding: 12px;
+  padding: 10px;
   background: #f9fafb;
-  border-radius: 8px;
+  border-radius: 5px;
 }
 
 .status-info {
@@ -248,7 +244,7 @@
 }
 
 .status-bar {
-  height: 24px;
+  height: 10px;
   background: #e5e7eb;
   border-radius: 12px;
   overflow: hidden;

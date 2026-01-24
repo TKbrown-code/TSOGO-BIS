@@ -8,6 +8,7 @@ import { useUserContext } from "../context/useUserContext";
 import { useCurrencyContext } from "../context/CurrencyContext";
 import { supabase } from "../lib/supabase";
 import { getCachedImage, preloadAllImages } from "../utils/imageCache";
+import Logo from "../assets/logo.png";
 
 export default function Navbar() {
   const { cartItems, setCartOpen } = useCart();
@@ -22,6 +23,8 @@ export default function Navbar() {
   const { user } = useUserContext();
   const { convert, currency } = useCurrencyContext();
   const searchRef = useRef(null);
+  const [navtopslide, setNavtopSlide] = useState("");
+  const [navtop, setNavtop] = useState(true);
 
   // Fetch matching products from Supabase
   const handleSearchChange = async (e) => {
@@ -114,10 +117,35 @@ export default function Navbar() {
     };
   }, []);
 
+const navtopslides = [
+  "Experience shopping with class — curated quality and timeless style at TSOGOBIS.",
+  "Where elegance meets value. Discover premium products and exclusive promotions.",
+  "Shop confidently with secure payments, refined selections, and exceptional service."
+];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+        const randomIndex = Math.floor(Math.random() * navtopslides.length);
+        const randomSlide = navtopslides[randomIndex];
+        setNavtopSlide(randomSlide);
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <nav className="navbar">
+    <>
+    {navtop && navtopslide && (
+    <div className="navtop">
+        <span className="navtop-slide">{navtopslide}</span>
+        <button className="navtop-close" onClick={() => setNavtop(false)}>
+          ×
+        </button>
+    </div>
+    )}
+
+    <nav className={`navbar ${!navtop ? "navtop-open" : !navtopslide ? "navtop-not" : ""}`}>
       <Link to="/" className="logo">
+      <img className="logoimage" src={Logo} alt="Logo" />
         <span className="logo-text">TSOGO-BIS</span>
       </Link>
 
@@ -237,6 +265,10 @@ export default function Navbar() {
 
       <ul className={`nav-menu ${menuOpen ? "active" : ""}`}>
         <li className="nav-close-btn-wrapper">
+          <div className="logo mobile">
+            <img className="logoimage" src={Logo} alt="Logo" />
+            <span className="logo-text">TSOGO-BIS</span>
+          </div>
           <button 
             className="nav-close-btn" 
             onClick={() => setMenuOpen(false)}
@@ -278,8 +310,8 @@ export default function Navbar() {
             className="cart-btn"
             aria-label="Open cart"
           >
-            <span className="cart-icon"><ShoppingCart size={20} /></span>
-            {totalQty > 0 && <span className="cart-badge">{totalQty}</span>}
+            <span className="material-symbols-outlined cart-icon">local_mall</span>
+             <span className="cart-badge">{totalQty}</span>
           </button>
         </li>
 
@@ -306,11 +338,6 @@ export default function Navbar() {
                   </Link>
                 </li>
                 <li>
-                  <Link to="/history" onClick={() => { setUserOpen(false); setMenuOpen(false); }}>
-                    History
-                  </Link>
-                </li>
-                <li>
                   <button className="dropdown-logout" onClick={() => { setUserOpen(false); setMenuOpen(false); }}>
                     Logout
                   </button>
@@ -327,5 +354,6 @@ export default function Navbar() {
         )}
       </ul>
     </nav>
+    </>
   );
 }

@@ -5,21 +5,23 @@ import { useUserContext } from "./useUserContext";
 const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
-  const { user } = useUserContext();
+  const { user, profile } = useUserContext();
   const [cartItems, setCartItems] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
 
   const fetchCart = useCallback(async () => {
-    if (!user?.id) return;
+    const userId = profile?.user_id || user?.id;
+    if (!userId) return;
     const { data, error } = await supabase
       .from("cart")
       .select("*, product_id(*, product_images(*))")
-      .eq("user_id", user.id);
+      .eq("user_id", userId);
     if (!error) setCartItems(data || []);
-  }, [user?.id]);
+  }, [profile?.user_id, user?.id]);
 
 const addToCart = async (product, quantity = 1, options = {}) => {
-  if (!user?.id) {
+  const userId = profile?.user_id || user?.id;
+  if (!userId) {
     alert("Please log in first.");
     return false;
   }
@@ -51,7 +53,7 @@ const addToCart = async (product, quantity = 1, options = {}) => {
     const { data: existingItems } = await supabase
       .from('cart')
       .select('id, quantity, selected_option')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('product_id', product.id);
 
     // Find matching item by comparing the entire selected_option
@@ -81,7 +83,7 @@ const addToCart = async (product, quantity = 1, options = {}) => {
       const { error } = await supabase
         .from('cart')
         .insert([{
-          user_id: user.id,
+          user_id: userId,
           product_id: product.id,
           quantity: newQuantity,
           selected_option: selectedOption,
@@ -104,32 +106,34 @@ const addToCart = async (product, quantity = 1, options = {}) => {
 };
 
   const removeItem = async (cartItemId) => {
-    if (!user?.id) return;
-    
-    // Delete by cart item ID (unique identifier)
-    await supabase
-      .from("cart")
-      .delete()
-      .eq("id", cartItemId)
-      .eq("user_id", user.id);
-    
-    setCartItems(prev => prev.filter(item => item.id !== cartItemId));
-  };
+  const userId = profile?.user_id || user?.id;
+  if (!userId) return;
+  
+  // Delete by cart item ID (unique identifier)
+  await supabase
+    .from("cart")
+    .delete()
+    .eq("id", cartItemId)
+    .eq("user_id", userId);
+  
+  setCartItems(prev => prev.filter(item => item.id !== cartItemId));
+};
 
-  const updateQuantity = async (cartItemId, newQuantity) => {
-    if (!user?.id) return;
-    if (newQuantity < 1) {
-      // If quantity is 0, remove the item
-      await removeItem(cartItemId);
-      return;
-    }
+const updateQuantity = async (cartItemId, newQuantity) => {
+  const userId = profile?.user_id || user?.id;
+  if (!userId) return;
+  if (newQuantity < 1) {
+    // If quantity is 0, remove the item
+    await removeItem(cartItemId);
+    return;
+  }
 
-    // Update by cart item ID (unique identifier)
-    await supabase
-      .from("cart")
-      .update({ quantity: newQuantity })
-      .eq("id", cartItemId)
-      .eq("user_id", user.id);
+  // Update by cart item ID (unique identifier)
+  await supabase
+    .from("cart")
+    .update({ quantity: newQuantity })
+    .eq("id", cartItemId)
+    .eq("user_id", userId);
 
     setCartItems(prev =>
       prev.map(item =>
@@ -141,15 +145,16 @@ const addToCart = async (product, quantity = 1, options = {}) => {
   };
 
   const clearCart = async () => {
-    if (!user?.id) return;
-    await supabase.from("cart").delete().eq("user_id", user.id);
+    const userId = profile?.user_id || user?.id;
+    if (!userId) return;
+    await supabase.from("cart").delete().eq("user_id", userId);
     setCartItems([]);
   };
 
 
   useEffect(() => {
     fetchCart();
-  }, [user, fetchCart]);
+  }, [user, profile, fetchCart]);
 
   
 

@@ -135,7 +135,7 @@ export default function TrackOrder() {
                 <div className="detail-icon"><User size={24} /></div>
                 <div className="detail-content">
                   <div className="detail-label">{t('tracking.customer')}</div>
-                  <div className="detail-value">{trackingData.user_name}</div>
+                  <div className="detail-value">{trackingData.username}</div>
                 </div>
               </div>
 

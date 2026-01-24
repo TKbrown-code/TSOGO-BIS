@@ -53,7 +53,7 @@ export default function AdminTracking() {
     try {
       const { data, error } = await supabase
         .from("checkouts")
-        .select("checkout_id, user_name, total, tracking_number")
+        .select("checkout_id, username, total, tracking_number")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -84,7 +84,7 @@ export default function AdminTracking() {
     setFormData({
       order_id: tracking.order_id || "",
       tracking_number: tracking.tracking_number,
-      user_name: tracking.user_name,
+      user_name: tracking.username,
       total_amount: tracking.total_amount,
       shipping_from: tracking.shipping_from,
       present_location: tracking.present_location,
@@ -110,7 +110,7 @@ export default function AdminTracking() {
           .from("order_tracking")
           .update({
             order_id: formData.order_id || null,
-            user_name: formData.user_name,
+            username: formData.user_name,
             total_amount: parseFloat(formData.total_amount),
             shipping_from: formData.shipping_from,
             present_location: formData.present_location,
@@ -129,7 +129,7 @@ export default function AdminTracking() {
           .insert({
             order_id: formData.order_id || null,
             tracking_number: formData.tracking_number,
-            user_name: formData.user_name,
+            username: formData.user_name,
             total_amount: parseFloat(formData.total_amount),
             shipping_from: formData.shipping_from,
             present_location: formData.present_location,
@@ -181,11 +181,11 @@ export default function AdminTracking() {
 
   const getStatusBadge = (status) => {
     const badges = {
-      pending: { color: "#f59e0b", icon: <Package size={16} />, text: "Pending" },
-      in_transit: { color: "#3b82f6", icon: <Truck size={16} />, text: "In Transit" },
-      out_for_delivery: { color: "#8b5cf6", icon: <TruckIcon size={16} />, text: "Out for Delivery" },
-      delivered: { color: "#10b981", icon: <CheckCircle size={16} />, text: "Delivered" },
-      failed: { color: "#ef4444", icon: <XCircle size={16} />, text: "Failed" }
+      pending: { color: "#f59e0b", icon: <Package size={25} />, text: "Pending" },
+      in_transit: { color: "#3b83f69a",  text: "In Transit" },
+      out_for_delivery: { color: "#8a5cf677",  text: "Out for Delivery" },
+      delivered: { color: "#10b981",   text: "Delivered" },
+      failed: { color: "#ef4444",   text: "Failed" }
     };
     
     const badge = badges[status] || badges.pending;
@@ -230,7 +230,7 @@ export default function AdminTracking() {
       </div>
 
       {loading ? (
-        <div className="loading">Loading trackings...</div>
+        <div className="loading"></div>
       ) : (
         <div className="tracking-table-container">
           <table className="tracking-table">
@@ -259,11 +259,11 @@ export default function AdminTracking() {
                     <td className="tracking-number">
                       <code>{tracking.tracking_number}</code>
                     </td>
-                    <td>{tracking.user_name}</td>
+                    <td>{tracking.username}</td>
                     <td className="amount">{tracking.total_amount} XAF</td>
                     <td>{tracking.shipping_from}</td>
                     <td className="location"><MapPin className="inline-block mr-1" size={14} /> {tracking.present_location}</td>
-                    <td>{getStatusBadge(tracking.status)}</td>
+                    <td className="tracking-status">{getStatusBadge(tracking.status)}</td>
                     <td>
                       {tracking.estimated_delivery 
                         ? new Date(tracking.estimated_delivery).toLocaleDateString()
@@ -275,14 +275,14 @@ export default function AdminTracking() {
                         className="btn-edit"
                         title="Edit"
                       >
-                        <Edit size={16} />
+                        <Edit size={25} />
                       </button>
                       <button
                         onClick={() => handleDelete(tracking.id)}
                         className="btn-delete"
                         title="Delete"
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={25} />
                       </button>
                       <a
                         href={`/track/${tracking.tracking_number}`}
@@ -291,7 +291,7 @@ export default function AdminTracking() {
                         className="btn-view"
                         title="View Tracking Page"
                       >
-                        <Eye size={16} />
+                        <Eye size={25} />
                       </a>
                     </td>
                   </tr>
@@ -319,11 +319,12 @@ export default function AdminTracking() {
                   <select
                     value={formData.order_id}
                     onChange={(e) => setFormData({...formData, order_id: e.target.value})}
+                    disabled={editingTracking}
                   >
                     <option value="">-- Select Order --</option>
                     {orders.map(order => (
                       <option key={order.checkout_id} value={order.checkout_id}>
-                        #{order.checkout_id} - {order.user_name} ({order.total} XAF)
+                        #{order.checkout_id} - {order.username} ({order.total} XAF)
                       </option>
                     ))}
                   </select>

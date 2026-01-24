@@ -249,36 +249,30 @@
 
 .order-info {
   display: grid;
-  gap: 12px;
   margin-bottom: 20px;
 }
 
-.info-row {
+.info-rowt {
   display: flex;
-  gap: 12px;
+  gap: 5px !important;
 }
 
-.info-row .label {
-  font-weight: 600;
+.info-rowt .label {
   color: #6b7280;
-  min-width: 100px;
 }
 
-.info-row .value {
-  color: #1f2937;
-  flex: 1;
+.info-rowt .value {
+  color: var(--accentColor);
+
 }
 
-.info-row .value.total {
-  font-size: 18px;
-  font-weight: 700;
-  color: #3b82f6;
+.info-rowt .value.total {
+  color: var(--accentColor);
 }
 
 .tracking-link {
-  color: #3b82f6;
+  color: var(--accentColor) !important;
   text-decoration: none;
-  font-weight: 500;
 }
 
 .tracking-link:hover {
@@ -317,18 +311,18 @@
 
 .item-qty {
   font-weight: 600;
-  color: #3b82f6;
+  color: var(--accentColor);
   min-width: 40px;
 }
 
 .item-name {
   flex: 1;
-  color: #1f2937;
+  color: var(--accentColor);
 }
 
 .item-price {
   font-weight: 600;
-  color: #1f2937;
+  color: var(--accentColor);
 }
 
 /* Order Actions */
@@ -352,7 +346,7 @@
 .action-group label {
   font-size: 12px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--accentColor);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -424,14 +418,14 @@
 .adtrack-modal-content .modal-header h3 {
   margin: 0;
   font-size: 18px;
-  color: #1f2937;
+  color: var(--accentColor);
 }
 
 .adtrack-modal-content .close-btn {
   background: none;
   border: none;
   font-size: 24px;
-  color: #6b7280;
+  color: var(--accentColor);
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 4px;
@@ -440,7 +434,7 @@
 
 .adtrack-modal-content .close-btn:hover {
   background: #f3f4f6;
-  color: #1f2937;
+  color: var(--accentColor);
 }
 
 .adtrack-modal-content .modal-body {
