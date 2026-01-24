@@ -322,6 +322,7 @@ export default function AdminOrders() {
                     className="delivery-select"
                   >
                     <option value="pending">Pending</option>
+                    <option value="processing">Processing</option>
                     <option value="shipped">Shipped</option>
                     <option value="in_transit">In Transit</option>
                     <option value="delivered">Delivered</option>
