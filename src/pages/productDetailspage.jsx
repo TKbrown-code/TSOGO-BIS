@@ -655,7 +655,7 @@ export default function ProductDetailsPage() {
           {rating ? (
             <div className="average-rating">
               <span>{renderStars(rating)}</span>
-              <span className="rating-number">({rating && rating.toFixed(1)})</span>
+              <span className="rating-number">({rating && typeof rating === 'number' ? rating.toFixed(1) : rating})</span>
             </div>
           ) : (
             <p>No ratings yet</p>
@@ -822,9 +822,9 @@ export default function ProductDetailsPage() {
                           reviewsData.length;
                         await supabase
                           .from("products")
-                          .update({ avg_rating: parseFloat(avgRating.toFixed(2)) })
+                          .update({ avg_rating: typeof avgRating === 'number' ? parseFloat(avgRating.toFixed(2)) : avgRating })
                           .eq("id", product.id);
-                        setRating(parseFloat(avgRating.toFixed(2)));
+                        setRating(typeof avgRating === 'number' ? parseFloat(avgRating.toFixed(2)) : avgRating);
                       }
                     }
                   }}
@@ -884,7 +884,7 @@ export default function ProductDetailsPage() {
             <FontAwesomeIcon icon={faTruck} /> Shipped from:{" "}
             <strong>{product.shipped_from}</strong>
           </p>
-          <p>Base Weight: {product.weight && parseFloat(product.weight).toFixed(2)} kg</p>
+          <p>Base Weight: {product.weight && !isNaN(product.weight) ? parseFloat(product.weight).toFixed(2) : product.weight} kg</p>
           <p>Base Price: {convert(product.price, currency)} {currency}</p>
           {product.category_id?.name && (
             <p>
@@ -960,7 +960,7 @@ export default function ProductDetailsPage() {
                                 Price: {convert(unitPrice, currency)} {currency}
                               </span>
                               <span className="unit-weight">
-                                Weight: {unitWeight.toFixed(2)} kg
+                                Weight: {typeof unitWeight === 'number' ? unitWeight.toFixed(2) : unitWeight} kg
                               </span>
                             </div>
                             <div className="buttonsq">
@@ -1002,7 +1002,7 @@ export default function ProductDetailsPage() {
                             Price: {convert(unitPrice, currency)} {currency}
                           </span>
                           <span className="unit-weight">
-                            Weight: {unitWeight.toFixed(2)} kg
+                            Weight: {typeof unitWeight === 'number' ? unitWeight.toFixed(2) : unitWeight} kg
                           </span>
                         </div>
                         <div className="buttonsq">
@@ -1051,13 +1051,13 @@ export default function ProductDetailsPage() {
             </select>
           </div>
           <p>Shipping Fee: {convert(shippingFee, currency)} {currency}</p>
-          <p>Total Weight: {totalWeight.toFixed(2)} kg</p>
+          <p>Total Weight: {typeof totalWeight === 'number' ? totalWeight.toFixed(2) : totalWeight} kg</p>
         </div>
 
         {/* Total Price */}
         <div className="p-price">
           <h2>
-            Grand Total: {convert((totalPrice + shippingFee).toFixed(0), currency)}{" "}
+            Grand Total: {convert(typeof (totalPrice + shippingFee) === 'number' ? (totalPrice + shippingFee).toFixed(0) : totalPrice + shippingFee, currency)}{" "}
             {currency}
           </h2>
         </div>
