@@ -20,24 +20,27 @@ export const CurrencyProvider = ({ children, defaultCurrency = "XAF" }) => {
     setLoading(true);
     try {
       const response = await axios.get(
-       "https://gidifmqzolmrqpywpimw.supabase.co/functions/v1/currency-rate",
+       "https://bompysyuamyalbzmubzo.supabase.co/functions/v1/currency-rate",
         {
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-          },
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          }
         }
       );
-
       if (response.data?.rates) {
         setRates(response.data.rates);
-        localStorage.setItem("currencyRates", JSON.stringify(response.data.rates));
-      } else {
-        setError("No rates returned from backend");
+        setError(null);
       }
     } catch (err) {
-      console.error("Error fetching currency rates:", err);
-      setError(err.message || "Failed to fetch rates from backend");
+      console.error('Error fetching currency rates:', err);
+      setError('Failed to fetch currency rates');
+      // Set fallback rates to prevent app from breaking
+      setRates({
+        USD: 1,
+        EUR: 0.85,
+        GBP: 0.73,
+        XAF: 555, // Fallback rate
+      });
     } finally {
       setLoading(false);
     }
@@ -52,8 +55,12 @@ export const CurrencyProvider = ({ children, defaultCurrency = "XAF" }) => {
 
   // Convert amount from base to target currency
  const convert = (amount, targetCurrency) => {
-  if (!rates || !rates[targetCurrency]) return amount.toFixed(2);
-  return (amount * rates[targetCurrency]).toFixed(2); // use number directly
+  if (!rates || !rates[targetCurrency]) {
+    const numAmount = typeof amount === 'number' ? amount : parseFloat(amount);
+    return isNaN(numAmount) ? amount : numAmount.toFixed(2);
+  }
+  const numAmount = typeof amount === 'number' ? amount : parseFloat(amount);
+  return isNaN(numAmount) ? amount : (numAmount * rates[targetCurrency]).toFixed(2);
 };
 
   return (
