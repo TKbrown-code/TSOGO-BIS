@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase";
 import AdminProductFormEnhanced from "./AdminProductFormEnhanced";
 import { Package, BarChart3, DollarSign, Search, Edit, Trash2, CheckCircle, XCircle } from "lucide-react";
 import "../styles/AdminProducts.css";
+import Fallbackimage from "../assets/imagefallback.jpg";
 
 export default function AdminProducts() {
   const [products, setProducts] = useState([]);
@@ -217,7 +218,7 @@ export default function AdminProducts() {
                       <img 
                         src={primaryImage?.publicUrl || "/placeholder.png"} 
                         alt={p.name}
-                        onError={(e) => (e.target.src = "/placeholder.png")}
+                        onError={(e) => { e.target.src = Fallbackimage; }}
                         onClick={() => {open(primaryImage?.publicUrl)}}
                         className="table-product-image"
                       />

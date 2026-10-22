@@ -46,7 +46,7 @@ export default function Navbar() {
         name,
         description,
         price,
-        product_images(image_path, is_primary),
+        product_images(image_path),
         category_id,
         subcategory_id,
         categories(name),
@@ -217,7 +217,6 @@ const navtopslides = [
                 <ul className="suggestion-list">
                   {products.map((p) => {
                     const imagePath = p.product_images?.find(img => img.is_primary)?.image_path || p.product_images?.[0]?.image_path;
-                    const imageUrl = getCachedImage(imagePath);
                     return (
                       <li
                         key={p.id}
@@ -226,7 +225,7 @@ const navtopslides = [
                       >
                         <div className="suggestion-image-wrapper">
                           <img
-                            src={imageUrl}
+                            src={imagePath}
                             alt={p.name}
                             className="suggestion-img"
                           />

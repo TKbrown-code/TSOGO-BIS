@@ -5,13 +5,14 @@ import { ShoppingCart } from "lucide-react";
 import "../styles/CartSidebar.css";
 import { useCurrencyContext } from "../context/CurrencyContext";
 import { preloadAllImages, getCachedImage } from "../utils/imageCache";
+import Fallbackimage from "../assets/imagefallback.jpg";
 
 export default function CartSidebar() {
   const { cartOpen, setCartOpen, cartItems, removeItem, updateQuantity } = useCart();
   const { convert, currency } = useCurrencyContext();
   const navigate = useNavigate();
   const [toast, setToast] = useState("");
-  const [imageUrls, setImageUrls] = useState({});
+  const [imageUrls, setImageUrls] = useState([]);
 
   useEffect(() => {
     const fetchImages = async () => {
@@ -20,15 +21,14 @@ export default function CartSidebar() {
       const allImages = cartItems.flatMap(item => item.product_id.product_images || []);
       await preloadAllImages(allImages);
 
-      const urls = {};
+      let primaryImage;
       cartItems.forEach(item => {
-        const primaryImage = item.product_id.product_images.find(img => img.is_primary);
-        urls[item.product_id.id] = primaryImage
-          ? getCachedImage(primaryImage.image_path)
-          : "/placeholder.png";
+        primaryImage = item.product_id.product_images?.find(img => img.is_primary) || item.product_id.product_images?.[0];
       });
 
-      setImageUrls(urls);
+      console.log("image_path: ", primaryImage.image_path);
+
+      setImageUrls(primaryImage.image_path);
     };
 
     fetchImages();
@@ -104,7 +104,7 @@ export default function CartSidebar() {
                   <div className="cart-item" key={item.id}>
                     <div className="item-image-wrapper">
                       <img
-                        src={imageUrls[item.product_id.id] || "/placeholder.png"}
+                        src={imageUrls || "/placeholder.png"}
                         alt={item.product_id.name}
                         className="cart-thumbnail"
                       />
@@ -112,36 +112,6 @@ export default function CartSidebar() {
                     <div className="cart-info">
                       <h4 className="item-name">{product.name}</h4>
                       <div className="item-details">
-                        <div className="item-options">
-                          {item.selected_option?.display ? (
-                            <span>{item.selected_option.display}</span>
-                          ) : (
-                            <>
-                              {Object.entries(item.selected_option || {}).map(([key, value]) => {
-                                // Skip internal/metadata fields
-                                if (
-                                  key === 'shipping_method' || 
-                                  key === 'shipping_fee' || 
-                                  key === 'added_price' || 
-                                  key === 'size_price' ||
-                                  key === 'weight' ||
-                                  key === 'total_weight' ||
-                                  key === 'display' ||
-                                  !value
-                                ) return null;
-                                
-                                return (
-                                  <span key={key}>
-                                    {key.charAt(0).toUpperCase() + key.slice(1)}: {value}
-                                  </span>
-                                );
-                              })}
-                            </>
-                          )}
-                          {item.selected_option?.shipping_method && (
-                          <><br /> <span>Shipping: {item.selected_option.shipping_method}</span></>
-                          )}
-                        </div>
                         <div className="item-price-row">
                           <div className="price-breakdown">
                             <span className="unit-price">
@@ -152,6 +122,7 @@ export default function CartSidebar() {
                                 + {convert(Number(item.selected_option.added_price), currency)} (color)
                               </span>
                             )}
+                            <br />
                             {item.selected_option?.size_price > 0 && (
                               <span className="extra-price">
                                 + {convert(Number(item.selected_option.size_price), currency)} (size)

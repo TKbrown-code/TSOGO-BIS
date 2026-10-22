@@ -167,7 +167,7 @@
 }
 
 .product-info h3 {
-  font-family: var(--headingFont);
+  font-family: major;
   font-size: 1rem;
   color: var(--headingColor);
   margin: 0;
@@ -175,13 +175,15 @@
 
 .product-info .product-Details {
   font-size: 0.9rem;
-  color: var(--textColor);
+  color: #8a8a8a;
   overflow: hidden;
   display: -webkit-box;
   line-clamp: 3;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   margin: 0 !important;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
 }
 
 .product-info .current-price {

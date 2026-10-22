@@ -19,7 +19,7 @@ export const CurrencyProvider = ({ children, defaultCurrency = "XAF" }) => {
   const fetchRates = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await axios.get(
+      const response = await fetch(
        "https://bompysyuamyalbzmubzo.supabase.co/functions/v1/currency-rate",
         {
           headers: {
@@ -27,8 +27,10 @@ export const CurrencyProvider = ({ children, defaultCurrency = "XAF" }) => {
           }
         }
       );
-      if (response.data?.rates) {
-        setRates(response.data.rates);
+      if (response.ok) {
+        const data = await response.json();
+        console.log("rates: ", data.rates);
+        setRates(data.rates);
         setError(null);
       }
     } catch (err) {

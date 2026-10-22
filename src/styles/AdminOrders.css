@@ -13,6 +13,7 @@
   margin-bottom: 32px;
 }
 
+
 .orders-header h1 {
   margin: 0 0 8px 0;
   font-size: 32px;
@@ -44,18 +45,22 @@
 
 .stat-card.pending {
   border-left: 4px solid #f59e0b;
+  background: none !important;
 }
 
 .stat-card.processing {
   border-left: 4px solid #3b82f6;
+  background: none !important;
 }
 
 .stat-card.completed {
   border-left: 4px solid #10b981;
+  background: none !important;
 }
 
 .stat-card.cancelled {
   border-left: 4px solid #ef4444;
+  background: none !important;
 }
 
 .stat-card.revenue {

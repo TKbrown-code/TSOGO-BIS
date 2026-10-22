@@ -224,7 +224,7 @@ export default function AdminProductFormEnhanced({ product = {}, onSaved, onCanc
         .from("product_images")
         .insert({
           product_id: productId,
-          image_path: filePath,
+          image_path: data.publicUrl,
           is_primary: i === primaryImageIndex
         })
         .select()
