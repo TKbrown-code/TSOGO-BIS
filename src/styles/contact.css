@@ -342,3 +342,47 @@
     height: 250px;
   }
 }
+
+/* Contact page, aligned with the TSOGO-BIS storefront */
+.contact-page-redesign{min-height:65vh;background:#faf9f6;color:#26352e}
+.contact-hero-redesign{position:relative;padding:66px 24px 58px;background:#f1eee7;color:#17231f;text-align:left;overflow:hidden}
+.contact-hero-redesign::before{content:"";position:absolute;inset:0 0 0 56%;background:linear-gradient(145deg,#d9d5c9,#c6c2b5 56%,#aaa999);pointer-events:none}
+.contact-hero-redesign::after{content:"";position:absolute;top:50%;right:9%;width:min(32vw,320px);aspect-ratio:1;border:1px solid #ffffff80;border-radius:50%;box-shadow:0 0 0 23px #ffffff25,0 0 0 48px #ffffff18;transform:translateY(-50%);pointer-events:none}
+.contact-hero-redesign .contact-hero-container{max-width:1100px}
+.contact-kicker{position:relative;z-index:1;display:inline-block;color:#8d7154;font-size:9px;font-weight:700;letter-spacing:.2em}
+.contact-hero-redesign .contact-hero-title{position:relative;z-index:1;margin:13px 0 12px;color:#17231f;font:400 clamp(42px,6vw,66px)/1.02 Georgia,serif;letter-spacing:-.035em}
+.contact-hero-redesign .contact-hero-title span{color:#8d7154}
+.contact-hero-redesign .contact-hero-subtitle{position:relative;z-index:1;max-width:540px;margin:0;color:#636960;font-size:13px;line-height:1.8}
+.contact-hero-email{position:relative;z-index:1;display:inline-flex;align-items:center;gap:10px;margin-top:21px;padding:11px 14px;color:#fff;background:#1d3029;text-decoration:none;font-size:11px;font-weight:600}
+.contact-hero-email:hover{background:#30483e}
+.contact-main-redesign{grid-template-columns:minmax(230px,.78fr) minmax(0,1.22fr);align-items:start;gap:18px;max-width:1100px;margin:0 auto;padding:42px 24px 68px}
+.contact-sidebar,.contact-form-redesign{min-width:0;padding:24px;border:1px solid #e7e4dc;border-radius:5px;background:#fffefa;box-shadow:0 8px 24px #17231f0a}
+.contact-sidebar h2,.contact-form-redesign h2{margin:10px 0;color:#26352e;font:400 25px/1.2 Georgia,serif}
+.contact-method-card{display:flex;align-items:center;gap:11px;margin-top:10px;padding:12px;border:1px solid #e7e4dc;border-radius:3px;color:#26352e;background:#fff;text-decoration:none;transition:border-color .16s,background-color .16s}
+.contact-method-card:hover{border-color:#c9bda9;background:#faf9f6}
+.contact-method-icon{display:grid;flex:0 0 36px;width:36px;height:36px;place-items:center;border-radius:50%;color:#735e44;background:#f1eee7}
+.contact-method-card>span:nth-child(2){display:grid;flex:1;min-width:0;gap:3px}
+.contact-method-card small{color:#8d7154;font-size:8px;font-weight:700;letter-spacing:.13em}
+.contact-method-card strong{overflow-wrap:anywhere;color:#354239;font-size:11px;font-weight:600}
+.contact-method-card em{color:#85877f;font-size:9px;font-style:normal}
+.contact-method-card>svg{flex:none;color:#8d7154}
+.contact-method-card.is-unavailable{background:#faf9f6}
+.contact-response-note{display:flex;align-items:flex-start;gap:9px;margin-top:17px;padding-top:14px;border-top:1px solid #e7e4dc;color:#8d7154}
+.contact-response-note svg{flex:none;margin-top:2px}
+.contact-response-note p{margin:0;color:#72766f;font-size:10px;line-height:1.65}
+.contact-response-note a{color:#354239;text-decoration:underline;text-underline-offset:2px}
+.contact-form-redesign{padding:26px}
+.contact-form-redesign h2{margin:9px 0 6px;font-size:29px}
+.contact-form-intro{margin:0;color:#72766f;font-size:11px;line-height:1.65}
+.contact-form-redesign-fields{display:grid;gap:12px;margin-top:19px}
+.contact-form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.contact-form-redesign-fields .form-group{display:grid;gap:6px;margin:0;color:#4b554d;font-size:10px;font-weight:600}
+.contact-form-redesign-fields input,.contact-form-redesign-fields textarea{width:100%;min-height:40px;margin:0;padding:10px 11px;border:1px solid #d8d5cd;border-radius:3px;outline:none;color:#26352e;background:#fff;font:inherit;font-size:11px;font-weight:400;transition:border-color .16s,box-shadow .16s}
+.contact-form-redesign-fields input::placeholder,.contact-form-redesign-fields textarea::placeholder{color:#9a9b94}
+.contact-form-redesign-fields input:focus,.contact-form-redesign-fields textarea:focus{border-color:#8d7154;box-shadow:0 0 0 3px #8d71541a}
+.contact-form-redesign-fields textarea{min-height:112px;resize:vertical;line-height:1.6}
+.contact-form-redesign-fields .submit-btn{justify-content:center;width:max-content;min-height:42px;padding:0 16px;border-radius:3px;color:#fff;background:#1d3029;font-size:11px}
+.contact-form-redesign-fields .submit-btn:hover{background:#30483e;transform:none;box-shadow:0 4px 12px #17231f1b}
+.contact-sent-note{margin:0;padding:10px 12px;border:1px solid #d9dfd7;border-radius:3px;color:#45564a;background:#f2f5f1;font-size:10px;line-height:1.5}
+@media(max-width:760px){.contact-hero-redesign::before{inset:52% 0 0}.contact-hero-redesign::after{top:74%;right:-15%;width:62vw}.contact-main-redesign{grid-template-columns:1fr;max-width:620px;padding:28px 18px 50px}.contact-sidebar,.contact-form-redesign{padding:20px}}
+@media(max-width:480px){.contact-hero-redesign{padding:52px 19px 47px}.contact-hero-redesign .contact-hero-title{font-size:41px}.contact-hero-redesign .contact-hero-subtitle{max-width:360px;font-size:12px}.contact-main-redesign{padding-inline:12px}.contact-form-row{grid-template-columns:1fr;gap:12px}.contact-form-redesign-fields .submit-btn{width:100%}}

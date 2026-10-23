@@ -1,3 +1,4 @@
+import { showSiteModal as alert } from "../utils/siteModal";
 // src/admin/AdminProductForm.jsx
 import React, { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
@@ -107,7 +108,8 @@ export default function AdminProductForm({ product = {}, onSaved, onCancel }) {
         .from("product_images")
         .insert({
           product_id: productId,
-          image_path: filePath,
+          storage_path: filePath,
+          image_url: data.publicUrl,
           is_primary: images.length === 0 && uploadedImages.length === 0 ? true : false
         })
         .select()
@@ -517,7 +519,7 @@ export default function AdminProductForm({ product = {}, onSaved, onCancel }) {
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
               {images.map((img, i) => (
                 <div key={img.id || i} style={{ position: "relative" }}>
-                  <img src={img.publicUrl || img.image_path} alt={`img-${i}`} style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 6 }} />
+                  <img src={img.image_url} alt={`img-${i}`} style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 6 }} />
                   <button type="button" onClick={() => setImages(prev => prev.filter((_, idx) => idx !== i))} style={{ position: "absolute", top: 0, right: 0 }}>✕</button>
                 </div>
               ))}

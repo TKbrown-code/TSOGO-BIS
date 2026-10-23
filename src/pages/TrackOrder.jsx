@@ -2,18 +2,16 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "../lib/supabase";
-import { useCurrencyContext } from "../context/CurrencyContext";
-import { MapPin, Package, Truck, TruckIcon, CheckCircle, XCircle, User, DollarSign, Upload, Calendar, FileText } from "lucide-react";
+import { MapPin, Package, Truck, TruckIcon, CheckCircle, XCircle, Upload, Calendar, Search, UserRound, CreditCard, BadgeCheck } from "lucide-react";
 import "../styles/TrackOrder.css";
 
 export default function TrackOrder() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { trackingId } = useParams(); // Get tracking number from URL
   const [trackingNumber, setTrackingNumber] = useState("");
   const [trackingData, setTrackingData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const { convert, currency } = useCurrencyContext();
 
   // Auto-track if tracking number in URL
   useEffect(() => {
@@ -22,6 +20,20 @@ export default function TrackOrder() {
       handleTrackWithNumber(trackingId);
     }
   }, [trackingId]);
+
+  // Keep an already-open tracking page in sync while an admin advances delivery.
+  useEffect(() => {
+    const number = trackingData?.tracking_number;
+    if (!number) return undefined;
+    const refreshStatus = async () => {
+      const { data, error: refreshError } = await supabase.rpc("track_shipment", {
+        p_tracking_number: number,
+      });
+      if (!refreshError && data?.length) setTrackingData(data[0]);
+    };
+    const intervalId = window.setInterval(refreshStatus, 12000);
+    return () => window.clearInterval(intervalId);
+  }, [trackingData?.tracking_number]);
 
   const handleTrackWithNumber = async (number) => {
     if (!number.trim()) {
@@ -34,19 +46,17 @@ export default function TrackOrder() {
     setTrackingData(null);
 
     try {
-      const { data, error: fetchError } = await supabase
-        .from("order_tracking")
-        .select("*")
-        .eq("tracking_number", number.trim())
-        .single();
+      const { data, error: fetchError } = await supabase.rpc("track_shipment", {
+        p_tracking_number: number.trim(),
+      });
 
-      if (fetchError || !data) {
+      if (fetchError || !data?.length) {
         setError(t('tracking.not_found'));
         setLoading(false);
         return;
       }
 
-      setTrackingData(data);
+      setTrackingData(data[0]);
     } catch (err) {
       setError(t('common.error'));
       console.error(err);
@@ -73,25 +83,41 @@ export default function TrackOrder() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "pending": return "#f59e0b";
-      case "in_transit": return "#3b82f6";
-      case "out_for_delivery": return "#8b5cf6";
-      case "delivered": return "#10b981";
-      case "failed": return "#ef4444";
-      default: return "#6b7280";
+      case "pending": return "var(--brand-bronze)";
+      case "processing": return "#8c7555";
+      case "in_transit": return "#63766b";
+      case "out_for_delivery": return "#735e44";
+      case "delivered": return "var(--brand-forest)";
+      case "failed": return "#966454";
+      default: return "#737970";
     }
   };
 
   const formatStatus = (status) => {
-    return status.split("_").map(word => 
-      word.charAt(0).toUpperCase() + word.slice(1)
-    ).join(" ");
+    const normalized = (status || "pending").toLowerCase();
+    return t(`tracking.statuses.${normalized}`, { defaultValue: normalized.split("_").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ") });
   };
+  const locale = { en: "en-US", fr: "fr-FR", zh: "zh-CN" }[i18n.resolvedLanguage?.slice(0, 2)] || "en-US";
+
+  const formatXaf = (amount) => new Intl.NumberFormat("fr-CM", {
+    style: "currency", currency: "XAF", maximumFractionDigits: 0,
+  }).format(Number(amount || 0));
+  const isPaid = ["paid", "succeeded", "successful"].includes(String(trackingData?.payment_status).toLowerCase());
+  const shippingAmount = Number(trackingData?.shipping_amount || 0);
+  const shippingState = shippingAmount <= 0 ? t('tracking.no_shipping_fee')
+    : trackingData?.shipping_paid ? t('tracking.shipping_paid') : t('tracking.shipping_unpaid');
+  const deliverySteps = ["pending", "processing", "in_transit", "out_for_delivery", "delivered"];
+  const rawDeliveryStatus = String(trackingData?.status || "pending").toLowerCase().replaceAll("-", "_").replaceAll(" ", "_");
+  const deliveryStatusAliases = { shipped: "in_transit", on_the_way: "in_transit", outfordelivery: "out_for_delivery" };
+  const currentDeliveryStatus = deliveryStatusAliases[rawDeliveryStatus] || rawDeliveryStatus;
+  const currentDeliveryStep = Math.max(0, deliverySteps.indexOf(currentDeliveryStatus));
+  const timelineProgress = `${(currentDeliveryStep / (deliverySteps.length - 1)) * 100}%`;
 
   return (
     <div className="track-order-page">
       <div className="track-container">
         <div className="track-header">
+          <span className="track-kicker">{t("tracking.eyebrow")}</span>
           <h1><MapPin className="inline-block mr-2" size={28} /> {t('tracking.title')}</h1>
           <p>{t('tracking.subtitle')}</p>
         </div>
@@ -100,19 +126,20 @@ export default function TrackOrder() {
           <div className="input-group">
             <input
               type="text"
+              aria-label={t('tracking.tracking_number')}
               placeholder={t('tracking.tracking_number')}
               value={trackingNumber}
               onChange={(e) => setTrackingNumber(e.target.value)}
               className="track-input"
             />
             <button type="submit" className="track-button" disabled={loading}>
-              {loading ? t('common.loading') : t('tracking.track_button')}
+              {loading ? t('common.loading') : <><Search size={17} /> {t('tracking.track_button')}</>}
             </button>
           </div>
         </form>
 
         {error && (
-          <div className="track-error">
+          <div className="track-error" role="alert">
             <span className="error-icon">⚠️</span>
             <p>{error}</p>
           </div>
@@ -120,110 +147,105 @@ export default function TrackOrder() {
 
         {trackingData && (
           <div className="tracking-result">
-            <div className="result-header">
-              <div className="status-badge" style={{ backgroundColor: getStatusColor(trackingData.status) }}>
-                <span className="status-icon">{getStatusIcon(trackingData.status)}</span>
-                <span className="status-text">{formatStatus(trackingData.status)}</span>
-              </div>
-              <div className="tracking-number-display">
-                {t('tracking.tracking_number')}: <strong>{trackingData.tracking_number}</strong>
-              </div>
-            </div>
-
-            <div className="tracking-details">
-              <div className="detail-card">
-                <div className="detail-icon"><User size={24} /></div>
-                <div className="detail-content">
-                  <div className="detail-label">{t('tracking.customer')}</div>
-                  <div className="detail-value">{trackingData.username}</div>
-                </div>
-              </div>
-
-              <div className="detail-card">
-                <div className="detail-icon"><DollarSign size={24} /></div>
-                <div className="detail-content">
-                  <div className="detail-label">{t('tracking.amount')}</div>
-                  <div className="detail-value">
-                    {convert(trackingData.total_amount, currency)} {currency}
+            <div className="tracking-result-main">
+              <div className="result-header">
+                <div className="tracking-status-group">
+                  <div className="status-badge" style={{ backgroundColor: getStatusColor(trackingData.status) }}>
+                    <span className="status-icon">{getStatusIcon(trackingData.status)}</span>
+                    <span className="status-text">{formatStatus(trackingData.status)}</span>
+                  </div>
+                  <div className="tracking-number-display">
+                    <span>{t('tracking.tracking_number')}</span>
+                    <strong>{trackingData.tracking_number}</strong>
                   </div>
                 </div>
-              </div>
-
-              <div className="detail-card">
-                <div className="detail-icon"><Upload size={24} /></div>
-                <div className="detail-content">
-                  <div className="detail-label">{t('tracking.from')}</div>
-                  <div className="detail-value">{trackingData.shipping_from}</div>
+                <div className="tracking-customer">
+                  <span className="tracking-customer-icon"><UserRound size={18} /></span>
+                  <span><small>{t('tracking.customer')}</small><strong>{trackingData.customer_name || t('tracking.customer')}</strong></span>
                 </div>
               </div>
 
-              <div className="detail-card highlight">
-                <div className="detail-icon"><MapPin size={24} /></div>
-                <div className="detail-content">
-                  <div className="detail-label">{t('tracking.location')}</div>
-                  <div className="detail-value">{trackingData.present_location}</div>
+              <section className="tracking-payment" aria-label={t("tracking.payment_details_aria")}>
+                <div className="tracking-section-heading">
+                  <span className="section-icon"><CreditCard size={17} /></span>
+                  <div><span>{t('tracking.payment')}</span><small>{t('tracking.payment_summary')}</small></div>
+                  <span className={`payment-state ${isPaid ? "is-paid" : "is-pending"}`}>
+                    {isPaid ? <BadgeCheck size={15} /> : <span className="payment-state-dot" />}
+                    {isPaid ? t('tracking.paid') : t('tracking.unpaid')}
+                  </span>
                 </div>
-              </div>
+                <div className="payment-amounts">
+                  <div><small>{t('tracking.amount_paid')}</small><strong>{formatXaf(trackingData.amount_paid)}</strong></div>
+                  <div><small>{t('tracking.order_total')}</small><strong>{formatXaf(trackingData.total_amount)}</strong></div>
+                  <div><small>{t('tracking.payment_method')}</small><strong>{trackingData.payment_method || "—"}</strong></div>
+                  <div><small>{t('tracking.shipping_fee')}</small><strong>{formatXaf(shippingAmount)} · {shippingState}</strong></div>
+                </div>
+              </section>
 
-              {trackingData.estimated_delivery && (
+              <div className="tracking-details">
                 <div className="detail-card">
-                  <div className="detail-icon"><Calendar size={24} /></div>
+                  <div className="detail-icon"><Upload size={21} /></div>
                   <div className="detail-content">
-                    <div className="detail-label">{t('tracking.estimated_delivery')}</div>
-                    <div className="detail-value">
-                      {new Date(trackingData.estimated_delivery).toLocaleDateString()}
+                    <div className="detail-label">{t('tracking.from')}</div>
+                    <div className="detail-value">{trackingData.shipping_from}</div>
+                  </div>
+                </div>
+                <div className="detail-card highlight">
+                  <div className="detail-icon"><MapPin size={21} /></div>
+                  <div className="detail-content">
+                    <div className="detail-label">{t('tracking.location')}</div>
+                    <div className="detail-value">{trackingData.present_location}</div>
+                  </div>
+                </div>
+
+                {trackingData.estimated_delivery && (
+                  <div className="detail-card">
+                    <div className="detail-icon"><Calendar size={21} /></div>
+                    <div className="detail-content">
+                      <div className="detail-label">{t('tracking.estimated_delivery')}</div>
+                  <div className="detail-value">{new Date(trackingData.estimated_delivery).toLocaleDateString(locale)}</div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
-              {trackingData.notes && (
-                <div className="detail-card full-width">
-                  <div className="detail-icon"><FileText size={24} /></div>
-                  <div className="detail-content">
-                    <div className="detail-label">{t('tracking.notes')}</div>
-                    <div className="detail-value">{trackingData.notes}</div>
-                  </div>
+              <section className="tracking-products">
+                <div className="tracking-section-heading">
+                  <span className="section-icon"><Package size={17} /></span>
+                  <div><span>{t('tracking.products')}</span><small>{trackingData.items?.length || 0} {(trackingData.items?.length || 0) === 1 ? t('tracking.item') : t('tracking.items')}</small></div>
                 </div>
-              )}
+                <div className="tracking-product-list">
+                  {(trackingData.items || []).map((item, index) => (
+                    <article className="tracking-product" key={`${item.name}-${index}`}>
+                      <div className="tracking-product-image">
+                        {item.image_url ? <img src={item.image_url} alt={item.name} onError={(event) => { event.currentTarget.style.display = "none"; }} /> : <Package size={20} aria-hidden="true" />}
+                      </div>
+                      <div className="tracking-product-info">
+                        <strong>{item.name}</strong>
+                        <span>{t('tracking.quantity')} {item.quantity}{item.options?.size ? ` · ${item.options.size}` : ""}{item.options?.color ? ` · ${item.options.color}` : ""}</span>
+                      </div>
+                      <strong className="tracking-product-price">{formatXaf(item.line_total)}</strong>
+                    </article>
+                  ))}
+                  {!trackingData.items?.length && <p className="tracking-no-products">{t("tracking.products_unavailable")}</p>}
+                </div>
+              </section>
             </div>
 
             <div className="tracking-timeline">
               <h3>{t('tracking.status')}</h3>
-              <div className="timeline">
-                <div className={`timeline-item ${["pending", "in_transit", "out_for_delivery", "delivered"].includes(trackingData.status) ? "completed" : ""}`}>
-                  <div className="timeline-dot"></div>
-                  <div className="timeline-content">
-                    <div className="timeline-title">{t('tracking.statuses.pending')}</div>
-                    <div className="timeline-time">
-                      {new Date(trackingData.created_at).toLocaleString()}
+              <div className="timeline" style={{ "--timeline-progress": timelineProgress }}>
+                {deliverySteps.map((step, index) => {
+                  const stepState = index < currentDeliveryStep ? "completed" : index === currentDeliveryStep ? "active" : "";
+                  return <div className={`timeline-item ${stepState}`} key={step}>
+                    <div className="timeline-dot"></div>
+                    <div className="timeline-content">
+                      <div className="timeline-title">{t(`tracking.statuses.${step}`, { defaultValue: formatStatus(step) })}</div>
+                      {index === 0 && trackingData.created_at && <div className="timeline-time">{new Date(trackingData.created_at).toLocaleString(locale)}</div>}
+                      {index > 0 && <div className="timeline-desc">{t(`tracking.statuses.${step}`, { defaultValue: formatStatus(step) })}</div>}
                     </div>
-                  </div>
-                </div>
-
-                <div className={`timeline-item ${["in_transit", "out_for_delivery", "delivered"].includes(trackingData.status) ? "completed" : trackingData.status === "pending" ? "active" : ""}`}>
-                  <div className="timeline-dot"></div>
-                  <div className="timeline-content">
-                    <div className="timeline-title">{t('tracking.statuses.in_transit')}</div>
-                    <div className="timeline-desc">{t('tracking.statuses.in_transit')}</div>
-                  </div>
-                </div>
-
-                <div className={`timeline-item ${["out_for_delivery", "delivered"].includes(trackingData.status) ? "completed" : trackingData.status === "in_transit" ? "active" : ""}`}>
-                  <div className="timeline-dot"></div>
-                  <div className="timeline-content">
-                    <div className="timeline-title">{t('tracking.statuses.out_for_delivery')}</div>
-                    <div className="timeline-desc">{t('tracking.statuses.out_for_delivery')}</div>
-                  </div>
-                </div>
-
-                <div className={`timeline-item ${trackingData.status === "delivered" ? "completed" : trackingData.status === "out_for_delivery" ? "active" : ""}`}>
-                  <div className="timeline-dot"></div>
-                  <div className="timeline-content">
-                    <div className="timeline-title">{t('tracking.statuses.delivered')}</div>
-                    <div className="timeline-desc">{t('tracking.statuses.delivered')}</div>
-                  </div>
-                </div>
+                  </div>;
+                })}
               </div>
             </div>
 

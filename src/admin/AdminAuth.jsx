@@ -1,3 +1,4 @@
+import { showSiteModal as alert } from "../utils/siteModal";
 // src/admin/AdminAuth.jsx
 import React, { useState } from "react";
 import { supabase } from "../lib/supabase";

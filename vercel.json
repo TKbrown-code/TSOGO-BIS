@@ -1,5 +1,21 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
+    { "source": "/shop", "destination": "/shop/index.html" },
+    { "source": "/about", "destination": "/about/index.html" },
+    { "source": "/contact", "destination": "/contact/index.html" },
+    { "source": "/logistics", "destination": "/logistics/index.html" },
+    { "source": "/terms-and-policies", "destination": "/terms-and-policies/index.html" },
+    { "source": "/checkout", "destination": "/checkout/index.html" },
+    { "source": "/orders", "destination": "/orders/index.html" },
+    { "source": "/dashboard", "destination": "/dashboard/index.html" },
+    { "source": "/SignUp", "destination": "/SignUp/index.html" },
+    { "source": "/reset-password", "destination": "/reset-password/index.html" },
+    { "source": "/fapshi", "destination": "/fapshi/index.html" },
+    { "source": "/track", "destination": "/track/index.html" },
+    { "source": "/track/:trackingId", "destination": "/track/index.html" },
+    { "source": "/ProductDetails/:id/:name", "destination": "/ProductDetails/:id/:name/index.html" },
+    { "source": "/referrals/:encodedUserId/:userIdPrefix", "destination": "/referrals/index.html" },
+    { "source": "/admin", "destination": "/admin/index.html" },
+    { "source": "/admin/:path*", "destination": "/admin/index.html" }
   ]
 }

@@ -5,8 +5,10 @@ import en from "./en.json";
 import fr from "./fr.json";
 import zh from "./zh.json";
 
-// Get saved language from cookie or default to 'en'
-const savedLanguage = Cookies.get("language") || "en";
+// Respect an existing choice; use French for first-time visitors.
+const savedLanguage = Cookies.get("language")
+  || (typeof localStorage !== "undefined" ? localStorage.getItem("language") : null)
+  || "fr";
 
 i18n.use(initReactI18next).init({
   resources: {
@@ -21,7 +23,8 @@ i18n.use(initReactI18next).init({
 
 // Save language to cookie whenever it changes
 i18n.on("languageChanged", (lng) => {
-  Cookies.set("language", lng, { expires: 365 }); // Save for 1 year
+  Cookies.set("language", lng, { expires: 365 });
+  if (typeof localStorage !== "undefined") localStorage.setItem("language", lng);
 });
 
 export default i18n;

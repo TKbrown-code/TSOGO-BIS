@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useCart } from "../context/CartContext";
@@ -6,18 +7,25 @@ import { useUserContext } from "../context/useUserContext";
 import { useCurrencyContext } from "../context/CurrencyContext";
 import "../styles/productDetails.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUser, faTruck, faTags, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faUser, faTruck, faTags } from "@fortawesome/free-solid-svg-icons";
 import { motion } from "framer-motion";
 import FallBackImage from "../assets/imagefallback.jpg";
+import { useModalMessage } from "../context/ModalMessageContext";
+import { MessageSquareText, Star } from "lucide-react";
 
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_KEY;
+const productDataCache = new Map();
+const productRequestCache = new Map();
+const PRODUCT_CACHE_TTL_MS = 30_000;
 
-export default function ProductDetailsPage() {
+export default function ProductDetailsPage({ onReady }) {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addToCart, clearCart } = useCart();
+  const { addToCart, clearCart, setCartOpen } = useCart();
   const { profile, user } = useUserContext();
+  const { showAlert } = useModalMessage();
   const { currency, convert } = useCurrencyContext();
+  const { t } = useTranslation();
 
   const [product, setProduct] = useState(null);
   const [images, setImages] = useState([]);
@@ -42,20 +50,45 @@ export default function ProductDetailsPage() {
   const [loading, setLoading] = useState(false);
   const [hasPurchased, setHasPurchased] = useState(false);
   const [checkingPurchase, setCheckingPurchase] = useState(true);
+  const [productError, setProductError] = useState(false);
 
   // Load product data
   useEffect(() => {
     if (!id) return;
+    let active = true;
+    const productKey = String(id);
+    setProductError(false);
+    setProduct((current) => current && String(current.id) !== productKey ? null : current);
 
     async function fetchProduct() {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*, product_images(image_path), category_id(name)")
-        .eq("id", id)
-        .single();
+      let data = null;
+      let error = null;
+      const cachedProduct = productDataCache.get(productKey);
 
-      if (error) {
+      if (cachedProduct && Date.now() - cachedProduct.savedAt < PRODUCT_CACHE_TTL_MS) {
+        data = cachedProduct.data;
+      } else {
+        let request = productRequestCache.get(productKey);
+        if (!request) {
+          request = supabase.from("products")
+            .select("*, product_images(image_url), category_id(name)")
+            .eq("id", id)
+            .single()
+            .then((result) => {
+              if (result.data && !result.error) productDataCache.set(productKey, { data: result.data, savedAt: Date.now() });
+              return result;
+            })
+            .finally(() => productRequestCache.delete(productKey));
+          productRequestCache.set(productKey, request);
+        }
+        ({ data, error } = await request);
+      }
+
+      if (!active) return;
+
+      if (error || !data) {
         console.error("Error fetching product:", error);
+        setProductError(true);
         return;
       }
 
@@ -72,11 +105,12 @@ export default function ProductDetailsPage() {
         console.error("Invalid product options JSON:", err);
         parsedOptions = {};
       }
+      if (!parsedOptions || !Object.keys(parsedOptions).length) parsedOptions = { Item: { Standard: {} } };
 
       const imgs = (data.product_images || []).map(img => {
         return {
-          url: img.image_path || img.path || img.image_url,
-          path: img.image_path || img.path || img.image_url
+          url: img.image_url || img.path || img.image_url,
+          path: img.image_url || img.path || img.image_url
         };
       });
       setImages(imgs);
@@ -97,15 +131,27 @@ export default function ProductDetailsPage() {
       setQuantities({});
 
       // Set shipping methods
-      const shippingData = typeof data.shipping_methods === "string" ? 
-        JSON.parse(data.shipping_methods) : 
-        (data.shipping_methods || {});
+      let shippingData = {};
+      try {
+        shippingData = typeof data.shipping_methods === "string" ? JSON.parse(data.shipping_methods) : (data.shipping_methods || {});
+      } catch (err) {
+        console.error("Invalid shipping methods JSON:", err);
+      }
       setShippingMethods(shippingData);
       setSelectedShipping(Object.keys(shippingData)[0] || "");
     }
 
-    fetchProduct();
+    fetchProduct().catch((fetchError) => {
+      if (!active) return;
+      console.error("Unexpected product loading error:", fetchError);
+      setProductError(true);
+    });
+    return () => { active = false; };
   }, [id]);
+
+  useEffect(() => {
+    if (product || productError) onReady?.();
+  }, [product, productError, onReady]);
 
   // Fetch reviews
   useEffect(() => {
@@ -281,7 +327,7 @@ export default function ProductDetailsPage() {
 
   // Add to cart handler
   const handleAddToCart = async () => {
-    if (!profile?.user_id) return alert("Please log in first.");
+    if (!user) { showAlert("Sign in to add this item to your bag and continue to checkout.", "Sign in to continue", "warning"); navigate("/SignUp"); return; }
 
     const cartItems = [];
     const methodPrice = parseFloat(shippingMethods[selectedShipping] || 0);
@@ -376,11 +422,12 @@ export default function ProductDetailsPage() {
     });
 
     if (cartItems.length === 0) {
-      return alert("Please select at least one option and quantity");
+      return showAlert("Please select at least one option and quantity.", "Choose your options", "warning");
     }
 
     
     // Add all items to cart
+    let allAdded = true;
     for (const item of cartItems) {
       const success = await addToCart(item.product, item.quantity, {
         selectedColor: item.selectedColor,
@@ -392,11 +439,10 @@ export default function ProductDetailsPage() {
       
       if (!success) {
         console.error('Failed to add item:', item);
+        allAdded = false;
       }
     }
-    
-    alert(`✅ ${cartItems.length} product(s) added to cart!`);
-    // Cart will not open automatically
+    if (allAdded) setCartOpen(true);
   };
 
   // Checkout handler
@@ -525,7 +571,7 @@ export default function ProductDetailsPage() {
       setPaymentModalOpen(true);
     } catch (err) {
       console.error("Checkout error:", err);
-      alert(err.message || "Failed to process checkout");
+      showAlert(err.message || "Failed to process checkout", "Checkout could not start", "error");
     }
   };
 
@@ -538,11 +584,11 @@ export default function ProductDetailsPage() {
         (payload) => {
           const updatedCheckout = payload.new;
           if (updatedCheckout.status === "paid") {
-            alert("Payment confirmed!");
+            showAlert("Your payment has been confirmed.", "Payment confirmed");
             clearCart();
             navigate("/orders");
           } else if (updatedCheckout.status === "failed") {
-            alert("Payment failed. Please try again.");
+            showAlert("Payment failed. Please try again.", "Payment failed", "error");
           }
         }
       )
@@ -554,7 +600,8 @@ export default function ProductDetailsPage() {
   }, []);
 
   if (!product) {
-    return <p>Loading product...</p>;
+    if (!productError) return <main className="product-detail-skeleton" aria-label={t("product_details.loading_product")} aria-busy="true" style={{ minHeight: "calc(100vh - 60px)" }}><div className="detail-skeleton-gallery"><div className="detail-skeleton-image" /><div className="detail-skeleton-thumbnails"><i /><i /><i /><i /></div></div><div className="detail-skeleton-info"><i className="detail-skeleton-eyebrow" /><i className="detail-skeleton-title" /><i className="detail-skeleton-copy" /><i className="detail-skeleton-copy short" /><div className="detail-skeleton-meta"><i /><i /><i /></div><i className="detail-skeleton-option" /><i className="detail-skeleton-row" /><i className="detail-skeleton-select" /><i className="detail-skeleton-total" /><i className="detail-skeleton-button" /></div></main>;
+    return <main className="product-state-page"><section className="product-state-card" role="alert"><span className="product-state-mark">T</span><h1>{t("product_details.product_not_found")}</h1><p>{t("product_details.product_unavailable")}</p><button type="button" onClick={() => navigate("/shop")}>{t("product_details.explore_shop")}</button></section></main>;
   }
 
   // Image loading handlers
@@ -581,23 +628,11 @@ export default function ProductDetailsPage() {
     return diffMinutes < 5; // editable for 5 minutes
   };
 
-  const renderStars = (rating) => {
-    const fullStars = Math.floor(rating);
-    const halfStar = rating % 1 >= 0.5;
-    const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
-
-    return (
-      <>
-        {"⭐".repeat(fullStars)}
-        {halfStar && "✩"}
-        {"☆".repeat(emptyStars)}
-      </>
-    );
-  };
+  const renderStars = (value) => <span className="review-star-row" aria-label={t("product_details.rating_out_of_five", { rating: value })}>{Array.from({ length: 5 }, (_, index) => <Star key={index} size={15} fill={index < Math.round(value) ? "currentColor" : "none"} />)}</span>;
 
   // Render product details
   return (
-    <div className="premium-details-container">
+    <div className="premium-details-container" style={{ margin: 0, paddingTop: 16, width: "100%", maxWidth: "none" }}>
       {/* Left side - Product Images */}
       <div className="right">
         <div className="premium-gallery">
@@ -611,12 +646,12 @@ export default function ProductDetailsPage() {
               transition={{ duration: 0.3 }}
             >
               <img 
-                src={images[currentImage]?.url} 
+                src={images[currentImage]?.url || FallBackImage}
                 alt={product.name} 
                 className={`zoomable-img ${imageStates[images[currentImage]?.path]?.loaded ? 'loaded' : 'loading'} ${imageStates[images[currentImage]?.path]?.error ? 'error' : ''}`}
                 onLoad={() => handleImageLoad(images[currentImage]?.path)}
                 onError={(e) => handleImageError(images[currentImage]?.path, e)}
-                onClick={(e) => { window.open(images[currentImage]?.path, '_blank'); }}
+                onClick={() => images[currentImage]?.url && window.open(images[currentImage]?.url, '_blank', 'noopener,noreferrer')}
               />
             </motion.div>
             
@@ -637,6 +672,8 @@ export default function ProductDetailsPage() {
             </button>
           </div>
           
+          {/* Thumbnails */}
+          {images.length > 1 && <div className="product-thumbnails" aria-label="Product photos">{images.map((img, idx) => <button type="button" key={`${img.url}-${idx}`} className={idx === currentImage ? "is-active" : ""} onClick={() => setCurrentImage(idx)} aria-label={`Show product photo ${idx + 1}`}><img src={img.url || FallBackImage} alt="" /></button>)}</div>}
           {/* Dots Indicator */}
           <div className="carousel-dots">
             {images.map((img, idx) => (
@@ -651,15 +688,13 @@ export default function ProductDetailsPage() {
 
         {/* Reviews Section */}
         <div className="premium-reviews">
-          <h2>Customer Reviews</h2>
+          <h2>{t("product_details.reviews_title")}</h2>
           {rating ? (
             <div className="average-rating">
               <span>{renderStars(rating)}</span>
               <span className="rating-number">({rating && typeof rating === 'number' ? rating.toFixed(1) : rating})</span>
             </div>
-          ) : (
-            <p>No ratings yet</p>
-          )}
+          ) : null}
 
           {/* Existing reviews */}
           {reviews.length > 0 ? (
@@ -675,7 +710,7 @@ export default function ProductDetailsPage() {
                     </div>
                   </div>
                   <div className="review-stars">
-                    <span className="stars">⭐ {review.rating}</span>
+                    <span className="stars"><Star size={14} fill="currentColor" /> {review.rating}</span>
                     {profile?.user_id === review.user_id && canEdit(review.created_at) && (
                       <button
                         className="editbtn"
@@ -691,7 +726,7 @@ export default function ProductDetailsPage() {
                           }
                         }}
                       >
-                        {editingReviewId === review.id ? "Cancel" : "Edit"}
+                        {editingReviewId === review.id ? t("product_details.cancel") : t("product_details.edit_review")}
                       </button>
                     )}
                   </div>
@@ -703,7 +738,7 @@ export default function ProductDetailsPage() {
                       e.preventDefault();
                       const updateText = reviewUpdate[review.id]?.trim();
                       if (!updateText) {
-                        alert("Please enter a valid review");
+                        showAlert("Please enter a valid review.", "Review details needed", "warning");
                         return;
                       }
 
@@ -718,7 +753,7 @@ export default function ProductDetailsPage() {
 
                       if (error) {
                         console.error("Error updating review:", error);
-                        alert("Failed to update review");
+                        showAlert("Failed to update review.", "Review could not be updated", "error");
                       } else if (data && data.length > 0) {
                         setReviews(prev =>
                           prev.map((r) =>
@@ -726,7 +761,7 @@ export default function ProductDetailsPage() {
                           )
                         );
                         setEditingReviewId(null);
-                        alert("Review updated successfully!");
+                        showAlert("Your review has been updated.", "Review updated");
                       }
                     }}
                   >
@@ -738,7 +773,7 @@ export default function ProductDetailsPage() {
                           [review.id]: e.target.value
                         }))
                       }
-                      placeholder="Edit your review..."
+                      placeholder={t("product_details.review_placeholder")}
                       required
                     />
                     <div className="form-actions">
@@ -746,16 +781,16 @@ export default function ProductDetailsPage() {
                         type="button"
                         onClick={() => setEditingReviewId(null)}
                       >
-                        Cancel
+                        {t("product_details.cancel")}
                       </button>
-                      <button type="submit">Update</button>
+                      <button type="submit">{t("product_details.update")}</button>
                     </div>
                   </form>
                 )}
               </div>
             ))
           ) : (
-            <p>No reviews yet.</p>
+            <div className="reviews-empty-state" role="img" aria-label={t("product_details.no_reviews")}><MessageSquareText size={22} /></div>
           )}
 
           {/* View More/Less Toggle */}
@@ -764,7 +799,7 @@ export default function ProductDetailsPage() {
               className="view-toggle-btn"
               onClick={toggleReviews}
             >
-              {showAllReviews ? `View Less (Show 5)` : `View All ${allReviews.length} Reviews`}
+              {showAllReviews ? t("product_details.view_less") : t("product_details.view_all", { count: allReviews.length })}
             </button>
           )}
 
@@ -773,7 +808,7 @@ export default function ProductDetailsPage() {
             <>
               {checkingPurchase ? (
                 <div className="review-form">
-                  <p style={{ textAlign: "center", color: "#666" }}>Checking purchase history...</p>
+                  <p style={{ textAlign: "center", color: "#666" }}>{t("product_details.checking_purchase")}</p>
                 </div>
               ) : hasPurchased ? (
                 <form
@@ -781,7 +816,7 @@ export default function ProductDetailsPage() {
                   onSubmit={async (e) => {
                     e.preventDefault();
                     if (!newReview.comment.trim()) {
-                      alert("Please write a review");
+                      showAlert("Please write a review.", "Review details needed", "warning");
                       return;
                     }
 
@@ -800,7 +835,7 @@ export default function ProductDetailsPage() {
 
                     if (error) {
                       console.error("Error adding review:", error);
-                      alert("Failed to add review");
+                      showAlert("Failed to add review.", "Review could not be added", "error");
                     } else if (data && data.length > 0) {
                       setAllReviews((prev) => [data[0], ...prev]);
                       setReviews((prev) => {
@@ -808,7 +843,7 @@ export default function ProductDetailsPage() {
                         return showAllReviews ? newReviews : newReviews.slice(0, 5);
                       });
                       setNewReview({ rating: 5, comment: "" });
-                      alert("Review added successfully!");
+                      showAlert("Your review has been added.", "Review submitted");
 
                       // Update product rating
                       const { data: reviewsData } = await supabase
@@ -829,9 +864,9 @@ export default function ProductDetailsPage() {
                     }
                   }}
                 >
-                  <h3>Write a Review</h3>
+                  <h3>{t("product_details.write_review")}</h3>
                   <div className="rating-input">
-                    <span>Rating: </span>
+                    <span>{t("product_details.rating_label")}: </span>
                     {[1, 2, 3, 4, 5].map((star) => (
                       <span
                         key={star}
@@ -849,11 +884,11 @@ export default function ProductDetailsPage() {
                     onChange={(e) =>
                       setNewReview({ ...newReview, comment: e.target.value })
                     }
-                    placeholder="Share your thoughts about this product..."
+                    placeholder={t("product_details.review_placeholder")}
                     required
                     className="rating-textarea"
                   />
-                  <button className="review-btn" type="submit">Submit Review</button>
+                  <button className="review-btn" type="submit">{t("product_details.submit_review")}</button>
                 </form>
               ) : (
                 <div className="review-form" style={{ 
@@ -863,9 +898,9 @@ export default function ProductDetailsPage() {
                   padding: "20px",
                   textAlign: "center"
                 }}>
-                  <h3 style={{ color: "#856404", marginBottom: "10px" }}>Purchase Required</h3>
+                  <h3 style={{ color: "#856404", marginBottom: "10px" }}>{t("product_details.purchase_required")}</h3>
                   <p style={{ color: "#856404", margin: 0 }}>
-                    You need to purchase this product before you can leave a review.
+                    {t("product_details.purchase_required_copy")}
                   </p>
                 </div>
               )}
@@ -876,19 +911,20 @@ export default function ProductDetailsPage() {
 
       {/* Right side - Product Info */}
       <div className="premium-info">
+        <p className="product-eyebrow">{t("product_details.eyebrow")}</p>
         <h1 className="p-title">{product.name}</h1>
         <p className="p-desc">{product.description}</p>
 
         <div className="p-meta">
           <p>
-            <FontAwesomeIcon icon={faTruck} /> Shipped from:{" "}
+            <FontAwesomeIcon icon={faTruck} /> {t("product_details.shipped_from")}{" "}
             <strong>{product.shipped_from}</strong>
           </p>
-          <p>Base Weight: {product.weight && !isNaN(product.weight) ? parseFloat(product.weight).toFixed(2) : product.weight} kg</p>
-          <p>Base Price: {convert(product.price, currency)} {currency}</p>
+          <p>{t("product_details.base_weight")} <strong>{product.weight && !isNaN(product.weight) ? parseFloat(product.weight).toFixed(2) : product.weight || "0.00"} kg</strong></p>
+          <p>{t("product_details.base_price")} <strong>{convert(product.price, currency)} {currency}</strong></p>
           {product.category_id?.name && (
             <p>
-              <FontAwesomeIcon icon={faTags} /> Category:{" "}
+              <FontAwesomeIcon icon={faTags} /> {t("product_details.category")}{" "}
               {product.category_id.name}
             </p>
           )}
@@ -899,7 +935,7 @@ export default function ProductDetailsPage() {
           Object.entries(product.options).map(([optionName, optionValues]) => (
             <div key={optionName}>
               <div className="p-options">
-                <p>{optionName.charAt(0).toUpperCase() + optionName.slice(1)}:</p>
+                <p>{t("product_details.choose_option", { option: optionName.charAt(0).toUpperCase() + optionName.slice(1) })}</p>
                 {Object.entries(optionValues).map(([optionValue]) => (
                   <button
                     key={optionValue}
@@ -914,7 +950,7 @@ export default function ProductDetailsPage() {
               {/* Size/Sub-options Selection with Quantities */}
               {selectedColor && optionValues[selectedColor] && (
                 <div className="p-sizes">
-                  <h3>Options</h3>
+                  <h3>{t("product_details.options")}</h3>
                   {(() => {
                     const selectedData = optionValues[selectedColor];
                     const basePrice = parseFloat(product.price || 0);
@@ -957,14 +993,14 @@ export default function ProductDetailsPage() {
                             <div className="options">
                               <span className="size-name">{itemName}</span>
                               <span className="unit-price">
-                                Price: {convert(unitPrice, currency)} {currency}
+                                {t("product_details.price")}: {convert(unitPrice, currency)} {currency}
                               </span>
                               <span className="unit-weight">
-                                Weight: {typeof unitWeight === 'number' ? unitWeight.toFixed(2) : unitWeight} kg
+                                {t("product_details.weight")}: {typeof unitWeight === 'number' ? unitWeight.toFixed(2) : unitWeight} kg
                               </span>
                             </div>
                             <div className="buttonsq">
-                              <button 
+                              <button aria-label={t("product_details.decrease_quantity")}
                                 type="button"
                                 onClick={(e) => {
                                   e.preventDefault();
@@ -974,7 +1010,7 @@ export default function ProductDetailsPage() {
                                 -
                               </button>
                               <span>{quantity}</span>
-                              <button 
+                              <button aria-label={t("product_details.increase_quantity")}
                                 type="button"
                                 onClick={(e) => {
                                   e.preventDefault();
@@ -998,11 +1034,11 @@ export default function ProductDetailsPage() {
                       <div className="size-item">
                         <div className="options">
                           <span className="size-name">{selectedColor}</span>
-                          <span className="unit-price">
-                            Price: {convert(unitPrice, currency)} {currency}
+                            <span className="unit-price">
+                            {t("product_details.price")}: {convert(unitPrice, currency)} {currency}
                           </span>
-                          <span className="unit-weight">
-                            Weight: {typeof unitWeight === 'number' ? unitWeight.toFixed(2) : unitWeight} kg
+                            <span className="unit-weight">
+                            {t("product_details.weight")}: {typeof unitWeight === 'number' ? unitWeight.toFixed(2) : unitWeight} kg
                           </span>
                         </div>
                         <div className="buttonsq">
@@ -1037,7 +1073,7 @@ export default function ProductDetailsPage() {
         {/* Shipping Method */}
         <div className="p-shipping">
           <div className="shipping-header">
-            <p>Shipping Method:</p>
+            <p>{t("product_details.shipping_method")}</p>
             <select
               value={selectedShipping}
               onChange={(e) => setSelectedShipping(e.target.value)}
@@ -1050,14 +1086,14 @@ export default function ProductDetailsPage() {
               ))}
             </select>
           </div>
-          <p>Shipping Fee: {convert(shippingFee, currency)} {currency}</p>
-          <p>Total Weight: {typeof totalWeight === 'number' ? totalWeight.toFixed(2) : totalWeight} kg</p>
+          <p>{t("product_details.shipping_fee")}: {convert(shippingFee, currency)} {currency}</p>
+          <p>{t("product_details.total_weight")}: {typeof totalWeight === 'number' ? totalWeight.toFixed(2) : totalWeight} kg</p>
         </div>
 
         {/* Total Price */}
         <div className="p-price">
           <h2>
-            Grand Total: {convert(typeof (totalPrice + shippingFee) === 'number' ? (totalPrice + shippingFee).toFixed(0) : totalPrice + shippingFee, currency)}{" "}
+            {t("product_details.grand_total")}: {convert(typeof (totalPrice + shippingFee) === 'number' ? (totalPrice + shippingFee).toFixed(0) : totalPrice + shippingFee, currency)}{" "}
             {currency}
           </h2>
         </div>
@@ -1065,14 +1101,7 @@ export default function ProductDetailsPage() {
         {/* Action Buttons */}
         <div className="action-buttons">
           <button className="addtocartbtn" onClick={handleAddToCart}>
-            Add to Cart
-          </button>
-          <button
-            className="buy-btn"
-            onClick={handleCheckout}
-            disabled={Object.values(quantities).every(qty => qty === 0)}
-          >
-            Buy Now
+            {t("product_details.add_to_bag")}
           </button>
         </div>
       </div>

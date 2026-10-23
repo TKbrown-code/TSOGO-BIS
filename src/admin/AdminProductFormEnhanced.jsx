@@ -1,7 +1,8 @@
+import { showSiteModal as alert } from "../utils/siteModal";
 // src/admin/AdminProductFormEnhanced.jsx
 import React, { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
-import { FileText, DollarSign, Truck, Palette, Image, Tag, X } from "lucide-react";
+import { FileText, DollarSign, Truck, Palette, Image, Tag, X, Plus, Save, Upload, ImagePlus, Star } from "lucide-react";
 import "../styles/AdminProductForm.css";
 
 export default function AdminProductFormEnhanced({ product = {}, onSaved, onCancel }) {
@@ -17,12 +18,16 @@ export default function AdminProductFormEnhanced({ product = {}, onSaved, onCanc
   const [weight, setWeight] = useState("");
   const [shippedFrom, setShippedFrom] = useState("");
   const [inStock, setInStock] = useState("In Stock");
+  const [stockQuantity, setStockQuantity] = useState("0");
   const [tags, setTags] = useState([]);
   
   // Images
   const [images, setImages] = useState([]);
   const [files, setFiles] = useState([]);
-  const [primaryImageIndex, setPrimaryImageIndex] = useState(0);
+  const [filePreviews, setFilePreviews] = useState([]);
+  const [removedImages, setRemovedImages] = useState([]);
+  const [primaryImageIndex, setPrimaryImageIndex] = useState(null);
+  const [primaryExistingImageId, setPrimaryExistingImageId] = useState(null);
   
   // Options builder - single option group
   const [hasOptions, setHasOptions] = useState(false);
@@ -75,9 +80,14 @@ export default function AdminProductFormEnhanced({ product = {}, onSaved, onCanc
       setSubcategoryId(resolvedSubcategoryId);
       setWeight(product.weight || "");
       setShippedFrom(product.shipped_from || "");
-      setInStock(product.in_Stock || "In Stock");
+      setInStock(product.in_Stock === false || Number(product.stock_quantity) === 0 ? "Out of Stock" : "In Stock");
+      setStockQuantity(String(product.stock_quantity ?? 0));
       setTags(product.product_tags?.map(t => t.tag) || []);
       setImages(product.images || []);
+      setFiles([]);
+      setRemovedImages([]);
+      setPrimaryExistingImageId(product.images?.find((image) => image.is_primary)?.id ?? null);
+      setPrimaryImageIndex(null);
       
       // Parse options
       if (product.options && typeof product.options === 'object') {
@@ -122,6 +132,25 @@ export default function AdminProductFormEnhanced({ product = {}, onSaved, onCanc
       }
     }
   }, [product]);
+
+  useEffect(() => {
+    const previews = files.map((file) => ({ file, url: URL.createObjectURL(file) }));
+    setFilePreviews(previews);
+    return () => previews.forEach(({ url }) => URL.revokeObjectURL(url));
+  }, [files]);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape" && !loading) onCancel?.();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [loading, onCancel]);
 
 
   // Build options JSON
@@ -205,16 +234,14 @@ export default function AdminProductFormEnhanced({ product = {}, onSaved, onCanc
     const uploadedImages = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      const filePath = `${productId}/${Date.now()}_${file.name}`;
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const filePath = `${productId}/${Date.now()}_${i}_${safeName}`;
 
       const { error: uploadError } = await supabase.storage
         .from("products-images")
         .upload(filePath, file, { cacheControl: "3600", upsert: false });
 
-      if (uploadError) {
-        console.error("Upload error:", uploadError.message);
-        continue;
-      }
+      if (uploadError) throw uploadError;
 
       const { data } = supabase.storage
         .from("products-images")
@@ -224,18 +251,56 @@ export default function AdminProductFormEnhanced({ product = {}, onSaved, onCanc
         .from("product_images")
         .insert({
           product_id: productId,
-          image_path: data.publicUrl,
+          storage_path: filePath,
+          image_url: data.publicUrl,
           is_primary: i === primaryImageIndex
         })
         .select()
         .single();
 
-      if (insertError) console.error("Insert image record error:", insertError.message);
+      if (insertError) {
+        await supabase.storage.from("products-images").remove([filePath]);
+        throw insertError;
+      }
 
       uploadedImages.push({ ...imgRecord, publicUrl: data.publicUrl });
     }
 
     return uploadedImages;
+  }
+
+  function handleImageFiles(fileList) {
+    const selected = Array.from(fileList || []);
+    const validFiles = selected.filter((file) => {
+      if (!file.type.startsWith("image/")) {
+        alert(`${file.name} is not an image file.`, "Unsupported file", "warning");
+        return false;
+      }
+      if (file.size > 8 * 1024 * 1024) {
+        alert(`${file.name} is larger than 8 MB. Choose a smaller image.`, "Image is too large", "warning");
+        return false;
+      }
+      return true;
+    });
+    if (!validFiles.length) return;
+    if (primaryExistingImageId === null && primaryImageIndex === null) setPrimaryImageIndex(files.length);
+    setFiles((current) => [...current, ...validFiles]);
+  }
+
+  function removeNewImage(index) {
+    setFiles((current) => current.filter((_, fileIndex) => fileIndex !== index));
+    if (primaryImageIndex === index) setPrimaryImageIndex(files.length > 1 ? (index === 0 ? 0 : index - 1) : null);
+    else if (primaryImageIndex !== null && primaryImageIndex > index) setPrimaryImageIndex(primaryImageIndex - 1);
+  }
+
+  function removeExistingImage(image) {
+    const next = images.filter((item) => item.id !== image.id);
+    setImages(next);
+    if (primaryExistingImageId === image.id) {
+      setPrimaryExistingImageId(next[0]?.id ?? null);
+      if (!next.length && files.length) setPrimaryImageIndex(0);
+    }
+    if (image.id) setRemovedImages((current) => [...current, image]);
   }
 
   // Toggle tag
@@ -266,7 +331,8 @@ export default function AdminProductFormEnhanced({ product = {}, onSaved, onCanc
         subcategory_id: resolvedSubcategory ? parseInt(resolvedSubcategory) : null,
         weight: weight ? parseFloat(weight) : null,
         shipped_from: shippedFrom || null,
-        in_Stock: inStock ? true : false,
+        in_Stock: inStock === "In Stock",
+        stock_quantity: inStock === "Out of Stock" ? 0 : Math.max(0, Number.parseInt(stockQuantity, 10) || 0),
         options: buildOptionsJson(),
         shipping_methods: buildShippingMethodsJson()
       };
@@ -284,9 +350,26 @@ export default function AdminProductFormEnhanced({ product = {}, onSaved, onCanc
           throw updateError;
         }
 
+        if (removedImages.length) {
+          const { error: imageDeleteError } = await supabase.from("product_images").delete().in("id", removedImages.map((image) => image.id));
+          if (imageDeleteError) throw imageDeleteError;
+          const storagePaths = removedImages.map((image) => image.storage_path).filter(Boolean);
+          if (storagePaths.length) {
+            const { error: storageError } = await supabase.storage.from("products-images").remove(storagePaths);
+            if (storageError) console.error("Could not remove one or more image files:", storageError.message);
+          }
+        }
+
+        const { error: resetPrimaryError } = await supabase.from("product_images").update({ is_primary: false }).eq("product_id", productId);
+        if (resetPrimaryError) throw resetPrimaryError;
+        if (primaryExistingImageId && images.some((image) => image.id === primaryExistingImageId)) {
+          const { error: primaryUpdateError } = await supabase.from("product_images").update({ is_primary: true }).eq("id", primaryExistingImageId);
+          if (primaryUpdateError) throw primaryUpdateError;
+        }
+
         if (files.length) {
           const newImages = await uploadFiles(productId, files);
-          setImages(prev => [...prev, ...newImages]);
+          setImages((prev) => [...prev, ...newImages]);
         }
 
         // Update tags
@@ -316,22 +399,22 @@ export default function AdminProductFormEnhanced({ product = {}, onSaved, onCanc
       }
 
       alert("Product saved successfully!");
+      setFiles([]);
       onSaved?.();
     } catch (err) {
       console.error(err);
       alert("Save failed: " + err.message);
     } finally {
       setLoading(false);
-      setFiles([]);
     }
   }
 
   return (
     <div className="product-form-modal">
-      <div className="product-form-container">
+      <div className="product-form-container" role="dialog" aria-modal="true" aria-labelledby="product-form-title">
         <div className="form-header">
-          <h2>{product.id ? "Edit Product" : "Create New Product"}</h2>
-          <button type="button" onClick={onCancel} className="close-btn"><X size={20} /></button>
+          <div className="form-heading-copy"><span className="form-heading-kicker">CATALOG EDITOR</span><h2 id="product-form-title">{product.id ? "Edit product" : "Create new product"}</h2><p>Manage product details, pricing, inventory, and storefront images.</p></div>
+          <button type="button" onClick={onCancel} className="close-btn" aria-label="Close product editor" title="Close"><X size={20} /></button>
         </div>
 
         <form onSubmit={handleSave} className="product-form">
@@ -380,11 +463,31 @@ export default function AdminProductFormEnhanced({ product = {}, onSaved, onCanc
 
               <div className="form-group">
                 <label>Stock Status</label>
-                <select value={inStock} onChange={e => setInStock(e.target.value)}>
+                <select value={inStock} onChange={e => {
+                  setInStock(e.target.value);
+                  if (e.target.value === "Out of Stock") setStockQuantity("0");
+                }}>
                   <option value="In Stock">In Stock</option>
                   <option value="Out of Stock">Out of Stock</option>
                   <option value="Pre-Order">Pre-Order</option>
                 </select>
+              </div>
+              <div className="form-group">
+                <label htmlFor="product-stock-quantity">Available quantity</label>
+                <input
+                  id="product-stock-quantity"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={stockQuantity}
+                  onChange={(e) => {
+                    const nextQuantity = e.target.value;
+                    setStockQuantity(nextQuantity);
+                    if (Number(nextQuantity) > 0) setInStock("In Stock");
+                    else if (nextQuantity === "0") setInStock("Out of Stock");
+                  }}
+                  placeholder="0"
+                />
               </div>
             </div>
 
@@ -443,7 +546,7 @@ export default function AdminProductFormEnhanced({ product = {}, onSaved, onCanc
               <div className="subsection-header">
                 <h4><Truck className="inline-block mr-2" size={18} /> Shipping Methods</h4>
                 <button type="button" onClick={addShippingMethod} className="btn-add">
-                  + Add Method
+                  <Plus size={15} /> Add method
                 </button>
               </div>
 
@@ -638,16 +741,17 @@ export default function AdminProductFormEnhanced({ product = {}, onSaved, onCanc
                 <label>Existing Images</label>
                 <div className="images-grid">
                   {images.map((img, i) => (
-                    <div key={img.id || i} className="image-item">
-                      <img src={img.publicUrl || img.image_path} alt={`Product ${i + 1}`} />
+                    <div key={img.id || i} className={`image-item existing-image-item ${primaryExistingImageId === img.id ? "selected-primary" : ""}`}>
+                      <img src={img.publicUrl || img.image_url} alt={`Product image ${i + 1}`} />
                       <button
                         type="button"
-                        onClick={() => setImages(prev => prev.filter((_, idx) => idx !== i))}
+                        onClick={() => removeExistingImage(img)}
                         className="btn-remove-image"
+                        aria-label={`Remove image ${i + 1}`}
                       >
-                        ✕
+                        <X size={14} />
                       </button>
-                      {img.is_primary && <span className="primary-badge">Primary</span>}
+                      {primaryExistingImageId === img.id ? <span className="primary-badge"><Star size={11} fill="currentColor" /> Primary image</span> : <button type="button" className="image-make-primary" onClick={() => { setPrimaryExistingImageId(img.id); setPrimaryImageIndex(null); }}><Star size={12} />Make primary</button>}
                     </div>
                   ))}
                 </div>
@@ -655,23 +759,30 @@ export default function AdminProductFormEnhanced({ product = {}, onSaved, onCanc
             )}
 
             <div className="form-group">
-              <label>Upload New Images</label>
+              <label htmlFor="product-image-upload">Add product images</label>
+              <label className="image-dropzone" htmlFor="product-image-upload" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); handleImageFiles(event.dataTransfer.files); }}>
+                <span className="image-dropzone-icon"><Upload size={19} /></span>
+                <span className="image-dropzone-copy"><strong>Choose images or drag them here</strong><small>PNG, JPG, WEBP · Up to 8 MB each</small></span>
+                <span className="image-browse-button">Browse images</span>
+              </label>
               <input
+                id="product-image-upload"
+                className="image-file-input"
                 type="file"
                 multiple
                 accept="image/*"
-                onChange={e => setFiles(Array.from(e.target.files))}
+                onChange={(event) => { handleImageFiles(event.target.files); event.target.value = ""; }}
               />
               {files.length > 0 && (
-                <div className="file-info">
-                  <p>{files.length} file(s) selected</p>
-                  <div className="form-group">
-                    <label>Primary Image</label>
-                    <select value={primaryImageIndex} onChange={e => setPrimaryImageIndex(parseInt(e.target.value))}>
-                      {files.map((file, i) => (
-                        <option key={i} value={i}>{file.name}</option>
-                      ))}
-                    </select>
+                <div className="new-image-preview-section">
+                  <div className="new-image-preview-heading"><strong><ImagePlus size={15} /> New image previews</strong><span>{files.length} selected</span></div>
+                  <div className="images-grid new-images-grid">
+                    {filePreviews.map(({ file, url }, index) => <article className={`image-item new-image-item ${primaryImageIndex === index ? "selected-primary" : ""}`} key={`${file.name}-${file.lastModified}-${index}`}>
+                      <img src={url} alt={`Preview of ${file.name}`} />
+                      <button type="button" onClick={() => removeNewImage(index)} className="btn-remove-image" aria-label={`Remove ${file.name}`}><X size={14} /></button>
+                      {primaryImageIndex === index ? <span className="primary-badge"><Star size={11} fill="currentColor" /> Primary image</span> : <button type="button" className="image-make-primary" onClick={() => { setPrimaryImageIndex(index); setPrimaryExistingImageId(null); }}><Star size={12} />Make primary</button>}
+                      <div className="new-image-file-caption"><strong>{file.name}</strong><span>{(file.size / (1024 * 1024)).toFixed(2)} MB</span></div>
+                    </article>)}
                   </div>
                 </div>
               )}
@@ -701,7 +812,7 @@ export default function AdminProductFormEnhanced({ product = {}, onSaved, onCanc
               Cancel
             </button>
             <button type="submit" disabled={loading} className="btn-save">
-              {loading ? "Saving..." : "Save Product"}
+              <Save size={16} />{loading ? "Saving…" : "Save product"}
             </button>
           </div>
         </form>

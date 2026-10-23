@@ -98,8 +98,8 @@ export default function useFormValidation(initialValues) {
   // --- Validate all fields before submit ---
   const validateFormSignIn = () => {
     const newErrors = {};
-    for (const key in form) {
-      const error = validateFieldSignIn (key, form[key]);
+    for (const key of ["email", "password"]) {
+      const error = validateFieldSignIn(key, form[key] || "");
       if (error) newErrors[key] = error;
     }
     setErrors(newErrors);

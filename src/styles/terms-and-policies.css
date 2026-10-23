@@ -1,0 +1,13 @@
+.terms-page { min-height: calc(100svh - 72px); padding: clamp(30px, 6vw, 76px) 20px; color: #29372f; background: #f7f6f2; }
+.terms-document { width: min(100%, 850px); margin: 0 auto; padding: clamp(25px, 6vw, 58px); border: 1px solid #e9e6de; background: #fffefa; box-shadow: 0 18px 55px rgba(28, 39, 31, .055); }
+.terms-back { display: inline-flex; align-items: center; gap: 8px; color: #78674f; text-decoration: none; font-size: 11px; font-weight: 650; }
+.terms-back:hover { color: #26352e; }
+.terms-heading { margin: 46px 0 33px; padding-bottom: 29px; border-bottom: 1px solid #e9e6de; }
+.terms-icon { display: grid; width: 39px; height: 39px; margin-bottom: 20px; place-items: center; border: 1px solid #e7e0d3; border-radius: 50%; color: #836e4f; background: #f7f4ed; }
+.terms-eyebrow { color: #907856; font-size: 9px; font-weight: 750; letter-spacing: .18em; }
+.terms-heading h1 { margin: 11px 0 9px; color: #28372f; font: 400 clamp(34px, 6vw, 48px)/1.1 Georgia, "Times New Roman", serif; letter-spacing: -.035em; }
+.terms-heading > p { margin: 0; color: #7a8078; font-size: 13px; line-height: 1.7; }
+.terms-content { color: #535e55; font-size: 14px; line-height: 1.9; white-space: pre-wrap; overflow-wrap: anywhere; }
+.terms-content p { margin: 0 0 20px; }
+.terms-state { color: #7a8078; }
+@media (max-width: 520px) { .terms-page { padding: 18px 11px 30px; } .terms-document { padding: 22px 19px; } .terms-heading { margin-top: 36px; } .terms-content { font-size: 13px; } }

@@ -14,11 +14,15 @@ export default function AppModal() {
       isOpen={isOpen}
       onClose={closeMessage}
       title={modalContent.title}
-      footer={modalContent.footer || (
-        <button className="modalbtn" onClick={closeMessage}>Close</button>
+      type={modalContent.type}
+      footer={modalContent.hideFooter ? null : modalContent.footer || (
+        modalContent.type === "confirm" ? <>
+          <button className="modalbtn modalbtn-secondary" onClick={() => closeMessage(false)}>{modalContent.cancelLabel || "Cancel"}</button>
+          <button className="modalbtn" onClick={() => closeMessage(true)}>{modalContent.confirmLabel || "Continue"}</button>
+        </> : <button className="modalbtn" onClick={() => closeMessage(true)}>Got it</button>
       )}
     >
-      <p>{modalContent.message}</p>
+      {modalContent.content || <p>{modalContent.message}</p>}
     </Modal>
   );
 }

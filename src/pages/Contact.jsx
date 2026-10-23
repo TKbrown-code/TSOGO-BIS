@@ -1,181 +1,75 @@
-import React from 'react';
-import { useTranslation } from 'react-i18next';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faPhone, 
-  faEnvelope, 
-  faMapMarkerAlt,
-  faClock,
-  faPaperPlane
-} from '@fortawesome/free-solid-svg-icons';
-import { 
-  faFacebook,
-  faWhatsapp,
-  faInstagram 
-} from "@fortawesome/free-brands-svg-icons";
-import '../styles/contact.css';
+import React, { useState } from "react";
+import { ArrowUpRight, Mail, MapPin, MessageCircle, Phone, Send } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { useSiteSettings } from "../context/SiteSettingsContext";
+import { useModalMessage } from "../context/ModalMessageContext";
+import "../styles/contact.css";
 
 export default function Contact() {
   const { t } = useTranslation();
-  
-  const contactMethods = [
-    {
-      icon: faPhone,
-      title: t('contact_page.methods.phone'),
-      details: ['+237 6XX XXX XXX', '+237 6XX XXX XXX'],
-      action: t('contact_page.actions.call_us')
-    },
-    {
-      icon: faWhatsapp,
-      title: t('contact_page.methods.whatsapp'),
-      details: ['+237 6XX XXX XXX'],
-      action: t('contact_page.actions.chat_with_us')
-    },
-    {
-      icon: faEnvelope,
-      title: t('contact_page.methods.email'),
-      details: ['contact@tsogobis.com', 'support@tsogobis.com'],
-      action: t('contact_page.actions.email_us')
-    },
-    {
-      icon: faMapMarkerAlt,
-      title: t('contact_page.methods.location'),
-      details: ['123 Business Avenue', 'Douala, Cameroon'],
-      action: t('contact_page.actions.get_directions')
-    },
-    {
-      icon: faClock,
-      title: t('contact_page.methods.hours'),
-      details: ['Monday-Friday: 8AM - 6PM', 'Saturday: 9AM - 4PM'],
-      action: ''
+  const { siteEmail, sitePhone } = useSiteSettings();
+  const { showAlert } = useModalMessage();
+  const [sent, setSent] = useState(false);
+  const phoneDigits = (sitePhone || "").replace(/\D/g, "");
+  const emailAddress = (siteEmail || "").trim();
+
+  const submitMessage = (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    if (!emailAddress) {
+      showAlert(t("contact_page.email_unavailable_message"), t("contact_page.email_unavailable_title"), "warning");
+      return;
     }
-  ];
+    const subject = String(form.get("subject") || t("contact_page.default_subject")).trim();
+    const body = [
+      `${t("contact_page.name")}: ${String(form.get("name") || "").trim()}`,
+      `${t("contact_page.email")}: ${String(form.get("email") || "").trim()}`,
+      "",
+      String(form.get("message") || "").trim(),
+    ].join("\n");
+    window.location.href = `mailto:${emailAddress}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    setSent(true);
+    event.currentTarget.reset();
+  };
 
   return (
-    <div className="contact-page">
-      {/* Hero Section */}
-      <section className="contact-hero">
+    <main className="contact-page contact-page-redesign">
+      <section className="contact-hero contact-hero-redesign">
         <div className="contact-hero-container">
-          <h1 className="contact-hero-title">
-            {t('contact_page.hero_title').split(' ').slice(0, 2).join(' ')} <span className="highlight">{t('contact_page.hero_title').split(' ').slice(2).join(' ')}</span>
-          </h1>
-          <p className="contact-hero-subtitle">
-            {t('contact_page.hero_subtitle')}
-          </p>
+          <span className="contact-kicker">{t("contact_page.help_kicker")}</span>
+          <h1 className="contact-hero-title">{t("contact_page.title_line1")}<br /><span>{t("contact_page.title_line2")}</span></h1>
+          <p className="contact-hero-subtitle">{t("contact_page.intro")}</p>
+          <a className="contact-hero-email" href={emailAddress ? `mailto:${emailAddress}` : "#contact-message"}><Mail size={16} />{emailAddress || t("contact_page.send_message")}<ArrowUpRight size={14} /></a>
         </div>
       </section>
 
-      {/* Contact Methods - Moved Up */}
-      <section className="contact-methods">
-        <div className="contact-container">
-          <h2 className="section-title">{t('contact_page.contact_options')}</h2>
-          <p className="section-subtitle">
-            {t('contact_page.contact_subtitle')}
-          </p>
-          <div className="methods-grid">
-            {contactMethods.map((method, index) => (
-              <div key={index} className="method-card">
-                <div className="method-icon">
-                  <FontAwesomeIcon icon={method.icon} />
-                </div>
-                <h3 className="method-title">{method.title}</h3>
-                <div className="method-details">
-                  {method.details.map((detail, i) => (
-                    <p key={i}>{detail}</p>
-                  ))}
-                </div>
-                {method.action && (
-                  <a 
-                    href={`#${method.title.toLowerCase()}`} 
-                    className="method-action"
-                  >
-                    {method.action}
-                  </a>
-                )}
-              </div>
-            ))}
-          </div>
+      <section className="contact-main contact-main-redesign">
+        <div className="contact-sidebar">
+          <span className="contact-kicker">{t("contact_page.options_kicker")}</span>
+          <h2>{t("contact_page.options_title")}</h2>
+          {emailAddress ? <a className="contact-method-card" href={`mailto:${emailAddress}`}><span className="contact-method-icon"><Mail size={18} /></span><span><small>{t("contact_page.email")}</small><strong>{emailAddress}</strong><em>{t("contact_page.open_email")}</em></span><ArrowUpRight size={15} /></a> : <div className="contact-method-card is-unavailable"><span className="contact-method-icon"><Mail size={18} /></span><span><small>{t("contact_page.email")}</small><strong>{t("contact_page.email_unavailable_title")}</strong><em>{t("contact_page.use_form")}</em></span></div>}
+          {phoneDigits && <a className="contact-method-card" href={`tel:${sitePhone}`}><span className="contact-method-icon"><Phone size={18} /></span><span><small>{t("contact_page.phone")}</small><strong>{sitePhone}</strong><em>{t("contact_page.call_store")}</em></span><ArrowUpRight size={15} /></a>}
+          {phoneDigits && <a className="contact-method-card" href={`https://wa.me/${phoneDigits}`} target="_blank" rel="noreferrer"><span className="contact-method-icon"><MessageCircle size={18} /></span><span><small>WhatsApp</small><strong>{t("contact_page.message_team")}</strong><em>{t("whatsapp.chat_label")}</em></span><ArrowUpRight size={15} /></a>}
+          <div className="contact-response-note"><MapPin size={16} /><p>{t("contact_page.delivery_note")} <Link to="/logistics">{t("navbar.delivery")}</Link> {t("contact_page.and")} <Link to="/track">{t("nav.track")}</Link>.</p></div>
         </div>
-      </section>
 
-      {/* Enhanced Contact Details */}
-      <section className="contact-details">
-        <div className="details-container">
-          {/* Business Hours */}
-          <div className="business-hours">
-            <h3 className="details-title">{t('contact_page.details.business_hours')}</h3>
-            <ul className="hours-list">
-              <li>Monday-Friday: 8:00 AM - 6:00 PM</li>
-              <li>Saturday: 9:00 AM - 4:00 PM</li>
-              <li>Sunday: Closed</li>
-            </ul>
-          </div>
-
-          {/* Team Contacts */}
-          <div className="team-contacts">
-            <h3 className="details-title">{t('contact_page.details.key_contacts')}</h3>
-            <div className="contact-person">
-              <h4>{t('contact_page.details.customer_support')}</h4>
-              <p>Email: support@tsogobis.com</p>
-              <p>Phone: +237 XXX XXX XXX</p>
+        <section className="contact-form-section contact-form-redesign" id="contact-message" aria-labelledby="contact-form-title">
+          <span className="contact-kicker">{t("contact_page.form_kicker")}</span>
+          <h2 id="contact-form-title">{t("contact_page.form_title")}</h2>
+          <p className="contact-form-intro">{t("contact_page.form_intro")}</p>
+          <form className="contact-form contact-form-redesign-fields" onSubmit={submitMessage}>
+            <div className="contact-form-row">
+              <label className="form-group">{t("contact_page.your_name")}<input name="name" type="text" autoComplete="name" placeholder={t("contact_page.name")} required /></label>
+              <label className="form-group">{t("contact_page.email_address")}<input name="email" type="email" autoComplete="email" placeholder={t("contact_page.email_placeholder")} required /></label>
             </div>
-            <div className="contact-person">
-              <h4>{t('contact_page.details.sales_inquiries')}</h4>
-              <p>Email: sales@tsogobis.com</p>
-              <p>Phone: +237 XXX XXX XXX</p>
-            </div>
-          </div>
-
-          {/* Social Links */}
-          <div className="social-links">
-            <h3 className="details-title">{t('contact_page.details.connect_with_us')}</h3>
-            <div className="social-icons">
-              <a href="#facebook" aria-label="Facebook"><FontAwesomeIcon icon={faFacebook} /></a>
-              <a href="#whatsapp" aria-label="WhatsApp"><FontAwesomeIcon icon={faWhatsapp} /></a>
-              <a href="#instagram" aria-label="Instagram"><FontAwesomeIcon icon={faInstagram} /></a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Map + Form at Bottom */}
-      <div className="contact-main">
-        {/* Map - Left Side */}
-        <section className="map-section">
-          <h2 className="section-title">{t('contact_page.office')}</h2>
-          <iframe
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3987.490895467985!2d11.5021!3d3.8480!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x108bcf7acbb1f83d%3A0x6e4a5a373e3f1a1e!2sYaound%C3%A9%2C%20Cameroon!5e0!3m2!1sen!2sus!4v1620000000000!5m2!1sen!2sus"
-            width="100%"
-            height="500"
-            style={{border:0}}
-            allowFullScreen=""
-            loading="lazy"
-          ></iframe>
-        </section>
-
-        {/* Contact Form - Right Side */}
-        <section className="contact-form-section">
-          <h2 className="section-title">{t('contact_page.form.title')}</h2>
-          <form className="contact-form">
-            <div className="form-group">
-              <input type="text" placeholder={t('contact_page.form.name_placeholder')} required />
-            </div>
-            <div className="form-group">
-              <input type="email" placeholder={t('contact_page.form.email_placeholder')} required />
-            </div>
-            <div className="form-group">
-              <input type="text" placeholder={t('contact_page.form.subject_placeholder')} />
-            </div>
-            <div className="form-group">
-              <textarea placeholder={t('contact_page.form.message_placeholder')} rows="5" required></textarea>
-            </div>
-            <button type="submit" className="submit-btn">
-              <FontAwesomeIcon icon={faPaperPlane} />
-              {t('contact_page.form.send_button')}
-            </button>
+            <label className="form-group">{t("contact_page.subject")}<input name="subject" type="text" placeholder={t("contact_page.subject_placeholder")} /></label>
+            <label className="form-group">{t("contact_page.your_message")}<textarea name="message" placeholder={t("contact_page.message_placeholder")} rows={5} required /></label>
+            {sent && <p className="contact-sent-note" role="status">{t("contact_page.sent_note")}</p>}
+            <button type="submit" className="submit-btn"><Send size={15} /> {t("contact_page.prepare_email")}</button>
           </form>
         </section>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

@@ -20,6 +20,35 @@
   text-align: center;
 }
 
+.payment-modal {
+  width: min(92vw, 520px);
+  max-height: min(88vh, 720px);
+  overflow-y: auto;
+  border: 1px solid #e8e2d9;
+  border-radius: 20px;
+  background: #fffdf9;
+  box-shadow: 0 24px 80px rgba(20, 30, 28, 0.25);
+}
+
+.payment-icon.pending {
+  background: #f3f0e9;
+  color: #35665b;
+  box-shadow: none;
+}
+
+.payment-icon.pending .spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #d7e0da;
+  border-top-color: #35665b;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.payment-link p:last-child {
+  margin: 12px 0 0;
+}
+
 /* Status Icon */
 .payment-status-icon {
   margin-bottom: 24px;

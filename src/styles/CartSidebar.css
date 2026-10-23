@@ -387,6 +387,30 @@
   }
 }
 
+/* TSOGO-BIS restrained cart treatment */
+.cart-sidebar-overlay{background:rgba(19,29,24,.48);backdrop-filter:blur(3px)}
+.cart-sidebar{right:0;width:440px;max-width:min(94vw,440px);transform:translateX(105%);transition:transform .3s cubic-bezier(.4,0,.2,1);background:#faf9f6;color:#26352e;box-shadow:-18px 0 55px rgba(19,29,24,.18);z-index:2002}
+.cart-sidebar.active{right:0;transform:translateX(0)}
+.cart-sidebar-overlay{z-index:2001}
+.cart-header h2 span{color:#8b8a83;font-family:inherit;font-size:14px}
+.cart-header{padding:23px 25px;background:#faf9f6;border-bottom:1px solid #e8e5de}
+.cart-header h2{color:#203029;font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:400}
+.close-btn{background:#f0eee8;color:#39453e}
+.close-btn:hover{background:#e7e2d7;transform:none}
+.cart-items{padding:15px 20px}
+.cart-item{gap:14px;margin-bottom:11px;padding:14px;background:#fff;border:1px solid #eeece6;border-radius:2px}
+.cart-item:hover{box-shadow:0 8px 24px rgba(35,43,37,.06);border-color:#e2ded4}
+.cart-thumbnail{width:76px;height:86px;border:0;border-radius:0;background:#f1efe9}
+.item-name{color:#29372f;font-family:Georgia,'Times New Roman',serif;font-size:16px;font-weight:400}
+.unit-price,.item-qty{color:#81847d}.item-total{color:#8d7154;font-size:14px}
+.qty-btn{width:27px;height:27px;border:1px solid #e1ded6;border-radius:0;color:#344139}.qty-btn:hover:not(:disabled){background:#203029;border-color:#203029}
+.remove-btn{top:10px;right:10px;width:25px;height:25px;background:transparent;color:#8b8a83;font-size:14px}.remove-btn:hover{background:#f0eee8;color:#4e554e;transform:none}
+.cart-summary{padding:21px 25px;background:#f2f0e9;border-top:1px solid #e5e1d8}
+.total-row{border-top:1px solid #dfdbd1}.total-row .summary-label{color:#344139;font-size:13px;font-weight:500}.total-amount{color:#26352e;font-size:19px}
+.checkout-btn{padding:16px;background:#1d3029;border-radius:0;font-size:11px;letter-spacing:.13em;text-transform:uppercase}.checkout-btn:hover{background:#30483e;transform:none;box-shadow:none}
+.cart-empty{color:#6e746d}.empty-icon{color:#9a866b;opacity:.9}.empty-text{color:#2e3b34;font-family:Georgia,serif;font-size:21px;font-weight:400}.empty-subtext{color:#85877f;font-size:12px}
+.cart-toast{border-radius:0;background:#24372e}
+
 /* Responsive Design */
 @media (max-width: 480px) {
   .cart-sidebar {

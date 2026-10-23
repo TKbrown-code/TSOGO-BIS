@@ -1,69 +1,56 @@
 .language-btn-container {
   position: fixed;
-  bottom: 80px;
-  left: 20px;
   z-index: 1000;
+  left: max(20px, env(safe-area-inset-left));
+  bottom: calc(22px + env(safe-area-inset-bottom));
 }
 
 .language-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
-  background: var(--primaryColor);
-  color: white;
-  border: none;
-  border-radius: 50px;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 999px;
+  color: #fffefa;
+  background: #1d3028;
+  box-shadow: 0 8px 24px rgba(25,40,32,.22);
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  transition: all 0.2s ease;
+  transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
 }
 
-.language-btn:hover {
-  background: var(--accentColor);
-  transform: translateY(-2px);
-}
-
-.language-btn:active {
-  transform: translateY(0);
-}
-
-.globe-icon {
-  color: white;
-}
-
-.current-lang {
-  font-weight: 600;
-  font-size: 0.9rem;
-}
+.language-btn:hover { transform: translateY(-2px); background: #294337; box-shadow: 0 11px 27px rgba(25,40,32,.25); }
+.language-btn:focus-visible,.language-option:focus-visible { outline: 3px solid #c5a879; outline-offset: 3px; }
+.globe-icon { flex: 0 0 auto; color: #f7f4ed; }
+.current-lang { min-width: 20px; font-size: 11px; font-weight: 700; letter-spacing: .06em; }
+.language-chevron { transition: transform .18s ease; }
+.language-chevron.is-open { transform: rotate(180deg); }
 
 .language-dropdown {
   position: absolute;
-  bottom: 100%;
   left: 0;
-  margin-bottom: 10px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-  overflow: hidden;
-  animation: fadeIn 0.2s ease-out;
+  bottom: calc(100% + 11px);
+  width: 220px;
+  padding: 7px;
+  border: 1px solid #e7e2d8;
+  border-radius: 12px;
+  background: #fffefa;
+  box-shadow: 0 18px 48px rgba(23,35,31,.2);
+  animation: languageMenuIn .16s ease-out both;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+.language-dropdown-heading { display:flex; align-items:center; gap:8px; padding:10px 10px 12px; border-bottom:1px solid #efede7; color:#737970; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+.language-option { display:grid; grid-template-columns:32px 1fr 18px; align-items:center; gap:10px; width:100%; padding:9px 10px; border:0; border-radius:7px; color:#354239; background:transparent; text-align:left; font:inherit; font-size:12px; cursor:pointer; }
+.language-option:hover,.language-option.is-active { background:#f4f1ea; }
+.language-option.is-active { color:#21372d; font-weight:650; }
+.language-option-mark { display:grid; width:29px; height:29px; place-items:center; border:1px solid #e6e0d5; border-radius:50%; color:#80674c; background:#fbfaf7; font-size:10px; font-weight:700; }
+.language-option small { display:block; margin-top:2px; color:#8a8d85; font-size:10px; font-weight:400; }
 
-.language-select {
-  padding: 10px 15px;
-  width: 100%;
-  border: none;
-  outline: none;
-  background: transparent;
-  cursor: pointer;
-  font-size: 0.9rem;
-}
+@keyframes languageMenuIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
 
-.language-select option {
-  padding: 8px;
+@media (max-width:480px) {
+  .language-btn-container { left: max(14px, env(safe-area-inset-left)); bottom: calc(14px + env(safe-area-inset-bottom)); }
+  .language-btn { min-height:40px; padding-inline:12px; }
+  .language-dropdown { width:min(220px, calc(100vw - 28px)); }
 }

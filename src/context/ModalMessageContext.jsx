@@ -1,40 +1,61 @@
-// ModalMessageContext.jsx
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
-const ModalMessageContext = createContext();
+const ModalMessageContext = createContext(null);
 
 export const ModalMessageProvider = ({ children }) => {
-  const [modalContent, setModalContent] = useState({
-    title: "",
-    message: "",
-    footer: null,
-    type: null, // "info", "error", "confirm"
-  });
+  const [modalContent, setModalContent] = useState({ title: "", message: "", type: null });
+  const resolverRef = useRef(null);
 
-  // generic function to open a modal
-  const openMessage = ({ title = "Notification", message, footer = null, type = "info" }) => {
-    setModalContent({ title, message, footer, type });
-  };
+  useEffect(() => {
+    const handleModalEvent = (event) => {
+      resolverRef.current?.(false);
+      resolverRef.current = null;
+      setModalContent({ title: event.detail?.title || "Notice", message: event.detail?.message || "", type: event.detail?.type || "info" });
+    };
+    window.addEventListener("tsogo:modal", handleModalEvent);
+    return () => window.removeEventListener("tsogo:modal", handleModalEvent);
+  }, []);
 
-  // shortcut for confirmation messages
-  const confirmMessage = (message, title = "Confirm", footer = null) => {
+  const closeMessage = useCallback((result = false) => {
+    resolverRef.current?.(result);
+    resolverRef.current = null;
+    setModalContent({ title: "", message: "", type: null });
+  }, []);
+
+  const openMessage = useCallback(({ title = "Message", message = "", type = "info", footer = null, content = null, hideFooter = false } = {}) => {
+    resolverRef.current?.(false);
+    resolverRef.current = null;
+    setModalContent({ title, message, type, footer, content, hideFooter });
+  }, []);
+
+  const showAlert = useCallback((message, title = "Notice", type = "info") => {
+    openMessage({ message, title, type });
+  }, [openMessage]);
+
+  const confirmDialog = useCallback((message, title = "Please confirm", options = {}) => {
+    resolverRef.current?.(false);
+    setModalContent({ title, message, type: "confirm", confirmLabel: options.confirmLabel || "Continue", cancelLabel: options.cancelLabel || "Cancel", tone: options.tone || "default" });
+    return new Promise((resolve) => { resolverRef.current = resolve; });
+  }, []);
+
+  const confirmMessage = useCallback((message, title = "Please confirm", footer = null) => {
+    // Compatibility for existing screens that provide their own modal footer.
     setModalContent({ title, message, footer, type: "confirm" });
-  };
+  }, []);
 
-  // shortcut for error messages
-  const errorMessage = (message, title = "Error", footer = null) => {
+  const errorMessage = useCallback((message, title = "Something went wrong", footer = null) => {
     setModalContent({ title, message, footer, type: "error" });
-  };
-
-  const closeMessage = () => {
-    setModalContent({ title: "", message: "", footer: null, type: null });
-  };
+  }, []);
 
   return (
-    <ModalMessageContext.Provider value={{ modalContent, openMessage, confirmMessage, errorMessage, closeMessage }}>
+    <ModalMessageContext.Provider value={{ modalContent, openMessage, showAlert, confirmDialog, confirmMessage, errorMessage, closeMessage }}>
       {children}
     </ModalMessageContext.Provider>
   );
 };
 
-export const useModalMessage = () => useContext(ModalMessageContext);
+export const useModalMessage = () => {
+  const context = useContext(ModalMessageContext);
+  if (!context) throw new Error("useModalMessage must be used within ModalMessageProvider");
+  return context;
+};

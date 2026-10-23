@@ -10,7 +10,7 @@ export const mockProducts = [
     created_at: "2024-01-01T00:00:00Z",
     product_images: [
       {
-        image_path: "/test-image-1.jpg",
+        image_url: "/test-image-1.jpg",
         is_primary: true
       }
     ],
@@ -30,7 +30,7 @@ export const mockProducts = [
     created_at: "2024-01-02T00:00:00Z",
     product_images: [
       {
-        image_path: "/test-image-2.jpg",
+        image_url: "/test-image-2.jpg",
         is_primary: true
       }
     ],
@@ -93,7 +93,7 @@ export const generateTestProduct = (overrides = {}) => ({
   created_at: new Date().toISOString(),
   product_images: [
     {
-      image_path: "/test-image.jpg",
+      image_url: "/test-image.jpg",
       is_primary: true
     }
   ],

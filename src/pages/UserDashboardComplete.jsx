@@ -5,10 +5,12 @@ import { useUserContext } from "../context/useUserContext";
 import { useNavigate } from "react-router-dom";
 import { LogOut, BarChart3, ShoppingCart, User, Save, Lock, DollarSign, Package, Settings, CheckCircle, Clock, Info } from "lucide-react";
 import "../styles/UserDashboardComplete.css";
+import { useModalMessage } from "../context/ModalMessageContext";
 
 export default function UserDashboardComplete() {
   const { user } = useUserContext();
   const navigate = useNavigate();
+  const { showAlert } = useModalMessage();
   const [activeTab, setActiveTab] = useState("overview");
   const [loading, setLoading] = useState(true);
 
@@ -102,9 +104,9 @@ export default function UserDashboardComplete() {
       .eq("user_id", user.id);
 
     if (error) {
-      alert("Error updating profile: " + error.message);
+      showAlert("Error updating profile: " + error.message, "Profile update failed", "error");
     } else {
-      alert("Profile updated successfully!");
+      showAlert("Your profile has been updated.", "Profile updated");
       loadUserData();
     }
 
@@ -115,12 +117,12 @@ export default function UserDashboardComplete() {
     e.preventDefault();
 
     if (newPassword !== confirmPassword) {
-      alert("New passwords do not match!");
+      showAlert("The new passwords do not match.", "Check your password", "warning");
       return;
     }
 
     if (newPassword.length < 6) {
-      alert("Password must be at least 6 characters!");
+      showAlert("Password must be at least 6 characters.", "Password too short", "warning");
       return;
     }
 
@@ -131,9 +133,9 @@ export default function UserDashboardComplete() {
     });
 
     if (error) {
-      alert("Error changing password: " + error.message);
+      showAlert("Error changing password: " + error.message, "Password change failed", "error");
     } else {
-      alert("Password changed successfully!");
+      showAlert("Your password has been changed.", "Password changed");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");

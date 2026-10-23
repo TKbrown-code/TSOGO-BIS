@@ -5,6 +5,7 @@ import App from "./App.jsx";
 import { CartProvider } from "./context/CartContext.jsx"; // import
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "./index.css";
+import "./styles/brand-theme.css";
 import { UserProvider } from "./context/useUserContext.jsx";
 import { CurrencyProvider } from "./context/CurrencyContext";
 import { SiteSettingsProvider } from "./context/SiteSettingsContext";

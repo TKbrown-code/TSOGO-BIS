@@ -6,7 +6,6 @@ const UserContext = createContext();
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const fetchUserData = async (sessionUser) => {
@@ -14,50 +13,52 @@ export const UserProvider = ({ children }) => {
     setUser(sessionUser);
 
     if (sessionUser) {
-      // ✅ Check admin role
-      const { data: admin } = await supabase
-        .from("admins")
-        .select("id")
-        .eq("id", sessionUser.id)
-        .maybeSingle();
+      try {
+        const { data: prof, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", sessionUser.id)
+          .maybeSingle();
 
-      setIsAdmin(!!admin);
-
-      // ✅ Fetch profile
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", sessionUser.id)
-        .maybeSingle();
-
-      setProfile(prof || null);
+        if (error) throw error;
+        setProfile(prof || null);
+      } catch (error) {
+        console.error("Error loading user profile:", error);
+        setProfile(null);
+      }
     } else {
       setProfile(null);
-      setIsAdmin(false);
     }
 
     setLoading(false);
   };
 
   useEffect(() => {
-    // Initial session check
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      fetchUserData(session?.user || null);
-    });
-
-    // Listen for login/logout
+    let active = true;
+    let pendingRefresh;
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      fetchUserData(session?.user || null);
+      const sessionUser = session?.user || null;
+      setUser(sessionUser);
+
+      // Auth callbacks run while Supabase holds its auth lock. Defer data API calls.
+      clearTimeout(pendingRefresh);
+      pendingRefresh = setTimeout(() => {
+        if (active) fetchUserData(sessionUser);
+      }, 0);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      active = false;
+      clearTimeout(pendingRefresh);
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (
     <UserContext.Provider
-      value={{ user, profile, isAdmin, loading, refreshUser: fetchUserData }}
+      value={{ user, profile, loading, refreshUser: fetchUserData }}
     >
       {children}
     </UserContext.Provider>

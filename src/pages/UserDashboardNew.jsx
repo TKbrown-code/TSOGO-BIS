@@ -2,20 +2,36 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { useUserContext } from "../context/useUserContext";
-import { useNavigate, Navigate } from "react-router-dom";
-import { getCachedImage } from "../utils/imageCache";
-import { Home, BarChart3, ShoppingCart, ShoppingBag, FileText, LogOut, DollarSign, Package, Star, Settings, CheckCircle, Clock, Plus, Minus } from "lucide-react";
+import { useNavigate, Navigate, useSearchParams, Link } from "react-router-dom";
+import { Home, BarChart3, ShoppingCart, ShoppingBag, FileText, LogOut, DollarSign, Package, Star, Settings, CheckCircle, Clock, Plus, Minus, Menu, X, Gift, Copy, Check } from "lucide-react";
 import "../styles/UserDashboardNew.css";
+import { useModalMessage } from "../context/ModalMessageContext";
+import { useTranslation } from "react-i18next";
+import { useCart } from "../context/CartContext";
 
 export default function UserDashboardNew() {
   const { user, profile, loading } = useUserContext();
+  const { t, i18n } = useTranslation();
+  const { refreshCart } = useCart();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { showAlert } = useModalMessage();
   
   // Active section
   const [activeSection, setActiveSection] = useState("overview");
+  useEffect(() => {
+    if (searchParams.get("section") === "settings") setActiveSection("settings");
+  }, [searchParams]);
+  useEffect(() => {
+    const language = i18n.resolvedLanguage?.slice(0, 2);
+    if (["en", "fr", "zh"].includes(language)) {
+      setFormData((current) => ({ ...current, language }));
+    }
+  }, [i18n.resolvedLanguage]);
   const [dataLoading, setDataLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [productNames, setProductNames] = useState({});
+  const [copiedReferralLink, setCopiedReferralLink] = useState(false);
 
   // User data from all tables
   const [userData, setUserData] = useState({
@@ -23,7 +39,9 @@ export default function UserDashboardNew() {
     orders: [],
     cart: [],
     cartHistory: [],
-    reviews: []
+    reviews: [],
+    referrals: [],
+    referralWallet: []
   });
 
   // Statistics
@@ -40,32 +58,22 @@ export default function UserDashboardNew() {
   const [formData, setFormData] = useState({
     fullName: "",
     phone: "",
-    language: "en"
+    language: i18n.resolvedLanguage?.slice(0, 2) || "fr"
   });
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [saving, setSaving] = useState(false);
-
-  // Helper function to get product image
-  const getProductImage = (product) => {
-    if (!product) return "/placeholder.png";
-    const primaryImage = product.product_images?.find(img => img.is_primary);
-    if (primaryImage) {
-      return getCachedImage(primaryImage.image_path) || "/placeholder.png";
-    }
-    return "/placeholder.png";
-  };
-
-  // Redirect if not logged in
-  if (!loading && !user) {
-    return <Navigate to="/SignUp" replace />;
-  }
 
   useEffect(() => {
     if (user) {
       loadAllUserData();
     }
   }, [user]);
+
+  // Keep hooks stable while auth state changes, then redirect signed-out visitors.
+  if (!loading && !user) {
+    return <Navigate to="/SignUp" replace />;
+  }
 
   async function loadAllUserData() {
     setDataLoading(true);
@@ -87,17 +95,16 @@ export default function UserDashboardNew() {
 
       // 3. Load Cart with full product details and images
       const { data: cartData } = await supabase
-        .from("cart")
+        .from("cart_items")
         .select(`
           *,
-          product_id (
+          product_id:products (
             id,
             name,
             price,
-            in_Stock,
-            description,
+            stock_quantity,
             product_images (
-              image_path,
+              image_url,
               is_primary
             )
           )
@@ -129,8 +136,6 @@ export default function UserDashboardNew() {
         setProductNames(nameMap);
       }
       
-      console.log("Cart History Data:", cartHistoryData);
-
       // 5. Load Reviews with product details
       const { data: reviewsData } = await supabase
         .from("product_reviews")
@@ -140,7 +145,7 @@ export default function UserDashboardNew() {
             id,
             name,
             product_images (
-              image_path,
+              image_url,
               is_primary
             )
           )
@@ -148,36 +153,63 @@ export default function UserDashboardNew() {
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
+      const { data: referralsData, error: referralsError } = await supabase
+        .from("referrals")
+        .select("id, created_at, commission_amount, commission_status")
+        .eq("referrer_user_id", user.id)
+        .order("created_at", { ascending: false });
+      if (referralsError && referralsError.code !== "42P01") {
+        console.error("Could not load referral summary:", referralsError);
+      }
+      const { data: referralWalletData, error: walletError } = await supabase
+        .from("referral_wallet_ledger")
+        .select("entry_type, amount")
+        .eq("user_id", user.id);
+      if (walletError && walletError.code !== "42P01") {
+        console.error("Could not load referral store credit:", walletError);
+      }
+
+      const normalizedOrders = (ordersData || []).map((order) => ({
+        ...order,
+        items: Array.isArray(order.items)
+          ? order.items
+          : typeof order.items === "string"
+            ? (() => { try { return JSON.parse(order.items); } catch { return []; } })()
+            : [],
+      }));
+
       // Set user data
       setUserData({
         profile: profileData,
-        orders: ordersData || [],
+        orders: normalizedOrders,
         cart: cartData || [],
         cartHistory: cartHistoryData || [],
-        reviews: reviewsData || []
+        reviews: reviewsData || [],
+        referrals: referralsData || [],
+        referralWallet: referralWalletData || []
       });
 
       // Set form data
       if (profileData) {
         setFormData({
-          fullName: profileData.full_name || "",
+          fullName: profileData.display_name || user.user_metadata?.display_name || "",
           phone: profileData.phone || "",
-          language: profileData.language || "en"
+          language: profileData.preferred_language || i18n.resolvedLanguage?.slice(0, 2) || "fr"
         });
       }
 
       // Calculate statistics
-      const totalOrders = ordersData?.length || 0;
-      const completedOrders = ordersData?.filter(o => o.status === "paid").length || 0;
-      const pendingOrders = ordersData?.filter(o => o.status === "pending").length || 0;
-      const totalSpent = ordersData?.reduce((sum, o) => sum + parseFloat(o.total || 0), 0) || 0;
+      const totalOrders = normalizedOrders.length;
+      const completedOrders = normalizedOrders.filter(o => (o.payment_status || o.status) === "paid").length;
+      const pendingOrders = normalizedOrders.filter(o => (o.payment_status || o.status) === "pending").length;
+      const totalSpent = normalizedOrders.reduce((sum, o) => (o.payment_status || o.status) === "paid" ? sum + (Number(o.total) || 0) : sum, 0);
 
       setStats({
         totalOrders,
         completedOrders,
         pendingOrders,
         totalSpent,
-        cartItems: cartData?.length || 0,
+        cartItems: (cartData || []).reduce((count, item) => count + (Number(item.quantity) || 1), 0),
         reviewsGiven: reviewsData?.length || 0
       });
 
@@ -193,23 +225,43 @@ export default function UserDashboardNew() {
     navigate("/");
   }
 
+  async function copyReferralLink() {
+    if (!user?.id) return;
+    const encodedUserId = btoa(user.id).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
+    const userIdPrefix = user.id.replaceAll("-", "").slice(0, 7).toUpperCase();
+    const link = `${window.location.origin}/referrals/${encodedUserId}/${userIdPrefix}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopiedReferralLink(true);
+      window.setTimeout(() => setCopiedReferralLink(false), 2200);
+    } catch (error) {
+      console.error("Could not copy referral link:", error);
+      showAlert(t("dashboard.referral_copy_error"), t("common.error"), "error");
+    }
+  }
+
   async function handleSaveProfile() {
     setSaving(true);
 
     const { error } = await supabase
       .from("profiles")
       .update({
-        full_name: formData.fullName,
+        display_name: formData.fullName.trim(),
         phone: formData.phone,
-        language: formData.language
+        preferred_language: formData.language
       })
       .eq("user_id", user.id);
 
     if (error) {
-      alert("Error updating profile: " + error.message);
+      console.error("Profile update failed:", error);
+      showAlert(t("dashboard.profile_save_error"), t("common.error"), "error");
     } else {
-      alert("Profile updated successfully!");
-      loadAllUserData();
+      await i18n.changeLanguage(formData.language);
+      setUserData((current) => ({
+        ...current,
+        profile: { ...current.profile, display_name: formData.fullName.trim(), phone: formData.phone, preferred_language: formData.language },
+      }));
+      showAlert(t("dashboard.profile_saved"), t("common.success"));
     }
 
     setSaving(false);
@@ -217,12 +269,12 @@ export default function UserDashboardNew() {
 
   async function handleChangePassword() {
     if (newPassword.length < 6) {
-      alert("Password must be at least 6 characters");
+      showAlert(t("dashboard.password_too_short"), t("common.error"), "warning");
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      alert("Passwords do not match");
+      showAlert(t("dashboard.password_mismatch"), t("common.error"), "warning");
       return;
     }
 
@@ -233,9 +285,10 @@ export default function UserDashboardNew() {
     });
 
     if (error) {
-      alert("Error changing password: " + error.message);
+      console.error("Password update failed:", error);
+      showAlert(t("dashboard.password_error"), t("common.error"), "error");
     } else {
-      alert("Password changed successfully!");
+      showAlert(t("dashboard.password_saved"), t("common.success"));
       setNewPassword("");
       setConfirmPassword("");
     }
@@ -245,14 +298,16 @@ export default function UserDashboardNew() {
 
   async function handleRemoveFromCart(cartId) {
     const { error } = await supabase
-      .from("cart")
+      .from("cart_items")
       .delete()
-      .eq("id", cartId);
+      .eq("id", cartId)
+      .eq("user_id", user.id);
 
     if (error) {
-      alert("Error removing item: " + error.message);
+      console.error("Cart item removal failed:", error);
+      showAlert(t("dashboard.cart_remove_error"), t("common.error"), "error");
     } else {
-      loadAllUserData();
+      await Promise.all([loadAllUserData(), refreshCart()]);
     }
   }
 
@@ -260,56 +315,58 @@ export default function UserDashboardNew() {
     if (newQuantity < 1) return;
 
     const { error } = await supabase
-      .from("cart")
+      .from("cart_items")
       .update({ quantity: newQuantity })
-      .eq("id", cartId);
+      .eq("id", cartId)
+      .eq("user_id", user.id);
 
     if (error) {
-      alert("Error updating quantity: " + error.message);
+      console.error("Cart quantity update failed:", error);
+      showAlert(t("dashboard.cart_update_error"), t("common.error"), "error");
     } else {
-      loadAllUserData();
+      await Promise.all([loadAllUserData(), refreshCart()]);
     }
   }
 
   const formatCurrency = (amount) => {
-    return `${parseFloat(amount).toLocaleString()} XAF`;
+    const locale = { en: "en-CM", fr: "fr-CM", zh: "zh-CN" }[i18n.resolvedLanguage?.slice(0, 2)] || "fr-CM";
+    return new Intl.NumberFormat(locale, { style: "currency", currency: "XAF", maximumFractionDigits: 0 }).format(Number(amount) || 0);
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    const locale = { en: "en-CM", fr: "fr-CM", zh: "zh-CN" }[i18n.resolvedLanguage?.slice(0, 2)] || "fr-CM";
+    return new Date(dateString).toLocaleDateString(locale, {
       year: "numeric",
       month: "short",
       day: "numeric"
     });
   };
 
+  const formatPaymentStatus = (status) => {
+    const translated = {
+      paid: t("orders.payment_completed"),
+      pending: t("orders.awaiting_payment"),
+      cancelled: t("orders.cancelled"),
+      failed: t("payment_modal.failed_title"),
+      expired: t("payment_modal.expired_title"),
+      processing: t("orders.delivery_processing"),
+      shipped: t("orders.delivery_shipped"),
+      out_for_delivery: t("orders.delivery_out_for_delivery"),
+      delivered: t("orders.delivery_delivered"),
+    };
+    return translated[status] || status || t("common.unknown");
+  };
+
   if (loading || dataLoading) {
     return (
-      <div className="user-dashboard-loading">
-        <div className="spinner"></div>
-        <p>Loading your dashboard...</p>
+      <div className="user-dashboard-container">
+        <div className="user-dashboard-loading">
+          <div className="spinner"></div>
+          <p>{t("dashboard.loading")}</p>
+        </div>
       </div>
     );
   }
-
-const fetchproduct = async (id) => {
-  if (!id) return null;
-
-  try {
-    const { data, error } = await supabase
-      .from("products")
-      .select("name")
-      .eq("id", id)
-      .single();
-
-    if (error) throw error;
-    return data;
-  } catch (err) {
-    console.error("fetchProduct failed:", err.message);
-    return null;
-  }
-};
-
 
   return (
     <div className="user-dashboard-container">
@@ -317,9 +374,9 @@ const fetchproduct = async (id) => {
       <button 
         className="mobile-menu-toggle"
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        aria-label="Toggle menu"
+        aria-label={sidebarOpen ? t("dashboard.close_menu") : t("dashboard.open_menu")}
       >
-        {sidebarOpen ? '✕' : '☰'}
+        {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
 
       {/* Sidebar Overlay for Mobile */}
@@ -332,12 +389,16 @@ const fetchproduct = async (id) => {
 
       {/* Sidebar */}
       <aside className={`user-sidebar ${sidebarOpen ? 'open' : ''}`}>
+        <Link to="/" className="dashboard-brand" aria-label={t("navbar.home_aria")} onClick={() => setSidebarOpen(false)}>
+          <span className="dashboard-brand-mark" aria-hidden="true">T<span>•••</span></span>
+          <span className="dashboard-brand-name">TSOGO<span>-</span>BIS<small>{t("navbar.tagline")}</small></span>
+        </Link>
         <div className="sidebar-header">
           <div className="user-avatar">
-            {userData.profile?.username?.charAt(0).toUpperCase() || "U"}
+            {(userData.profile?.display_name || user?.user_metadata?.display_name || user?.email || "U").charAt(0).toUpperCase()}
           </div>
-          <h3>{userData.profile?.username || "User"}</h3>
-          <p>{userData.profile?.email}</p>
+          <h3>{userData.profile?.display_name || user?.user_metadata?.display_name || user?.email?.split("@")[0] || ""}</h3>
+          <p>{user?.email}</p>
         </div>
 
         <nav className="sidebar-nav">
@@ -346,7 +407,7 @@ const fetchproduct = async (id) => {
             onClick={() => navigate("/")}
           >
             <span className="icon"><Home size={20} /></span>
-            Home
+            {t("dashboard.home")}
           </button>
           <button
             className={activeSection === "overview" ? "active" : ""}
@@ -356,7 +417,7 @@ const fetchproduct = async (id) => {
             }}
           >
             <span className="icon"><BarChart3 size={20} /></span>
-            Overview
+            {t("dashboard.overview")}
           </button>
           <button
             className={activeSection === "orders" ? "active" : ""}
@@ -366,7 +427,7 @@ const fetchproduct = async (id) => {
             }}
           >
             <span className="icon"><ShoppingCart size={20} /></span>
-            My Orders
+            {t("dashboard.orders")}
           </button>
           <button
             className={activeSection === "cart" ? "active" : ""}
@@ -376,7 +437,7 @@ const fetchproduct = async (id) => {
             }}
           >
             <span className="icon"><ShoppingBag size={20} /></span>
-            Shopping Cart
+            {t("dashboard.cart")}
             {stats.cartItems > 0 && (
               <span className="badge">{stats.cartItems}</span>
             )}
@@ -389,7 +450,7 @@ const fetchproduct = async (id) => {
             }}
           >
             <span className="icon"><Star size={20} /></span>
-            My Reviews
+            {t("dashboard.reviews")}
           </button>
           <button
             className={activeSection === "history" ? "active" : ""}
@@ -399,7 +460,7 @@ const fetchproduct = async (id) => {
             }}
           >
             <span className="icon"><FileText size={20} /></span>
-            Cart History
+            {t("dashboard.cart_history")}
           </button>
           <button
             className={activeSection === "settings" ? "active" : ""}
@@ -409,13 +470,23 @@ const fetchproduct = async (id) => {
             }}
           >
             <span className="icon"><Settings size={20} /></span>
-            Settings
+            {t("dashboard.settings")}
+          </button>
+          <button
+            className={activeSection === "referrals" ? "active" : ""}
+            onClick={() => {
+              setActiveSection("referrals");
+              setSidebarOpen(false);
+            }}
+          >
+            <span className="icon"><Gift size={20} /></span>
+            {t("dashboard.referrals")}
           </button>
         </nav>
 
         <button className="btn-signout" onClick={handleSignOut}>
           <span className="icon"><LogOut size={20} /></span>
-          Sign Out
+          {t("dashboard.sign_out")}
         </button>
       </aside>
 
@@ -424,14 +495,14 @@ const fetchproduct = async (id) => {
         {/* Overview Section */}
         {activeSection === "overview" && (
           <div className="section-content">
-            <h1>Dashboard Overview</h1>
+            <h1>{t("dashboard.overview")}</h1>
 
             <div className="stats-grid">
               <div className="stat-card">
                 <div className="stat-icon"><ShoppingCart size={24} /></div>
                 <div className="stat-info">
                   <div className="stat-value">{stats.totalOrders}</div>
-                  <div className="stat-label">Total Orders</div>
+                  <div className="stat-label">{t("dashboard.total_orders")}</div>
                 </div>
               </div>
 
@@ -439,7 +510,7 @@ const fetchproduct = async (id) => {
                 <div className="stat-icon"><CheckCircle size={24} /></div>
                 <div className="stat-info">
                   <div className="stat-value">{stats.completedOrders}</div>
-                  <div className="stat-label">Completed</div>
+                  <div className="stat-label">{t("dashboard.completed")}</div>
                 </div>
               </div>
 
@@ -447,7 +518,7 @@ const fetchproduct = async (id) => {
                 <div className="stat-icon"><Clock size={24} /></div>
                 <div className="stat-info">
                   <div className="stat-value">{stats.pendingOrders}</div>
-                  <div className="stat-label">Pending</div>
+                  <div className="stat-label">{t("dashboard.pending")}</div>
                 </div>
               </div>
 
@@ -455,7 +526,7 @@ const fetchproduct = async (id) => {
                 <div className="stat-icon"><DollarSign size={24} /></div>
                 <div className="stat-info">
                   <div className="stat-value">{formatCurrency(stats.totalSpent)}</div>
-                  <div className="stat-label">Total Spent</div>
+                  <div className="stat-label">{t("dashboard.total_spent")}</div>
                 </div>
               </div>
 
@@ -463,7 +534,7 @@ const fetchproduct = async (id) => {
                 <div className="stat-icon"><ShoppingBag size={24} /></div>
                 <div className="stat-info">
                   <div className="stat-value">{stats.cartItems}</div>
-                  <div className="stat-label">Cart Items</div>
+                  <div className="stat-label">{t("dashboard.cart_items")}</div>
                 </div>
               </div>
 
@@ -471,26 +542,40 @@ const fetchproduct = async (id) => {
                 <div className="stat-icon"><Star size={24} /></div>
                 <div className="stat-info">
                   <div className="stat-value">{stats.reviewsGiven}</div>
-                  <div className="stat-label">Reviews Given</div>
+                  <div className="stat-label">{t("dashboard.reviews_given")}</div>
                 </div>
               </div>
             </div>
 
+            <section className="dashboard-referral-card">
+              <div className="dashboard-referral-copy">
+                <span className="dashboard-referral-icon"><Gift size={20} /></span>
+                <div>
+                  <h2>{t("dashboard.referral_invite_title")}</h2>
+                  <p>{t("dashboard.referral_invite_copy")}</p>
+                </div>
+              </div>
+              <button type="button" className="dashboard-referral-button" onClick={copyReferralLink} disabled={!user?.id}>
+                {copiedReferralLink ? <Check size={16} /> : <Copy size={16} />}
+                {copiedReferralLink ? t("dashboard.referral_copied") : t("dashboard.referral_copy_link")}
+              </button>
+            </section>
+
             <div className="recent-section">
-              <h2>Recent Orders</h2>
+              <h2>{t("dashboard.recent_orders")}</h2>
               {userData.orders.slice(0, 5).length === 0 ? (
                 <div className="empty-state">
-                  <p>No orders yet</p>
-                  <button onClick={() => navigate("/shop")}>Start Shopping</button>
+                  <p>{t("dashboard.no_orders_copy")}</p>
+                  <button onClick={() => navigate("/shop")}>{t("dashboard.start_shopping")}</button>
                 </div>
               ) : (
                 <div className="orders-list">
                   {userData.orders.slice(0, 5).map(order => (
-                    <div onClick={() => navigate(`/order/${order.checkout_id}`)} key={order.checkout_id} className="order-card-mini">
+                    <div onClick={() => navigate("/orders")} key={order.checkout_id} className="order-card-mini" role="button" tabIndex={0} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") navigate("/orders"); }}>
                       <div className="order-header">
-                        <strong>Order #{order.checkout_id}</strong>
-                        <span className={`status-badge ${order.status}`}>
-                          {order.status}
+                        <strong>{t("dashboard.order_number", { id: order.checkout_id })}</strong>
+                        <span className={`status-badge ${order.payment_status || order.status}`}>
+                          {formatPaymentStatus(order.payment_status || order.status)}
                         </span>
                       </div>
                       <div className="order-details">
@@ -505,17 +590,46 @@ const fetchproduct = async (id) => {
           </div>
         )}
 
+        {activeSection === "referrals" && (
+          <div className="section-content">
+            <h1>{t("dashboard.referrals")}</h1>
+            <section className="dashboard-referral-panel">
+              <div className="dashboard-referral-panel-heading">
+                <span className="dashboard-referral-icon"><Gift size={22} /></span>
+                <div>
+                  <h2>{t("dashboard.referral_invite_title")}</h2>
+                  <p>{t("dashboard.referral_invite_copy")}</p>
+                </div>
+              </div>
+              <label className="dashboard-referral-label" htmlFor="dashboard-referral-link">{t("dashboard.referral_your_link")}</label>
+              <div className="dashboard-referral-link-row">
+                <input id="dashboard-referral-link" readOnly value={user?.id ? `${window.location.origin}/referrals/${btoa(user.id).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "")}/${user.id.replaceAll("-", "").slice(0, 7).toUpperCase()}` : ""} />
+                <button type="button" className="dashboard-referral-button" onClick={copyReferralLink} disabled={!user?.id}>
+                  {copiedReferralLink ? <Check size={16} /> : <Copy size={16} />}
+                  {copiedReferralLink ? t("dashboard.referral_copied") : t("dashboard.referral_copy_link")}
+                </button>
+              </div>
+              <p className="dashboard-referral-terms">{t("dashboard.referral_terms")}</p>
+              <div className="dashboard-referral-metrics">
+                <div><span>{t("dashboard.referral_people")}</span><strong>{userData.referrals.length}</strong></div>
+                <div><span>{t("dashboard.referral_commission")}</span><strong>{formatCurrency(userData.referrals.reduce((sum, row) => sum + Number(row.commission_amount || 0), 0))}</strong></div>
+                <div><span>{t("dashboard.referral_pending")}</span><strong>{formatCurrency(userData.referralWallet.reduce((sum, row) => sum + ((row.entry_type === "spent" ? -1 : 1) * Number(row.amount || 0)), 0))}</strong></div>
+              </div>
+            </section>
+          </div>
+        )}
+
         {/* Orders Section */}
         {activeSection === "orders" && (
           <div className="section-content">
-            <h1>My Orders</h1>
+            <h1>{t("dashboard.orders")}</h1>
 
             {userData.orders.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon"><Package size={48} /></div>
-                <h3>No Orders Yet</h3>
-                <p>Start shopping to see your orders here</p>
-                <button onClick={() => navigate("/shop")}>Browse Products</button>
+                <h3>{t("dashboard.no_orders_yet")}</h3>
+                <p>{t("dashboard.orders_empty_copy")}</p>
+                <button onClick={() => navigate("/shop")}>{t("dashboard.browse_products")}</button>
               </div>
             ) : (
               <div className="orders-list">
@@ -525,17 +639,17 @@ const fetchproduct = async (id) => {
                     <div key={order.checkout_id} className="order-card">
                       <div className="order-card-header">
                         <div>
-                          <strong>Order #{order.checkout_id}</strong>
+                          <strong>{t("dashboard.order_number", { id: order.checkout_id })}</strong>
                           <div className="order-date">{formatDate(order.created_at)}</div>
                         </div>
-                        <span className={`status-badge ${order.status}`}>
-                          {order.status}
+                        <span className={`status-badge ${order.payment_status || order.status}`}>
+                          {formatPaymentStatus(order.payment_status || order.status)}
                         </span>
                       </div>
 
                       <div className="order-card-body">
                         <div className="order-items">
-                          <strong>Items:</strong>
+                          <strong>{t("dashboard.items")}:</strong>
                           {items.map((item, idx) => (
                             <div key={idx} className="order-item">
                               <span>{item.name} x {item.quantity}</span>
@@ -546,30 +660,30 @@ const fetchproduct = async (id) => {
 
                         <div className="order-info-grid">
                           <div className="info-item">
-                            <div className="label">Delivery Status</div>
+                            <div className="label">{t("dashboard.delivery_status")}</div>
                             <div className="value">
                               <span className={`delivery-badge ${order.delivery_status}`}>
-                                {order.delivery_status || "pending"}
+                                {order.delivery_status ? t(`orders.delivery_${order.delivery_status}`, { defaultValue: order.delivery_status }) : t("orders.delivery_pending")}
                               </span>
                             </div>
                           </div>
 
                           <div className="info-item">
-                            <div className="label">Shipping Method</div>
-                            <div className="value">{order["method of shipping"] || "Standard"}</div>
+                            <div className="label">{t("dashboard.shipping_method")}</div>
+                            <div className="value">{order["method of shipping"] || t("dashboard.standard_shipping")}</div>
                           </div>
 
                           <div className="info-item">
-                            <div className="label">Delivery Address</div>
+                            <div className="label">{t("dashboard.delivery_address")}</div>
                             <div className="value">{order.address}</div>
                           </div>
 
                           {order.tracking_link && (
                             <div className="info-item">
-                              <div className="label">Tracking</div>
+                                <div className="label">{t("dashboard.track_package")}</div>
                               <div className="value">
                                 <a href={order.tracking_link} target="_blank" rel="noopener noreferrer" className="tracking-link">
-                                  Track Package
+                                  {t("dashboard.track_package")}
                                 </a>
                               </div>
                             </div>
@@ -579,7 +693,7 @@ const fetchproduct = async (id) => {
 
                       <div className="order-card-footer">
                         <div className="order-total-display">
-                          Total: <strong>{formatCurrency(order.total)}</strong>
+                          {t("dashboard.total")}: <strong>{formatCurrency(order.total)}</strong>
                         </div>
                       </div>
                     </div>
@@ -593,26 +707,32 @@ const fetchproduct = async (id) => {
         {/* Cart Section */}
         {activeSection === "cart" && (
           <div className="section-content">
-            <h1>Shopping Cart</h1>
+            <h1>{t("dashboard.cart")}</h1>
 
             {userData.cart.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon"><ShoppingBag size={48} /></div>
-                <h3>Your Cart is Empty</h3>
-                <p>Add some products to your cart</p>
-                <button onClick={() => navigate("/shop")}>Browse Products</button>
+                <h3>{t("dashboard.cart_empty")}</h3>
+                <p>{t("dashboard.cart_empty_copy")}</p>
+                <button onClick={() => navigate("/shop")}>{t("dashboard.browse_products")}</button>
               </div>
             ) : (
               <div className="cart-list">
-                {userData.cart.map(item => (
-                  <div key={item.id} className="cart-item">
+                {userData.cart.map(item => {
+                  const product = item.product_id && typeof item.product_id === "object" ? item.product_id : item.products;
+                  const image = product?.product_images?.find((productImage) => productImage.is_primary)?.image_url || product?.product_images?.[0]?.image_url;
+                  const selections = item.selected_options || item.selected_option || {};
+                  return <div key={item.id} className="cart-item">
+                    <div className="cart-item-image-wrap">
+                      {image ? <img className="cart-item-image" src={image} alt={product?.name || ""} /> : <div className="cart-item-image cart-item-image-placeholder"><Package size={22} /></div>}
+                    </div>
                     <div className="cart-item-info">
-                      <h3>{item.products?.name}</h3>
-                      <p className="cart-item-price">{formatCurrency(item.products?.price || 0)}</p>
-                      {item.color && <p>Color: {item.color}</p>}
-                      {item.size && <p>Size: {item.size}</p>}
+                      <h3>{product?.name || t("common.unknown")}</h3>
+                      <p className="cart-item-price">{formatCurrency(product?.price || 0)}</p>
+                      {(selections.color || item.color) && <p>{t("dashboard.color")}: {selections.color || item.color}</p>}
+                      {(selections.size || item.size) && <p>{t("dashboard.size")}: {selections.size || item.size}</p>}
                       <p className="cart-item-stock">
-                        {item.products?.in_Stock === "true" ? "✅ In Stock" : "❌ Out of Stock"}
+                        {Number(product?.stock_quantity) > 0 || product?.in_Stock === true || product?.in_Stock === "true" ? `✓ ${t("dashboard.in_stock")}` : `× ${t("dashboard.out_of_stock")}`}
                       </p>
                     </div>
 
@@ -623,30 +743,30 @@ const fetchproduct = async (id) => {
                         <button onClick={() => handleUpdateCartQuantity(item.id, item.quantity + 1)}>+</button>
                       </div>
                       <button className="btn-remove" onClick={() => handleRemoveFromCart(item.id)}>
-                        Remove
+                        {t("dashboard.remove")}
                       </button>
                     </div>
 
                     <div className="cart-item-total">
-                      {formatCurrency((item.products?.price || 0) * item.quantity)}
+                      {formatCurrency((product?.price || 0) * item.quantity)}
                     </div>
                   </div>
-                ))}
+                })}
 
                 <div className="cart-summary">
-                  <h3>Cart Summary</h3>
+                  <h3>{t("dashboard.cart_summary")}</h3>
                   <div className="summary-row">
-                    <span>Subtotal:</span>
+                    <span>{t("dashboard.subtotal")}:</span>
                     <strong>
                       {formatCurrency(
                         userData.cart.reduce((sum, item) => 
-                          sum + (item.products?.price || 0) * item.quantity, 0
+                          sum + ((typeof item.product_id === "object" ? item.product_id?.price : item.products?.price) || 0) * item.quantity, 0
                         )
                       )}
                     </strong>
                   </div>
                   <button className="btn-checkout" onClick={() => navigate("/checkout")}>
-                    Proceed to Checkout
+                    {t("dashboard.checkout")}
                   </button>
                 </div>
               </div>
@@ -657,25 +777,26 @@ const fetchproduct = async (id) => {
         {/* Reviews Section */}
         {activeSection === "reviews" && (
           <div className="section-content">
-            <h1>My Reviews</h1>
+            <h1>{t("dashboard.reviews")}</h1>
 
             {userData.reviews.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-icon">⭐</div>
-                <h3>No Reviews Yet</h3>
-                <p>Purchase products and leave reviews</p>
+                <div className="empty-icon"><Star size={32} strokeWidth={1.7} aria-hidden="true" /></div>
+                <h3>{t("dashboard.no_reviews")}</h3>
+                <p>{t("dashboard.reviews_empty_copy")}</p>
               </div>
             ) : (
               <div className="reviews-list">
                 {userData.reviews.map(review => (
                   <div key={review.id} className="review-card">
                     <div className="review-header">
-                      <h3>{review.product_id?.name || 'Unknown Product'}</h3>
-                      <div className="review-rating">
-                        {"⭐".repeat(review.rating)}
+                      <h3>{review.product_id?.name || t("common.unknown")}</h3>
+                      <div className="review-rating" aria-label={t("dashboard.rating_out_of_five", { rating: review.rating })}>
+                        {Array.from({ length: Math.max(0, Math.min(5, Number(review.rating) || 0)) }, (_, index) => <Star key={index} size={15} fill="currentColor" aria-hidden="true" />)}
                       </div>
                     </div>
-                    <p className="review-comment">{review.comment}</p>
+                    {review.title && <h4>{review.title}</h4>}
+                    <p className="review-comment">{review.body || review.comment}</p>
                     <div className="review-date">{formatDate(review.created_at)}</div>
                   </div>
                 ))}
@@ -687,13 +808,13 @@ const fetchproduct = async (id) => {
         {/* Cart History Section */}
         {activeSection === "history" && (
           <div className="section-content">
-            <h1>Cart History</h1>
+            <h1>{t("dashboard.cart_history")}</h1>
 
             {userData.cartHistory.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon"><FileText size={48} /></div>
-                <h3>No History Yet</h3>
-                <p>Your cart activity will appear here</p>
+                <h3>{t("dashboard.no_history")}</h3>
+                <p>{t("dashboard.history_empty_copy")}</p>
               </div>
             ) : (
               <div className="history-list">
@@ -703,8 +824,8 @@ const fetchproduct = async (id) => {
                       {history.action === "INSERT" ? <Plus size={20} /> : <Minus size={20} />}
                     </div>
                     <div className="history-info">
-                      <strong>{history.action === "INSERT" ? "Added to cart" : "Removed from cart"}</strong>
-                      <p>{productNames[history.product_id] || history.product_id} | Quantity: {history.quantity}</p>
+                      <strong>{history.action === "INSERT" ? t("dashboard.added_to_cart") : t("dashboard.removed_from_cart")}</strong>
+                      <p>{productNames[history.product_id] || history.product_id} | {t("dashboard.quantity")}: {history.quantity}</p>
                       <span className="history-date">{formatDate(history.action_at)}</span>
                     </div>
                   </div>
@@ -717,13 +838,13 @@ const fetchproduct = async (id) => {
         {/* Settings Section */}
         {activeSection === "settings" && (
           <div className="section-content">
-            <h1>Account Settings</h1>
+            <h1>{t("dashboard.account_settings")}</h1>
 
             <div className="settings-section">
-              <h2>Profile Information</h2>
+              <h2>{t("dashboard.profile_info")}</h2>
               <div className="settings-form">
                 <div className="form-group">
-                  <label>Full Name</label>
+                  <label>{t("dashboard.full_name")}</label>
                   <input
                     type="text"
                     value={formData.fullName}
@@ -732,18 +853,18 @@ const fetchproduct = async (id) => {
                 </div>
 
                 <div className="form-group">
-                  <label>Email</label>
+                  <label>{t("dashboard.email")}</label>
                   <input
                     type="email"
-                    value={userData.profile?.email || ""}
+                    value={user?.email || ""}
                     disabled
                     className="disabled-input"
                   />
-                  <small>Email cannot be changed</small>
+                  <small>{t("dashboard.email_locked")}</small>
                 </div>
 
                 <div className="form-group">
-                  <label>Phone Number</label>
+                  <label>{t("dashboard.phone")}</label>
                   <input
                     type="tel"
                     value={formData.phone}
@@ -752,60 +873,61 @@ const fetchproduct = async (id) => {
                 </div>
 
                 <div className="form-group">
-                  <label>Language</label>
+                  <label>{t("dashboard.language")}</label>
                   <select
                     value={formData.language}
                     onChange={(e) => setFormData({ ...formData, language: e.target.value })}
                   >
-                    <option value="en">English</option>
-                    <option value="fr">Français</option>
+                    <option value="en">{t("dashboard.english")}</option>
+                    <option value="fr">{t("dashboard.french")}</option>
+                    <option value="zh">{t("dashboard.chinese")}</option>
                   </select>
                 </div>
 
                 <button className="btn-save" onClick={handleSaveProfile} disabled={saving}>
-                  {saving ? "Saving..." : "Save Changes"}
+                  {saving ? t("dashboard.saving") : t("dashboard.save_changes")}
                 </button>
               </div>
             </div>
 
             <div className="settings-section">
-              <h2>Change Password</h2>
+              <h2>{t("dashboard.change_password")}</h2>
               <div className="settings-form">
                 <div className="form-group">
-                  <label>New Password</label>
+                  <label>{t("dashboard.new_password")}</label>
                   <input
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Enter new password"
+                    placeholder={t("dashboard.password_placeholder")}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>Confirm Password</label>
+                  <label>{t("dashboard.confirm_password")}</label>
                   <input
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm new password"
+                    placeholder={t("dashboard.confirm_password_placeholder")}
                   />
                 </div>
 
                 <button className="btn-save" onClick={handleChangePassword} disabled={saving}>
-                  {saving ? "Changing..." : "Change Password"}
+                  {saving ? t("dashboard.changing_password") : t("dashboard.update_password")}
                 </button>
               </div>
             </div>
 
             <div className="settings-section">
-              <h2>Account Information</h2>
+              <h2>{t("dashboard.account_details")}</h2>
               <div className="account-info">
                 <div className="info-row">
-                  <span className="label">User ID:</span>
+                  <span className="label">{t("dashboard.user_id")}:</span>
                   <span className="value code">{user?.id}</span>
                 </div>
                 <div className="info-row">
-                  <span className="label">Member Since:</span>
+                  <span className="label">{t("dashboard.member_since")}:</span>
                   <span className="value">{formatDate(userData.profile?.created_at)}</span>
                 </div>
               </div>

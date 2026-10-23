@@ -1,250 +1,137 @@
-// src/admin/AdminReviews.jsx
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabase";
-import { MessageSquare, Star, Search, Package, Trash2 } from "lucide-react";
+import { showSiteModal } from "../utils/siteModal";
+import { Check, Clock3, MessageSquareText, Package, RefreshCw, Search, ShieldCheck, Star, X } from "lucide-react";
 import "../styles/AdminReviews.css";
+
+const statusLabels = { pending: "Needs review", published: "Published", rejected: "Rejected" };
+const dateLabel = (value) => value ? new Date(value).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "—";
 
 export default function AdminReviews() {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterRating, setFilterRating] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const [busyId, setBusyId] = useState(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [ratingFilter, setRatingFilter] = useState("all");
 
-  useEffect(() => {
-    loadReviews();
-  }, []);
-
-  async function loadReviews() {
+  const loadReviews = useCallback(async () => {
     setLoading(true);
+    setLoadError("");
     const { data, error } = await supabase
       .from("product_reviews")
-      .select(`
-        *,
-        product_id(id, name),
-        user_id(user_id, full_name, email)
-      `)
+      .select("id,product_id,user_id,order_item_id,rating,title,body,status,created_at,updated_at,products(name)")
       .order("created_at", { ascending: false });
-
     if (error) {
       console.error("Error loading reviews:", error);
-    } else {
-      setReviews(data || []);
+      setLoadError(error.message || "Reviews could not be loaded.");
+      setReviews([]);
+      setLoading(false);
+      return;
     }
+
+    const rows = data || [];
+    const userIds = [...new Set(rows.map((review) => review.user_id).filter(Boolean))];
+    let profilesById = {};
+    if (userIds.length) {
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("user_id,display_name")
+        .in("user_id", userIds);
+      if (!profilesError) profilesById = Object.fromEntries((profiles || []).map((profile) => [profile.user_id, profile]));
+    }
+    setReviews(rows.map((review) => ({ ...review, reviewer: profilesById[review.user_id] || null })));
     setLoading(false);
-  }
+  }, []);
 
-  async function deleteReview(reviewId) {
-    if (!confirm("Are you sure you want to delete this review?")) return;
+  useEffect(() => { loadReviews(); }, [loadReviews]);
 
-    const { error } = await supabase
-      .from("product_reviews")
-      .delete()
-      .eq("id", reviewId);
-
+  async function setReviewStatus(review, status) {
+    if (review.status === status) return;
+    setBusyId(review.id);
+    const { error } = await supabase.from("product_reviews").update({ status }).eq("id", review.id);
     if (error) {
-      alert("Error deleting review: " + error.message);
+      console.error("Could not update review status:", error);
+      showSiteModal(`Could not update this review: ${error.message}`, "Review update failed", "error");
     } else {
-      setReviews(reviews.filter(r => r.id !== reviewId));
-      alert("Review deleted successfully!");
+      setReviews((current) => current.map((item) => item.id === review.id ? { ...item, status, updated_at: new Date().toISOString() } : item));
     }
+    setBusyId(null);
   }
 
-  // Filter reviews
-  const filteredReviews = reviews.filter(review => {
-    const matchesSearch = 
-      review.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      review.comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      review.product_id?.name?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRating = !filterRating || review.rating === parseInt(filterRating);
-    return matchesSearch && matchesRating;
-  });
+  const stats = useMemo(() => {
+    const count = reviews.length;
+    return {
+      total: count,
+      pending: reviews.filter((review) => review.status === "pending").length,
+      published: reviews.filter((review) => review.status === "published").length,
+      average: count ? (reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / count).toFixed(1) : "0.0",
+    };
+  }, [reviews]);
 
-  // Statistics
-  const stats = {
-    total: reviews.length,
-    avgRating: reviews.length > 0 
-      ? (reviews.reduce((sum, r) => sum + parseFloat(r.rating), 0) / reviews.length).toFixed(1)
-      : 0,
-    fiveStar: reviews.filter(r => r.rating === 5).length,
-    fourStar: reviews.filter(r => r.rating === 4).length,
-    threeStar: reviews.filter(r => r.rating === 3).length,
-    twoStar: reviews.filter(r => r.rating === 2).length,
-    oneStar: reviews.filter(r => r.rating === 1).length
-  };
+  const filteredReviews = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return reviews.filter((review) => {
+      const searchTarget = [review.title, review.body, review.products?.name, review.reviewer?.display_name, review.user_id].join(" ").toLowerCase();
+      return (!query || searchTarget.includes(query))
+        && (statusFilter === "all" || review.status === statusFilter)
+        && (ratingFilter === "all" || Number(review.rating) === Number(ratingFilter));
+    });
+  }, [reviews, search, statusFilter, ratingFilter]);
 
   return (
-    <div className="admin-reviews">
-      <div className="reviews-header">
-        <div>
-          <h1><Star className="inline-block mr-2" size={28} /> Reviews Management</h1>
-          <p className="subtitle">Manage product reviews and ratings</p>
-        </div>
-      </div>
+    <main className="admin-reviews-page">
+      <header className="reviews-page-heading">
+        <div><span className="reviews-eyebrow">CUSTOMER VOICE</span><h1>Product reviews</h1><p>Review customer feedback and decide which submissions appear in the shop.</p></div>
+        <button type="button" className="reviews-refresh" onClick={loadReviews} disabled={loading}><RefreshCw size={15} className={loading ? "reviews-spin" : ""} />Refresh reviews</button>
+      </header>
 
-      {/* Statistics */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-icon"><MessageSquare size={24} /></div>
-          <div className="stat-content">
-            <div className="stat-value">{stats.total}</div>
-            <div className="stat-label">Total Reviews</div>
+      <section className="reviews-summary" aria-label="Review summary">
+        <article><span className="reviews-summary-icon"><MessageSquareText size={18} /></span><div><strong>{stats.total}</strong><small>Total reviews</small></div></article>
+        <article><span className="reviews-summary-icon is-pending"><Clock3 size={18} /></span><div><strong>{stats.pending}</strong><small>Awaiting moderation</small></div></article>
+        <article><span className="reviews-summary-icon is-published"><ShieldCheck size={18} /></span><div><strong>{stats.published}</strong><small>Visible in the shop</small></div></article>
+        <article><span className="reviews-summary-icon is-rating"><Star size={18} /></span><div><strong>{stats.average}<span className="reviews-out-of"> / 5</span></strong><small>Average rating</small></div></article>
+      </section>
+
+      <section className="reviews-workspace">
+        <header className="reviews-toolbar">
+          <div><h2>Review inbox</h2><p>{filteredReviews.length} {filteredReviews.length === 1 ? "review" : "reviews"} shown</p></div>
+          <div className="reviews-filters">
+            <label className="reviews-search"><Search size={16} /><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search reviews or products" aria-label="Search reviews" /></label>
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label="Filter review status"><option value="all">All statuses</option><option value="pending">Needs review</option><option value="published">Published</option><option value="rejected">Rejected</option></select>
+            <select value={ratingFilter} onChange={(event) => setRatingFilter(event.target.value)} aria-label="Filter review rating"><option value="all">All ratings</option>{[5, 4, 3, 2, 1].map((rating) => <option value={rating} key={rating}>{rating} stars</option>)}</select>
           </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon"><Star size={24} /></div>
-          <div className="stat-content">
-            <div className="stat-value">{stats.avgRating}</div>
-            <div className="stat-label">Average Rating</div>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon"><Star size={24} /></div>
-          <div className="stat-content">
-            <div className="stat-value">{stats.fiveStar}</div>
-            <div className="stat-label">5 Star Reviews</div>
-          </div>
-        </div>
-      </div>
+        </header>
 
-      {/* Rating Distribution */}
-      <div className="rating-distribution">
-        <h3>Rating Distribution</h3>
-        <div className="distribution-bars">
-          {[5, 4, 3, 2, 1].map(rating => {
-            const count = reviews.filter(r => r.rating === rating).length;
-            const percentage = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
-            return (
-              <div key={rating} className="distribution-row">
-                <span className="rating-label">{rating} ⭐</span>
-                <div className="progress-bar">
-                  <div 
-                    className="progress-fill" 
-                    style={{ width: `${percentage}%` }}
-                  ></div>
-                </div>
-                <span className="rating-count">{count}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="filters-bar">
-        <div className="search-box">
-          <input
-            type="text"
-            placeholder="Search reviews..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <select value={filterRating} onChange={e => setFilterRating(e.target.value)}>
-          <option value="">All Ratings</option>
-          <option value="5">5 Stars</option>
-          <option value="4">4 Stars</option>
-          <option value="3">3 Stars</option>
-          <option value="2">2 Stars</option>
-          <option value="1">1 Star</option>
-        </select>
-        {(searchQuery || filterRating) && (
-          <button
-            onClick={() => {
-              setSearchQuery("");
-              setFilterRating("");
-            }}
-            className="btn-clear"
-          >
-            Clear Filters
-          </button>
-        )}
-      </div>
-
-      {/* Reviews Table */}
-      {loading ? (
-        <div className="loading-state">
-          <div className="spinner"></div>
-          <p>Loading reviews...</p>
-        </div>
-      ) : filteredReviews.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">⭐</div>
-          <h3>No reviews found</h3>
-          <p>
-            {searchQuery || filterRating
-              ? "Try adjusting your filters"
-              : "No reviews have been submitted yet"}
-          </p>
-        </div>
-      ) : (
-        <div className="table-container">
-          <table className="reviews-table">
-            <thead>
-              <tr>
-                <th>Reviewer</th>
-                <th>Product</th>
-                <th>Rating</th>
-                <th>Comment</th>
-                <th>Date</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredReviews.map(review => (
-                <tr key={review.id}>
-                  <td>
-                    <div className="reviewer-cell">
-                      <div className="reviewer-avatar">
-                        {review.username.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <strong>{review.username}</strong>
-                        {review.user_id?.email && (
-                          <div className="reviewer-email">{review.user_id.email}</div>
-                        )}
-                      </div>
+        {loadError ? <div className="reviews-state is-error" role="alert"><span><X size={20} /></span><h3>Reviews unavailable</h3><p>{loadError}</p><button type="button" onClick={loadReviews}>Try again</button></div>
+          : loading ? <div className="reviews-loading" aria-label="Loading reviews">{[0, 1, 2].map((item) => <i key={item} />)}</div>
+            : filteredReviews.length === 0 ? <div className="reviews-state"><span><MessageSquareText size={22} /></span><h3>{reviews.length ? "No matching reviews" : "No reviews yet"}</h3><p>{reviews.length ? "Adjust the search or filters to find another review." : "Customer feedback will appear here when it is submitted."}</p></div>
+              : <div className="reviews-list">{filteredReviews.map((review) => {
+                const name = review.reviewer?.display_name || "Customer";
+                const initial = name.charAt(0).toUpperCase();
+                return <article className="admin-review-card" key={review.id}>
+                  <header className="admin-review-card-head">
+                    <div className="admin-review-identity"><span className="admin-review-avatar">{initial}</span><div><strong>{name}</strong><small>Review #{review.id} · {dateLabel(review.created_at)}</small></div></div>
+                    <span className={`review-status-badge is-${review.status || "pending"}`}>{statusLabels[review.status] || "Needs review"}</span>
+                  </header>
+                  <div className="admin-review-content">
+                    <div className="admin-review-product"><Package size={15} /><span>{review.products?.name || `Product #${review.product_id}`}</span><span className="admin-review-order">Order item #{review.order_item_id}</span></div>
+                    <div className="admin-review-rating" aria-label={`${review.rating} out of 5 stars`}>{[1, 2, 3, 4, 5].map((star) => <Star key={star} size={15} fill={star <= Number(review.rating) ? "currentColor" : "none"} />)}<strong>{Number(review.rating).toFixed(1)}</strong></div>
+                    {review.title && <h3>{review.title}</h3>}
+                    <p className="admin-review-body">{review.body || <span className="reviews-no-comment">No written comment was provided.</span>}</p>
+                  </div>
+                  <footer className="admin-review-actions">
+                    <span className="admin-review-customer-id">Customer ID · {review.user_id ? `${review.user_id.slice(0, 8)}…` : "Unavailable"}</span>
+                    <div>
+                      {review.status !== "published" && <button type="button" className="review-action is-approve" onClick={() => setReviewStatus(review, "published")} disabled={busyId === review.id}><Check size={15} />Publish</button>}
+                      {review.status !== "rejected" && <button type="button" className="review-action is-reject" onClick={() => setReviewStatus(review, "rejected")} disabled={busyId === review.id}><X size={15} />Reject</button>}
+                      {review.status !== "pending" && <button type="button" className="review-action is-reset" onClick={() => setReviewStatus(review, "pending")} disabled={busyId === review.id}><Clock3 size={15} />Return to pending</button>}
                     </div>
-                  </td>
-                  <td>
-                    <div className="product-cell">
-                      <Package className="inline-block mr-1" size={14} /> {review.product_id?.name || `Product #${review.product_id}`}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="rating-cell">
-                      <div className="stars">{Array(Math.floor(review.rating)).fill(0).map((_, i) => <Star key={i} size={14} fill="gold" stroke="gold" />)}</div>
-                      <span className="rating-number">{review.rating}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="comment-cell">
-                      {review.comment}
-                      {review.updated_at !== review.created_at && (
-                        <span className="edited-badge">Edited</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="date-cell">
-                    {new Date(review.created_at).toLocaleDateString()}
-                    <div className="time-cell">
-                      {new Date(review.created_at).toLocaleTimeString()}
-                    </div>
-                  </td>
-                  <td>
-                    <button
-                      onClick={() => deleteReview(review.id)}
-                      className="btn-delete"
-                      title="Delete"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
+                  </footer>
+                </article>;
+              })}</div>}
+      </section>
+    </main>
   );
 }

@@ -1,0 +1,22 @@
+# Fapshi payment setup
+
+Apply `migrations/20261023100000_secure_fapshi_checkout.sql` first, then `migrations/20261023120000_link_fapshi_checkouts_to_orders.sql`, then `migrations/20261023130000_restore_checkouts_status.sql` if the `checkouts.status` column was deleted, then `migrations/20261023140000_payment_method_and_tracking.sql`, `migrations/20261023150000_tracking_code_and_order_details.sql`, `migrations/20261023160000_tracking_prefix_tsb.sql`, and `migrations/20261023170000_order_confirmation_and_shipping_payment.sql`. The order-link migration connects each checkout to `orders`, copies its line items into `order_items`, creates a `payment_attempts` row, and keeps those tables synchronized as payment status changes. The payment/tracking migrations record successful Fapshi payments as `Mobile Payment`; tracking numbers use `TSB` + the first four characters of the customer's user ID + eight random alphanumeric characters. Migration 170 creates a retryable confirmation-email queue and adds shipping amount/paid status to the restricted tracking lookup. If the database was bootstrapped from `schema-v2.sql`, the first migration creates the app-compatible `checkouts`/`checkout_items` tables and adds atomic stock reservation, per-user idempotency, and idempotent payment state transitions.
+
+If the storefront still displays an old `ST-XXXXX` number, that Supabase database is still using the earlier tracking trigger. Apply migrations `20261023150000_tracking_code_and_order_details.sql`, `20261023160000_tracking_prefix_tsb.sql`, and `20261023170000_order_confirmation_and_shipping_payment.sql` in that order. The second migration rotates existing checkout and shipment numbers to `TSB` + the first four characters of the customer's user ID + eight random letters/numbers, and the third restores the latest public tracking response fields. Do not run only migration 160 when migration 170 is already installed, because 170 adds shipping details to the tracking lookup.
+
+Set these Edge Function secrets in Supabase:
+
+- `FAPSHI_API_KEY` and `FAPSHI_API_USER`: credentials for the same Fapshi service.
+- `FAPSHI_BASE_URL`: set explicitly to `https://sandbox.fapshi.com` while developing, or `https://live.fapshi.com` for production. Use the matching credentials for that environment.
+- `FAPSHI_WEBHOOK_SECRET`: same value configured as the Fapshi service webhook secret.
+- `FAPSHI_WEBHOOK_URL`: deployed `fapshi-webhook` function URL configured on the Fapshi service.
+- `APP_URL`: public site origin, for example `https://tsogo-bis.vercel.app`.
+- `RESEND_API_KEY` and `RESEND_FROM_EMAIL`: Resend credentials and verified sender used for order confirmation emails (the same secrets already used by password reset).
+
+Deploy `create-fapshi-order`, `get-fapshi-checkout-status`, and `fapshi-webhook`. Keep the Fapshi credentials and Supabase service role key in Edge Function secrets only. Configure the Fapshi webhook secret in its dashboard so notifications include `x-wh-secret`.
+
+For the webhook, deploy with JWT verification explicitly disabled because Fapshi does not send a Supabase JWT. This repository sets `verify_jwt = false` in `config.toml`, but that setting only takes effect after deployment. From the repository root run `supabase functions deploy fapshi-webhook --project-ref bompysyuamyalbzmubzo --no-verify-jwt`. The function then authenticates the request using `FAPSHI_WEBHOOK_SECRET` (`x-wh-secret`) and verifies the transaction with Fapshi before changing database state. Do not disable verification on the customer-facing status or checkout functions.
+
+The checkout initiation endpoint accepts cart row IDs and an idempotency key only. It derives the customer identity from the verified Supabase session, recalculates merchandise totals from catalog prices, and reserves stock in the same database transaction that creates checkout records. A webhook status is verified against Fapshi's status endpoint before database updates are applied.
+
+The return URL includes the checkout ID. When the customer returns to `/orders`, the authenticated status function polls Fapshi directly every 12 seconds for up to three minutes if the checkout is still pending. It verifies the transaction ID, checkout reference, amount, and transaction type on the server before applying the same payment update. This is a recovery path when the Fapshi webhook is not invoked; the webhook should still be configured for customers who do not return to the site.

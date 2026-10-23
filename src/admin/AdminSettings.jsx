@@ -1,20 +1,45 @@
+import { showSiteModal as alert } from "../utils/siteModal";
 // src/admin/AdminSettings.jsx
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "../lib/supabase";
 import { useAdmin } from "../context/AdminContext";
 import { useSiteSettings } from "../context/SiteSettingsContext";
-import { Users, Globe, Save, Lock, User, Settings, CheckCircle, XCircle } from "lucide-react";
+import { Users, Globe, Save, Lock, User, Settings, ShieldCheck, RefreshCw, Store } from "lucide-react";
 import "../styles/AdminSettings.css";
+
+async function functionErrorMessage(error, data) {
+  if (data?.error) return data.error;
+  const response = error?.context;
+  if (response && typeof response.clone === "function") {
+    try {
+      const payload = await response.clone().json();
+      if (payload?.error || payload?.message) {
+        const message = payload.error || payload.message;
+        return payload.detail ? `${message}: ${payload.detail}` : message;
+      }
+    } catch {
+      try {
+        const body = await response.clone().text();
+        if (body) return body.slice(0, 240);
+      } catch { /* keep the SDK message */ }
+    }
+  }
+  return error?.message || "The admin service could not be reached.";
+}
 
 export default function AdminSettings() {
   const { t } = useTranslation();
   const { user, adminRole } = useAdmin();
   const { refreshSettings } = useSiteSettings();
   const [loading, setLoading] = useState(false);
+  const [adminsLoading, setAdminsLoading] = useState(true);
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsError, setSettingsError] = useState("");
+  const [adminsError, setAdminsError] = useState("");
   const [admins, setAdmins] = useState([]);
   const [newAdminEmail, setNewAdminEmail] = useState("");
-  const [newAdminRole, setNewAdminRole] = useState("moderator");
   const [showAddForm, setShowAddForm] = useState(false);
 
   // Site settings
@@ -23,6 +48,7 @@ export default function AdminSettings() {
   const [sitePhone, setSitePhone] = useState("");
   const [currency, setCurrency] = useState("XAF");
   const [taxRate, setTaxRate] = useState("0");
+  const [termsAndPolicies, setTermsAndPolicies] = useState("");
 
   // Password change
   const [currentPassword, setCurrentPassword] = useState("");
@@ -36,39 +62,49 @@ export default function AdminSettings() {
   }, []);
 
   async function loadAdmins() {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("admins")
-      .select("*")
-      .order("created_at", { ascending: false });
+    setAdminsLoading(true);
+    setAdminsError("");
+    const { data, error } = await supabase.functions.invoke("manage-admins", {
+      body: { action: "list" },
+    });
 
     if (error) {
       console.error("Error loading admins:", error);
+      setAdminsError(await functionErrorMessage(error, data));
+    } else if (data?.error) {
+      console.error("Error loading admins:", data.error);
+      setAdminsError(data.error);
     } else {
-      setAdmins(data || []);
+      setAdmins(data?.admins || []);
     }
-    setLoading(false);
+    setAdminsLoading(false);
   }
 
   async function loadSiteSettings() {
+    setSettingsLoading(true);
+    setSettingsError("");
     const { data, error } = await supabase
       .from("site_settings")
       .select("*")
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Error loading site settings:", error);
+      setSettingsError(error.message || "Site settings could not be loaded.");
       // Use defaults if no settings found
+      setSettingsLoading(false);
       return;
     }
 
     if (data) {
       setSiteName(data.site_name || "TSOGO-BIS");
-      setSiteEmail(data.site_email || "");
-      setSitePhone(data.site_phone || "");
-      setCurrency(data.currency || "XAF");
-      setTaxRate(data.tax_rate?.toString() || "0");
+      setSiteEmail(data.contact_email || "");
+      setSitePhone(data.contact_phone || "");
+      setCurrency(data.base_currency || "XAF");
+      setTaxRate(((Number(data.tax_rate) || 0) * 100).toString());
+      setTermsAndPolicies(data.terms_and_policies || "");
     }
+    setSettingsLoading(false);
   }
 
   async function addAdmin() {
@@ -77,42 +113,23 @@ export default function AdminSettings() {
       return;
     }
 
-    // Check if admin can add admins (only super_admin)
-    if (adminRole !== "super_admin") {
-      alert("Only super admins can add new admins");
+    if (adminRole !== "admin") {
+      alert("Only admins can add admins");
       return;
     }
 
     setLoading(true);
+    const { data, error } = await supabase.functions.invoke("manage-admins", {
+      body: { action: "add", email: newAdminEmail.trim() },
+    });
 
-    // First, find the user by email in the profiles table
-    const { data: profileData, error: profileError } = await supabase
-      .from("profiles")
-      .select("user_id")
-      .eq("email", newAdminEmail.trim())
-      .single();
-
-    if (profileError || !profileData) {
-      alert("User not found. The user must have an account first.");
-      setLoading(false);
-      return;
-    }
-
-    // Now insert into admins table with the user_id
-    const { error } = await supabase
-      .from("admins")
-      .insert({
-        id: profileData.user_id,
-        email: newAdminEmail.trim(),
-        role: newAdminRole
-      });
-
-    if (error) {
-      alert("Error adding admin: " + error.message);
+    if (error || data?.error) {
+      alert("Error adding admin: " + await functionErrorMessage(error, data));
     } else {
-      alert("Admin added successfully!");
+      alert(data.invited
+        ? "Invite sent. The new admin can sign in after accepting it."
+        : "Admin access added to the existing account.");
       setNewAdminEmail("");
-      setNewAdminRole("moderator");
       setShowAddForm(false);
       loadAdmins();
     }
@@ -120,8 +137,8 @@ export default function AdminSettings() {
   }
 
   async function deleteAdmin(adminId, email) {
-    if (adminRole !== "super_admin") {
-      alert("Only super admins can delete admins");
+    if (adminRole !== "admin") {
+      alert("Only admins can remove admins");
       return;
     }
 
@@ -129,33 +146,14 @@ export default function AdminSettings() {
       return;
     }
 
-    const { error } = await supabase
-      .from("admins")
-      .delete()
-      .eq("id", adminId);
+    const { data, error } = await supabase.functions.invoke("manage-admins", {
+      body: { action: "remove", user_id: adminId },
+    });
 
-    if (error) {
-      alert("Error removing admin: " + error.message);
+    if (error || data?.error) {
+      alert("Error removing admin: " + await functionErrorMessage(error, data));
     } else {
       alert("Admin removed successfully!");
-      loadAdmins();
-    }
-  }
-
-  async function updateAdminRole(adminId, newRole) {
-    if (adminRole !== "super_admin") {
-      alert("Only super admins can change roles");
-      return;
-    }
-
-    const { error } = await supabase
-      .from("admins")
-      .update({ role: newRole })
-      .eq("id", adminId);
-
-    if (error) {
-      alert("Error updating role: " + error.message);
-    } else {
       loadAdmins();
     }
   }
@@ -214,38 +212,18 @@ export default function AdminSettings() {
   }
 
   async function saveSiteSettings() {
-    setLoading(true);
-
-    // Get the first (and only) settings record
-    const { data: existingSettings } = await supabase
-      .from("site_settings")
-      .select("id")
-      .single();
+    setSavingSettings(true);
 
     const settingsData = {
       site_name: siteName,
-      site_email: siteEmail,
-      site_phone: sitePhone,
-      currency: currency,
-      tax_rate: parseFloat(taxRate) || 0
+      contact_email: siteEmail,
+      contact_phone: sitePhone,
+      base_currency: currency,
+      tax_rate: (parseFloat(taxRate) || 0) / 100,
+      terms_and_policies: termsAndPolicies
     };
 
-    let error;
-
-    if (existingSettings) {
-      // Update existing settings
-      const result = await supabase
-        .from("site_settings")
-        .update(settingsData)
-        .eq("id", existingSettings.id);
-      error = result.error;
-    } else {
-      // Insert new settings (first time)
-      const result = await supabase
-        .from("site_settings")
-        .insert(settingsData);
-      error = result.error;
-    }
+    const { error } = await supabase.from("site_settings").upsert({ id: true, ...settingsData }, { onConflict: "id" });
 
     if (error) {
       alert("Error saving settings: " + error.message);
@@ -255,23 +233,25 @@ export default function AdminSettings() {
       refreshSettings();
     }
 
-    setLoading(false);
+    setSavingSettings(false);
   }
 
   return (
     <div className="admin-settings">
       <div className="settings-header">
         <div>
+          <span className="settings-eyebrow">STORE CONTROL</span>
           <h1><Settings className="inline-block mr-2" size={28} /> {t('admin.settings.title')}</h1>
           <p className="subtitle">{t('admin.settings.subtitle')}</p>
         </div>
+        <div className="settings-header-note"><ShieldCheck size={16} /> Changes apply across the storefront</div>
       </div>
 
       {/* Admin Management Section */}
       <div className="settings-section">
         <div className="section-header">
-          <h2><Users className="inline-block mr-2" size={20} /> {t('admin.settings.admin_users')}</h2>
-          {adminRole === "super_admin" && (
+          <div><h2><Users className="inline-block mr-2" size={20} /> {t('admin.settings.admin_users')}</h2><p>Manage who can access the admin workspace.</p></div>
+          {adminRole === "admin" && (
             <button
               onClick={() => setShowAddForm(!showAddForm)}
               className="btn-add"
@@ -291,15 +271,6 @@ export default function AdminSettings() {
                 onChange={(e) => setNewAdminEmail(e.target.value)}
                 className="input-email"
               />
-              <select
-                value={newAdminRole}
-                onChange={(e) => setNewAdminRole(e.target.value)}
-                className="select-role"
-              >
-                <option value="moderator">{t('admin.settings.moderator')}</option>
-                <option value="admin">{t('admin.settings.admin')}</option>
-                <option value="super_admin">{t('admin.settings.super_admin')}</option>
-              </select>
               <button
                 onClick={addAdmin}
                 disabled={loading}
@@ -314,12 +285,13 @@ export default function AdminSettings() {
           </div>
         )}
 
-        {loading && !showAddForm ? (
+        {adminsError && <div className="settings-inline-error" role="alert"><span>{adminsError}</span><button type="button" onClick={loadAdmins}><RefreshCw size={14} /> Retry</button></div>}
+        {adminsLoading && !showAddForm ? (
           <div className="loading-state">
-            <div className="spinner"></div>
-            <p>Loading admins...</p>
+            <div className="settings-skeleton"><i /><i /><i /></div>
+            <p>Loading administrators…</p>
           </div>
-        ) : (
+        ) : !adminsError && (
           <div className="admins-table-container">
             <table className="admins-table">
               <thead>
@@ -332,7 +304,7 @@ export default function AdminSettings() {
               </thead>
               <tbody>
                 {admins.map((admin) => (
-                  <tr key={admin.id}>
+                  <tr key={admin.user_id}>
                     <td>
                       <div className="admin-email-cell">
                         <div className="admin-avatar-small">
@@ -345,27 +317,13 @@ export default function AdminSettings() {
                       </div>
                     </td>
                     <td>
-                      {adminRole === "super_admin" && admin.email !== user?.email ? (
-                        <select
-                          value={admin.role || "moderator"}
-                          onChange={(e) => updateAdminRole(admin.id, e.target.value)}
-                          className="role-select"
-                        >
-                          <option value="moderator">{t('admin.settings.moderator')}</option>
-                          <option value="admin">{t('admin.settings.admin')}</option>
-                          <option value="super_admin">{t('admin.settings.super_admin')}</option>
-                        </select>
-                      ) : (
-                        <span className={`role-badge ${admin.role || "moderator"}`}>
-                          {admin.role ? admin.role.replace("_", " ") : "moderator"}
-                        </span>
-                      )}
+                      <span className="role-badge admin">Admin</span>
                     </td>
                     <td>{admin.created_at ? new Date(admin.created_at).toLocaleDateString() : "—"}</td>
                     <td>
-                      {adminRole === "super_admin" && admin.email !== user?.email ? (
+                      {adminRole === "admin" && admin.user_id !== user?.id ? (
                         <button
-                          onClick={() => deleteAdmin(admin.id, admin.email)}
+                          onClick={() => deleteAdmin(admin.user_id, admin.email)}
                           className="btn-delete-small"
                         >
                           {t('admin.settings.remove')}
@@ -376,6 +334,7 @@ export default function AdminSettings() {
                     </td>
                   </tr>
                 ))}
+                {admins.length === 0 && <tr><td colSpan="4" className="settings-table-empty">No administrator accounts were returned.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -385,10 +344,13 @@ export default function AdminSettings() {
       {/* Site Settings Section */}
       <div className="settings-section">
         <div className="section-header">
-          <h2><Globe className="inline-block mr-2" size={20} /> {t('admin.settings.site_settings')}</h2>
+          <div><h2><Globe className="inline-block mr-2" size={20} /> {t('admin.settings.site_settings')}</h2><p>Store identity, contact details, currency, tax, and public policies.</p></div>
         </div>
 
-        <div className="settings-form">
+        {settingsError && <div className="settings-inline-error" role="alert"><span>{settingsError}</span><button type="button" onClick={loadSiteSettings}><RefreshCw size={14} /> Retry</button></div>}
+        {settingsLoading ? <div className="settings-form-skeleton"><i /><i /><i /><i /></div> : <div className="settings-form">
+          <div className="settings-form-intro"><Store size={17} /><span>Store profile</span></div>
+          <div className="settings-form-grid">
           <div className="form-group">
             <label>{t('admin.settings.site_name')}</label>
             <input
@@ -407,6 +369,7 @@ export default function AdminSettings() {
               onChange={(e) => setSiteEmail(e.target.value)}
               placeholder="admin@tsogo-bis.com"
             />
+          </div>
           </div>
 
           <div className="form-group">
@@ -443,67 +406,37 @@ export default function AdminSettings() {
             </div>
           </div>
 
-          <button onClick={saveSiteSettings} className="btn-save-settings">
-            <Save className="inline-block mr-1" size={16} /> {t('admin.settings.save_settings')}
-          </button>
+          <div className="form-group">
+            <label htmlFor="site-terms">Terms and policies</label>
+            <small>Edit the content shown on the public Terms and Policies page. Plain text is supported; separate sections with blank lines.</small>
+            <textarea
+              id="site-terms"
+              value={termsAndPolicies}
+              onChange={(event) => setTermsAndPolicies(event.target.value)}
+              rows={16}
+              placeholder="Terms and policies content"
+            />
+          </div>
+
+          <div className="settings-save-row"><span>Changes are saved to the live storefront.</span><button type="button" onClick={saveSiteSettings} className="btn-save-settings" disabled={savingSettings}>
+            <Save className="inline-block mr-1" size={16} /> {savingSettings ? "Saving changes…" : t('admin.settings.save_settings')}
+          </button></div>
         </div>
+        }
       </div>
 
-      {/* Role Permissions Info */}
+      {/* Admin access model */}
       <div className="settings-section">
         <div className="section-header">
-          <h2><Lock className="inline-block mr-2" size={20} /> Role Permissions</h2>
+          <h2><Lock className="inline-block mr-2" size={20} /> Admin access</h2>
         </div>
-
-        <div className="permissions-grid">
-          <div className="permission-card">
-            <div className="permission-header">
-              <span className="role-badge moderator">Moderator</span>
-            </div>
-            <ul className="permission-list">
-              <li><CheckCircle className="inline-block mr-1" size={14} /> View dashboard</li>
-              <li><CheckCircle className="inline-block mr-1" size={14} /> Manage products</li>
-              <li><CheckCircle className="inline-block mr-1" size={14} /> View orders</li>
-              <li><CheckCircle className="inline-block mr-1" size={14} /> Manage reviews</li>
-              <li><XCircle className="inline-block mr-1" size={14} /> Manage users</li>
-              <li><XCircle className="inline-block mr-1" size={14} /> Manage admins</li>
-            </ul>
-          </div>
-
-          <div className="permission-card">
-            <div className="permission-header">
-              <span className="role-badge admin">Admin</span>
-            </div>
-            <ul className="permission-list">
-              <li><CheckCircle className="inline-block mr-1" size={14} /> View dashboard</li>
-              <li><CheckCircle className="inline-block mr-1" size={14} /> Manage products</li>
-              <li><CheckCircle className="inline-block mr-1" size={14} /> Manage orders</li>
-              <li><CheckCircle className="inline-block mr-1" size={14} /> Manage reviews</li>
-              <li><CheckCircle className="inline-block mr-1" size={14} /> Manage users</li>
-              <li><XCircle className="inline-block mr-1" size={14} /> Manage admins</li>
-            </ul>
-          </div>
-
-          <div className="permission-card">
-            <div className="permission-header">
-              <span className="role-badge super_admin">Super Admin</span>
-            </div>
-            <ul className="permission-list">
-              <li><CheckCircle className="inline-block mr-1" size={14} /> View dashboard</li>
-              <li><CheckCircle className="inline-block mr-1" size={14} /> Manage products</li>
-              <li><CheckCircle className="inline-block mr-1" size={14} /> Manage orders</li>
-              <li><CheckCircle className="inline-block mr-1" size={14} /> Manage reviews</li>
-              <li><CheckCircle className="inline-block mr-1" size={14} /> Manage users</li>
-              <li><CheckCircle className="inline-block mr-1" size={14} /> Manage admins</li>
-            </ul>
-          </div>
-        </div>
+        <p>All users listed above have the same admin access. Admins can invite new admins from this dashboard and remove other admins. The last remaining admin cannot be removed.</p>
       </div>
 
       {/* Change Password Section */}
       <div className="settings-section">
         <div className="section-header">
-          <h2><Lock className="inline-block mr-2" size={20} /> Change Password</h2>
+          <div><h2><Lock className="inline-block mr-2" size={20} /> Change Password</h2><p>Update the password for your administrator account.</p></div>
         </div>
 
         <div className="settings-form">
@@ -554,7 +487,7 @@ export default function AdminSettings() {
       {/* Current User Info */}
       <div className="settings-section">
         <div className="section-header">
-          <h2><User className="inline-block mr-2" size={20} /> Your Account</h2>
+          <div><h2><User className="inline-block mr-2" size={20} /> Your Account</h2><p>Identity and access details for the signed-in administrator.</p></div>
         </div>
 
         <div className="account-info">

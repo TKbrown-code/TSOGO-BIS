@@ -1,78 +1,43 @@
 // useUserInfo.jsx
 import { supabase } from "../lib/supabase";
 import { useModalMessage } from "../context/ModalMessageContext"; // import context
-import React from "react";
-import { useState } from "react";
-import useFormValidation from "../hooks/verifyForm"
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export default function useUserinfo({form, isSignUp, setLoading}) {
   // get all modal helpers from context
-  const { openMessage, confirmMessage, errorMessage, closeMessage } = useModalMessage();
-  const[resetForm, setResetForm] = useState("");
+  const { confirmMessage, errorMessage, closeMessage } = useModalMessage();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const initialValues = {
-    fullName: "",
-    email: "",
-    phone: "",
-    password: "",
-    vpassword: "",
-    policy: false,
-  };
-
-  const { handleChange, setForm } = useFormValidation(initialValues);
-
-  const clearForm = () => {
-    setForm(initialValues); // ✅ reset form
-  };
-
-
   const SignUP = async () => {
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: form.email,
-        password: form.password,
+      const { data, error } = await supabase.functions.invoke("create-account", {
+        body: {
+          email: form.email.trim(),
+          password: form.password,
+          fullName: form.fullName.trim(),
+          language: (i18n.resolvedLanguage || localStorage.getItem("language") || "fr").slice(0, 2),
+          referralCode: localStorage.getItem("tsogo_referral_code") || null,
+        },
       });
 
-      if (error) {
-        console.error("Sign Up error object:", error);
-        errorMessage("Sign Up error: " + (error.message || error.error_description || "Unknown error"));
+      if (error || data?.error || !data?.success) {
+        console.error("Sign Up failed:", error || data?.error || "Unexpected response");
+        errorMessage(t("auth.signup_error"), t("auth.signup_error_title"));
         setLoading(false);
         return;
-      } else if (data?.user?.identities?.length === 0) {
-        errorMessage("User Email or Name already exist!");
-        setLoading(false);
-        clearForm();
-        return;
-      } else {
-          setLoading(false);
-        confirmMessage(
-  "Sign up successful! Verify your email before continuing.",
-  "Confirm Email",
-  <>
-    <button
-      className="modalbtn verifybtn"
-      onClick={async () => {
-        await SignIn();
-      }}
-    >
-      Sign In
-    </button>
-    <button
-      className="modalbtn"
-      onClick={() => {
-        closeMessage();
-        navigate("/dashboard");
-      }}
-    >
-      Close
-    </button>
-  </>
-);
       }
+
+      setLoading(false);
+      localStorage.removeItem("tsogo_referral_code");
+      confirmMessage(
+        t("auth.signup_email_message"),
+        t("auth.signup_email_title"),
+        <button className="modalbtn" onClick={() => closeMessage(true)}>{t("auth.next")}</button>,
+      );
     } catch (err) {
       console.error("Unexpected error during Sign Up:", err);
-      errorMessage("Something went wrong during Sign Up.");
+      errorMessage(t("auth.signup_error"), t("auth.signup_error_title"));
       setLoading(false);
     }
   };
@@ -105,7 +70,6 @@ export default function useUserinfo({form, isSignUp, setLoading}) {
           </>
         );
         setLoading(false);
-        clearForm();
       }
     } catch (err) {
       console.error("Unexpected error during Sign In:", err);
@@ -116,12 +80,12 @@ export default function useUserinfo({form, isSignUp, setLoading}) {
 
   const Insert = async (user) => {
     try {
-      const { data, error } = await supabase.from("profiles").insert([{
-        user_id: user.id,
-        full_name: form.fullName,
-        email: form.email,
-        phone: form.phone,
-      }]);
+      const { data, error } = await supabase
+        .from("profiles")
+        .update({ display_name: form.fullName })
+        .eq("user_id", user.id)
+        .select("user_id")
+        .maybeSingle();
 
       if (error) {
         console.error("Profile insert error object:", error);
@@ -130,11 +94,8 @@ export default function useUserinfo({form, isSignUp, setLoading}) {
         return;
       }
 
-      confirmMessage("Account created successfully!",
-        <button className="modalbtn" onClick={() => {navigate("/dashboard"); closeMessage();}}>Close</button>
-      );
+      confirmMessage("Account created successfully!", "Welcome to TSOGO-BIS", <button className="modalbtn" onClick={() => {navigate("/dashboard"); closeMessage();}}>Continue</button>);
       setLoading(false);
-      clearForm();
     } catch (err) {
       console.error("Unexpected error during profile insert:", err);
       errorMessage("Something went wrong while creating your profile.");

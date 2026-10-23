@@ -1,0 +1,120 @@
+/* One shared palette for the storefront, based on the landing page. */
+:root {
+  --brand-ink: #17231f;
+  --brand-forest: #1d3029;
+  --brand-forest-soft: #26352e;
+  --brand-muted: #636960;
+  --brand-muted-soft: #85877f;
+  --brand-bronze: #8d7154;
+  --brand-bronze-light: #b89c78;
+  --brand-paper: #faf9f6;
+  --brand-white: #fffefa;
+  --brand-stone: #f1eee7;
+  --brand-stone-mid: #eae8df;
+  --brand-border: #e7e4dc;
+  --brand-border-strong: #d8d5cd;
+
+  /* Legacy components consume these variables throughout the app. */
+  --primaryColor: var(--brand-ink);
+  --secondaryColor: var(--brand-white);
+  --headingColor: var(--brand-bronze);
+  --accentColor: var(--brand-forest);
+  --mutedColor: var(--brand-stone);
+  --textColor: var(--brand-forest-soft);
+  --surface: var(--brand-white);
+  --surface-2: var(--brand-paper);
+  --border: var(--brand-border);
+  --headingFont: Georgia, 'Times New Roman', serif;
+  --bodyFont: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+body { color: var(--brand-forest-soft); background: var(--brand-paper); }
+
+/* Bring the landing hero and supporting sections into the same token system. */
+.hero { background: var(--brand-stone); color: var(--brand-ink); }
+.hero-copy > p { color: var(--brand-muted); }
+.hero-kicker, .home-eyebrow { color: var(--brand-bronze); }
+.hero-kicker span, .hero h1 em, .hero-art-monogram span { color: var(--brand-bronze); }
+.hero-btn-primary { color: var(--brand-white); background: var(--brand-forest); border-color: var(--brand-forest); }
+.hero-btn-primary:hover, .discover-link:hover { background: var(--brand-forest-soft); border-color: var(--brand-forest-soft); }
+.hero-btn-secondary { color: var(--brand-forest-soft); }
+.home-page { background: var(--brand-paper); color: var(--brand-forest-soft); }
+
+/* About and Delivery use the same light editorial hero treatment as Home. */
+.about-hero-redesign, .logistics-hero-redesign {
+  background: var(--brand-stone);
+  color: var(--brand-ink);
+}
+.about-hero-redesign::before, .logistics-hero-redesign::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 0 54%;
+  z-index: 0;
+  background: linear-gradient(145deg, #d9d5c9, #c6c2b5 56%, #aaa999);
+  pointer-events: none;
+}
+.about-hero-redesign::after, .logistics-hero-redesign::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: 50%;
+  right: 7%;
+  width: min(34vw, 390px);
+  aspect-ratio: 1;
+  border: 1px solid #ffffff70;
+  border-radius: 50%;
+  box-shadow: 0 0 0 25px #ffffff24, 0 0 0 55px #ffffff1a;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.about-hero-redesign .about-hero-container,
+.logistics-hero-redesign .logistics-hero-inner,
+.logistics-hero-redesign .logistics-hero-seal { z-index: 1; }
+.about-hero-redesign .about-hero-title,
+.logistics-hero-redesign .hero-title { color: var(--brand-ink); }
+.about-hero-redesign .highlight,
+.logistics-hero-redesign .hero-title em { color: var(--brand-bronze); }
+.about-hero-redesign .about-hero-subtitle,
+.logistics-hero-redesign .hero-subtitle { color: var(--brand-muted); }
+.about-hero-redesign .about-kicker,
+.logistics-hero-redesign .logistics-kicker { color: var(--brand-bronze); }
+.about-hero-actions > a,
+.logistics-track-link { color: var(--brand-white); background: var(--brand-forest); }
+.about-hero-actions > a:hover,
+.logistics-track-link:hover { background: var(--brand-forest-soft); }
+.about-hero-actions > span { color: var(--brand-muted); }
+.logistics-hero-seal { border-color: #ffffffa0; color: var(--brand-bronze); }
+
+.about-page-redesign, .logistics-page-redesign, .track-order-page,
+.premium-details-container, .product-state-page { background-color: var(--brand-paper); color: var(--brand-forest-soft); }
+.about-story-art, .about-principles, .delivery-info-band { background-color: var(--brand-stone); }
+.about-principle-card, .delivery-step-card, .premium-info, .premium-gallery,
+.premium-reviews, .tracking-result, .product-state-card { background-color: var(--brand-white); }
+.about-principle-card, .delivery-step-card, .premium-gallery, .premium-info,
+.premium-reviews, .tracking-result, .product-state-card { border-color: var(--brand-border); }
+.about-page-redesign h1, .about-page-redesign h2, .about-page-redesign h3,
+.logistics-page-redesign h1, .logistics-page-redesign h2, .logistics-page-redesign h3,
+.track-order-page h1, .track-order-page h2, .track-order-page h3,
+.premium-details-container h1, .premium-details-container h2, .premium-details-container h3 {
+  color: var(--brand-forest-soft);
+}
+.about-page-redesign p, .logistics-page-redesign p,
+.premium-details-container .p-desc { color: var(--brand-muted); }
+.product-eyebrow, .track-kicker, .detail-icon { color: var(--brand-bronze); }
+.track-button, .product-state-card button, .addtocartbtn,
+.about-contact-band > a, .delivery-info-band > a { color: var(--brand-white); background: var(--brand-forest); }
+.track-button:hover:not(:disabled), .product-state-card button:hover,
+.addtocartbtn:hover, .about-contact-band > a:hover, .delivery-info-band > a:hover { background: var(--brand-forest-soft); }
+.color-btn.active { border-color: var(--brand-forest); background: var(--brand-forest); }
+.carousel-arrow, .buttonsq button, .track-another-btn,
+.shipping-select, .password-reset-modal-form input { border-color: var(--brand-border-strong); }
+.tracking-result, .premium-info, .premium-gallery, .premium-reviews,
+.delivery-step-card, .about-principle-card { box-shadow: none; }
+
+@media (max-width: 760px) {
+  .about-hero-redesign::before, .logistics-hero-redesign::before { inset: 48% 0 0; }
+  .about-hero-redesign::after, .logistics-hero-redesign::after { top: 72%; right: -20%; width: 75vw; }
+}
+
+/* Track Order is intentionally on the landing page's warm stone surface. */
+.track-order-page { margin-top: 0; background: var(--brand-stone); }

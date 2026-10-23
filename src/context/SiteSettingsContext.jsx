@@ -7,8 +7,9 @@ const SiteSettingsContext = createContext();
 export const SiteSettingsProvider = ({ children }) => {
   const [settings, setSettings] = useState({
     site_name: "TSOGO-BIS",
-    site_email: "admin@tsogo-bis.com",
-    site_phone: "+237 XXX XXX XXX",
+    site_email: "",
+    site_phone: "",
+    terms_and_policies: "",
     currency: "XAF",
     tax_rate: 0
   });
@@ -20,24 +21,29 @@ export const SiteSettingsProvider = ({ children }) => {
 
   async function loadSettings() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("site_settings")
-      .select("*")
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from("site_settings")
+        .select("*")
+        .maybeSingle();
 
-    if (error) {
+      if (error) {
+        console.error("Error loading site settings:", error);
+      } else if (data) {
+        setSettings({
+          site_name: data.site_name || "TSOGO-BIS",
+          site_email: data.contact_email || "",
+          site_phone: data.contact_phone || "",
+          terms_and_policies: data.terms_and_policies || "",
+          currency: data.base_currency || "XAF",
+          tax_rate: data.tax_rate || 0
+        });
+      }
+    } catch (error) {
       console.error("Error loading site settings:", error);
-      // Keep default settings
-    } else if (data) {
-      setSettings({
-        site_name: data.site_name || "TSOGO-BIS",
-        site_email: data.site_email || "",
-        site_phone: data.site_phone || "",
-        currency: data.currency || "XAF",
-        tax_rate: data.tax_rate || 0
-      });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   // Function to refresh settings (call after update)
@@ -53,6 +59,7 @@ export const SiteSettingsProvider = ({ children }) => {
     siteName: settings.site_name,
     siteEmail: settings.site_email,
     sitePhone: settings.site_phone,
+    termsAndPolicies: settings.terms_and_policies,
     currency: settings.currency,
     taxRate: settings.tax_rate
   };

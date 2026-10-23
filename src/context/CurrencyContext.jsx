@@ -1,72 +1,18 @@
 // context/CurrencyContext.jsx
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import axios from "axios";
-import { SUPABASE_ANON_KEY } from "../lib/constants";
+import React, { createContext, useContext } from "react";
 
 const CurrencyContext = createContext();
 
-export const CurrencyProvider = ({ children, defaultCurrency = "XAF" }) => {
-  const [currency, setCurrency] = useState(defaultCurrency);
-  const [rates, setRates] = useState(() => {
-    // load cached rates from localStorage on init
-    const saved = localStorage.getItem("currencyRates");
-    return saved ? JSON.parse(saved) : {};
-  });
-  const [loading, setLoading] = useState(Object.keys(rates).length === 0);
-  const [error, setError] = useState(null);
-
-  // Fetch rates from Supabase Edge Function
-  const fetchRates = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(
-       "https://bompysyuamyalbzmubzo.supabase.co/functions/v1/currency-rate",
-        {
-          headers: {
-            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-          }
-        }
-      );
-      if (response.ok) {
-        const data = await response.json();
-        console.log("rates: ", data.rates);
-        setRates(data.rates);
-        setError(null);
-      }
-    } catch (err) {
-      console.error('Error fetching currency rates:', err);
-      setError('Failed to fetch currency rates');
-      // Set fallback rates to prevent app from breaking
-      setRates({
-        USD: 1,
-        EUR: 0.85,
-        GBP: 0.73,
-        XAF: 555, // Fallback rate
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Initial fetch + interval every 30 minutes
-  useEffect(() => {
-    fetchRates(); // initial fetch
-    const interval = setInterval(fetchRates, 30 * 60 * 1000); // 30 minutes
-    return () => clearInterval(interval);
-  }, [fetchRates]);
-
-  // Convert amount from base to target currency
- const convert = (amount, targetCurrency) => {
-  if (!rates || !rates[targetCurrency]) {
-    const numAmount = typeof amount === 'number' ? amount : parseFloat(amount);
-    return isNaN(numAmount) ? amount : numAmount.toFixed(2);
-  }
-  const numAmount = typeof amount === 'number' ? amount : parseFloat(amount);
-  return isNaN(numAmount) ? amount : (numAmount * rates[targetCurrency]).toFixed(2);
-};
+export const CurrencyProvider = ({ children }) => {
+  const convert = (amount) => {
+    const numericAmount = typeof amount === "number" ? amount : Number.parseFloat(amount);
+    return Number.isFinite(numericAmount)
+      ? new Intl.NumberFormat("fr-CM", { maximumFractionDigits: 0 }).format(numericAmount)
+      : amount;
+  };
 
   return (
-    <CurrencyContext.Provider value={{ currency, setCurrency, rates, convert, loading, error }}>
+    <CurrencyContext.Provider value={{ currency: "FCFA", setCurrency: () => {}, rates: { XAF: 1 }, convert, loading: false, error: null }}>
       {children}
     </CurrencyContext.Provider>
   );

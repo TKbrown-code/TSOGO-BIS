@@ -1,0 +1,15 @@
+[functions.create-fapshi-order]
+verify_jwt = true
+
+[functions.get-fapshi-checkout-status]
+verify_jwt = true
+
+[functions.fapshi-webhook]
+verify_jwt = false
+
+[functions.create-account]
+verify_jwt = false
+
+[functions.manage-admins]
+verify_jwt = true
+

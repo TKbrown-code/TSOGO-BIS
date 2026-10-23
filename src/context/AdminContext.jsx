@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { signUpUser, sendOtp } from "../hooks/functions";
-import Swal from "sweetalert2";
+import { showSiteModal } from "../utils/siteModal";
 
 const AdminContext = createContext();
 
@@ -21,11 +21,7 @@ export const AdminProvider = ({ children }) => {
     }
 
     try {
-      const { data, error } = await supabase
-        .from("admins")
-        .select("id, role")
-        .eq("id", uid)
-        .single();
+      const { data, error } = await supabase.rpc("is_admin");
 
       if (error) {
         console.error("Admin check error:", error);
@@ -34,11 +30,9 @@ export const AdminProvider = ({ children }) => {
         return false;
       }
 
-      if (data) {
+      if (data === true) {
         setIsAdmin(true);
-        // Use the actual role from database, default to 'moderator' if not set
-        setAdminRole(data.role || 'moderator');
-        console.log('Admin role set to:', data.role || 'moderator');
+        setAdminRole("admin");
         return true;
       }
 
@@ -57,29 +51,26 @@ export const AdminProvider = ({ children }) => {
 
   // Initialize auth state
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data, error }) => {
-      if (error) {
-        console.error("Error getting session:", error);
-        setUser(null);
-        setIsAdmin(false);
-        setLoading(false);
-        return;
-      }
-      const session = data?.session;
-      setUser(session?.user ?? null);
-      checkAdmin(session?.user?.id);
-    });
-
-    // Listen for auth changes
+    let active = true;
+    let pendingAdminCheck;
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
-        setUser(session?.user ?? null);
-        checkAdmin(session?.user?.id);
+        const nextUser = session?.user ?? null;
+        setUser(nextUser);
+
+        // Do not call Supabase APIs until the auth callback releases its lock.
+        clearTimeout(pendingAdminCheck);
+        pendingAdminCheck = setTimeout(() => {
+          if (active) checkAdmin(nextUser?.id);
+        }, 0);
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      active = false;
+      clearTimeout(pendingAdminCheck);
+      subscription.unsubscribe();
+    };
   }, [checkAdmin]);
 
   // Sign out
@@ -97,38 +88,20 @@ export const AdminProvider = ({ children }) => {
         password: credentials.password,
       })
     if (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: error.message,
-      });
+      showSiteModal(error.message, "Sign in failed", "error");
     }
     return data;
   }
 
   const signUp = async (credentials) => {
-    Swal.fire({
-      tile:"Signing Up.....",
-      allowOutsideClick:false,
-      didOpen: () => {
-        Swal.showLoading();
-      }
-    });
+    showSiteModal("Creating your account. This may take a moment.", "Creating account", "info");
     const response = await signUpUser(credentials);
     const res = await response.json();
     if (response.ok) {
      await login(credentials);
-     Swal.fire({
-      icon: "success",
-      title: "Success",
-      text: "User signed up successfully",
-    });
+     showSiteModal("User signed up successfully.", "Account created");
     } else {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: res.error,
-      });
+      showSiteModal(res.error, "Sign up failed", "error");
     }
   };
 
@@ -136,17 +109,9 @@ export const AdminProvider = ({ children }) => {
     const responds = await sendOtp(credentials);
     const res = await responds.json();
     if (responds.ok) {
-      Swal.fire({
-        icon: "success",
-        title: "Success",
-        text: "OTP sent successfully",
-      });
+      showSiteModal("OTP sent successfully.", "Code sent");
     }else{
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: res.error,
-      });
+      showSiteModal(res.error, "Could not send code", "error");
     }
   };
 
