@@ -4,7 +4,7 @@ import Navbar from "./components/navigation/Navbar";
 import Footer from "./components/navigation/Footer";
 import Home from "./pages/Home";       // create Home page
 import Checkout from "./pages/Checkout"; // create Checkout page
-import AdminApp from "./pages/AdminApp";
+import AdminApp from "./admin/app/AdminApp";
 import Cart from "./components/checkout/CartSidebar";
 import Logistics from "./pages/logistics";
 import  Form  from "./pages/form"
@@ -13,7 +13,7 @@ import { ModalMessageProvider } from "./context/ModalMessageContext";
 import Userdashboard from "./pages/userDashboard";
 import UserDashboardComplete from "./pages/UserDashboardComplete";
 import UserDashboardNew from "./pages/UserDashboardNew";
-import ProtectedRoute from "./components/admin/ProtectedRoute";
+import ProtectedRoute from "./admin/auth/ProtectedRoute";
 import ProductDetails from "./pages/productDetailspage";
 import Shop from "./pages/shop";
 import Orders from "./pages/Orders";
@@ -52,7 +52,6 @@ function AppContent() {
     <>
     <ErrorBoundary>
      <ModalMessageProvider>
-      {/* Only show Navbar on non-admin and non-dashboard routes */}
       {!isAdminRoute && !isDashboardRoute && <Navbar />}
       
       <Routes>

@@ -23,7 +23,7 @@ export default function ProductDetailsPage({ onReady }) {
   const navigate = useNavigate();
   const { addToCart, clearCart, setCartOpen } = useCart();
   const { profile, user } = useUserContext();
-  const { showAlert } = useModalMessage();
+  const { showAlert, confirmDialog } = useModalMessage();
   const { currency, convert } = useCurrencyContext();
   const { t } = useTranslation();
 
@@ -44,12 +44,16 @@ export default function ProductDetailsPage({ onReady }) {
   const [newReview, setNewReview] = useState({ rating: 5, comment: "" });
   const [editingReviewId, setEditingReviewId] = useState(null);
   const [reviewUpdate, setReviewUpdates] = useState({});
+  const [reviewClock, setReviewClock] = useState(Date.now());
   const [rating, setRating] = useState(0);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [paymentData, setPaymentData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [hasPurchased, setHasPurchased] = useState(false);
   const [checkingPurchase, setCheckingPurchase] = useState(true);
+  const [hasReviewed, setHasReviewed] = useState(false);
+  const [reviewOrderItemId, setReviewOrderItemId] = useState(null);
+  const [reviewSecondsLeft, setReviewSecondsLeft] = useState(0);
   const [productError, setProductError] = useState(false);
 
   // Load product data
@@ -71,7 +75,7 @@ export default function ProductDetailsPage({ onReady }) {
         let request = productRequestCache.get(productKey);
         if (!request) {
           request = supabase.from("products")
-            .select("*, product_images(image_url), category_id(name)")
+            .select("*, product_images(image_url,alt_text,is_primary,sort_order), category_id(name)")
             .eq("id", id)
             .single()
             .then((result) => {
@@ -107,10 +111,13 @@ export default function ProductDetailsPage({ onReady }) {
       }
       if (!parsedOptions || !Object.keys(parsedOptions).length) parsedOptions = { Item: { Standard: {} } };
 
-      const imgs = (data.product_images || []).map(img => {
+      const imgs = [...(data.product_images || [])]
+        .sort((a, b) => Number(Boolean(b.is_primary)) - Number(Boolean(a.is_primary)) || Number(a.sort_order || 0) - Number(b.sort_order || 0))
+        .map(img => {
         return {
           url: img.image_url || img.path || img.image_url,
-          path: img.image_url || img.path || img.image_url
+          path: img.image_url || img.path || img.image_url,
+          alt: img.alt_text || data.name,
         };
       });
       setImages(imgs);
@@ -118,7 +125,7 @@ export default function ProductDetailsPage({ onReady }) {
       setProduct({
         ...data,
         options: parsedOptions,
-        shipped_from: data.shipped_from || "Unknown",
+        shipped_from: data.origin_country || data.shipped_from || "Unknown",
       });
       
 
@@ -134,6 +141,12 @@ export default function ProductDetailsPage({ onReady }) {
       let shippingData = {};
       try {
         shippingData = typeof data.shipping_methods === "string" ? JSON.parse(data.shipping_methods) : (data.shipping_methods || {});
+        if (Array.isArray(shippingData)) {
+          shippingData = Object.fromEntries(shippingData.map((method) => [
+            method.name || method.method || method.label,
+            method.price ?? method.pricePerKg ?? method.fee ?? method.rate ?? 0,
+          ]).filter(([name]) => name));
+        }
       } catch (err) {
         console.error("Invalid shipping methods JSON:", err);
       }
@@ -169,6 +182,8 @@ export default function ProductDetailsPage({ onReady }) {
       } else {
         setAllReviews(data || []);
         setReviews((data || []).slice(0, 5)); // Show first 5
+        const publicRatings = (data || []).filter((review) => review.status === "published").map((review) => Number(review.rating)).filter(Number.isFinite);
+        setRating(publicRatings.length ? publicRatings.reduce((sum, value) => sum + value, 0) / publicRatings.length : 0);
       }
     }
 
@@ -180,18 +195,24 @@ export default function ProductDetailsPage({ onReady }) {
     if (!id || !user?.id) {
       setCheckingPurchase(false);
       setHasPurchased(false);
+      setHasReviewed(false);
+      setReviewOrderItemId(null);
       return;
     }
 
     async function checkPurchaseHistory() {
       setCheckingPurchase(true);
+      setHasPurchased(false);
+      setHasReviewed(false);
+      setReviewOrderItemId(null);
       try {
-        // Fetch user's checkouts that contain this product
         const { data: checkouts, error } = await supabase
           .from("checkouts")
-          .select("items")
+          .select("checkout_id,order_id,delivered_at,delivery_status,payment_status")
           .eq("user_id", user.id)
-          .eq("status", "paid");
+          .eq("payment_status", "paid")
+          .eq("delivery_status", "delivered")
+          .order("created_at", { ascending: false });
 
         if (error) {
           console.error("Error checking purchase history:", error);
@@ -199,13 +220,33 @@ export default function ProductDetailsPage({ onReady }) {
           return;
         }
 
-        // Check if any checkout contains this product
-        const purchased = checkouts?.some(checkout => {
-          const items = checkout.items || [];
-          return items.some(item => item.product_id === parseInt(id));
-        });
+        const eligibleCheckouts = (checkouts || []).filter((checkout) => checkout.order_id && checkout.delivered_at &&
+          Date.now() < new Date(checkout.delivered_at).getTime() + 60_000);
+        const orderIds = eligibleCheckouts.map((checkout) => checkout.order_id);
+        if (orderIds.length) {
+          const { data: orderItems, error: itemsError } = await supabase
+            .from("order_items")
+            .select("id,order_id")
+            .in("order_id", orderIds)
+            .eq("product_id", Number(id));
+          if (itemsError) throw itemsError;
+          const matchingItem = (orderItems || []).find((item) => eligibleCheckouts.some((checkout) => checkout.order_id === item.order_id));
+          if (matchingItem) {
+            setReviewOrderItemId(matchingItem.id);
+            setHasPurchased(true);
+            const matchingCheckout = eligibleCheckouts.find((checkout) => checkout.order_id === matchingItem.order_id);
+            setReviewSecondsLeft(Math.max(0, Math.ceil((new Date(matchingCheckout.delivered_at).getTime() + 60_000 - Date.now()) / 1000)));
+          }
+        }
 
-        setHasPurchased(purchased);
+        const { data: existingReviews, error: reviewError } = await supabase
+          .from("product_reviews")
+          .select("id")
+          .eq("product_id", id)
+          .eq("user_id", user.id)
+          .limit(1);
+        if (reviewError) console.error("Error checking existing product review:", reviewError);
+        setHasReviewed(Boolean(existingReviews?.length));
       } catch (err) {
         console.error("Error checking purchase:", err);
         setHasPurchased(false);
@@ -216,6 +257,7 @@ export default function ProductDetailsPage({ onReady }) {
 
     checkPurchaseHistory();
   }, [id, user?.id]);
+
 
   // Toggle show all reviews
   const toggleReviews = () => {
@@ -599,6 +641,28 @@ export default function ProductDetailsPage({ onReady }) {
     };
   }, []);
 
+  // Hooks must run on every render, including while the product is loading.
+  useEffect(() => {
+    if (!hasPurchased || reviewSecondsLeft <= 0) return undefined;
+    const timerId = window.setInterval(() => {
+      setReviewSecondsLeft((remaining) => Math.max(0, remaining - 1));
+    }, 1000);
+    return () => window.clearInterval(timerId);
+  }, [hasPurchased, reviewSecondsLeft > 0]);
+
+  useEffect(() => {
+    const hasEditableReview = user?.id && reviews.some((review) => review.user_id === user.id && Date.now() < new Date(review.created_at).getTime() + 180_000);
+    if (!hasEditableReview) return undefined;
+    const timerId = window.setInterval(() => {
+      const now = Date.now();
+      setReviewClock(now);
+      if (!reviews.some((review) => review.user_id === user.id && now < new Date(review.created_at).getTime() + 180_000)) {
+        window.clearInterval(timerId);
+      }
+    }, 1000);
+    return () => window.clearInterval(timerId);
+  }, [reviews, user?.id]);
+
   if (!product) {
     if (!productError) return <main className="product-detail-skeleton" aria-label={t("product_details.loading_product")} aria-busy="true" style={{ minHeight: "calc(100vh - 60px)" }}><div className="detail-skeleton-gallery"><div className="detail-skeleton-image" /><div className="detail-skeleton-thumbnails"><i /><i /><i /><i /></div></div><div className="detail-skeleton-info"><i className="detail-skeleton-eyebrow" /><i className="detail-skeleton-title" /><i className="detail-skeleton-copy" /><i className="detail-skeleton-copy short" /><div className="detail-skeleton-meta"><i /><i /><i /></div><i className="detail-skeleton-option" /><i className="detail-skeleton-row" /><i className="detail-skeleton-select" /><i className="detail-skeleton-total" /><i className="detail-skeleton-button" /></div></main>;
     return <main className="product-state-page"><section className="product-state-card" role="alert"><span className="product-state-mark">T</span><h1>{t("product_details.product_not_found")}</h1><p>{t("product_details.product_unavailable")}</p><button type="button" onClick={() => navigate("/shop")}>{t("product_details.explore_shop")}</button></section></main>;
@@ -621,18 +685,13 @@ export default function ProductDetailsPage({ onReady }) {
   };
 
   // Helper functions for reviews
-  const canEdit = (createdAt) => {
-    const now = new Date();
-    const reviewTime = new Date(createdAt);
-    const diffMinutes = (now - reviewTime) / (1000 * 60);
-    return diffMinutes < 5; // editable for 5 minutes
-  };
-
   const renderStars = (value) => <span className="review-star-row" aria-label={t("product_details.rating_out_of_five", { rating: value })}>{Array.from({ length: 5 }, (_, index) => <Star key={index} size={15} fill={index < Math.round(value) ? "currentColor" : "none"} />)}</span>;
+  const canEdit = (review) => Boolean(user?.id && review.user_id === user.id && reviewClock < new Date(review.created_at).getTime() + 180_000);
+  const reviewWindowOpen = hasPurchased && reviewSecondsLeft > 0;
 
   // Render product details
   return (
-    <div className="premium-details-container" style={{ margin: 0, paddingTop: 16, width: "100%", maxWidth: "none" }}>
+    <div className="premium-details-container">
       {/* Left side - Product Images */}
       <div className="right">
         <div className="premium-gallery">
@@ -647,7 +706,7 @@ export default function ProductDetailsPage({ onReady }) {
             >
               <img 
                 src={images[currentImage]?.url || FallBackImage}
-                alt={product.name} 
+                alt={images[currentImage]?.alt || product.name}
                 className={`zoomable-img ${imageStates[images[currentImage]?.path]?.loaded ? 'loaded' : 'loading'} ${imageStates[images[currentImage]?.path]?.error ? 'error' : ''}`}
                 onLoad={() => handleImageLoad(images[currentImage]?.path)}
                 onError={(e) => handleImageError(images[currentImage]?.path, e)}
@@ -674,16 +733,6 @@ export default function ProductDetailsPage({ onReady }) {
           
           {/* Thumbnails */}
           {images.length > 1 && <div className="product-thumbnails" aria-label="Product photos">{images.map((img, idx) => <button type="button" key={`${img.url}-${idx}`} className={idx === currentImage ? "is-active" : ""} onClick={() => setCurrentImage(idx)} aria-label={`Show product photo ${idx + 1}`}><img src={img.url || FallBackImage} alt="" /></button>)}</div>}
-          {/* Dots Indicator */}
-          <div className="carousel-dots">
-            {images.map((img, idx) => (
-              <button
-                key={idx}
-                className={`dot ${idx === currentImage ? "active" : ""} ${imageStates[img.path]?.loaded && 'loaded'} ${imageStates[img.path]?.error ? 'error' : ''}`}
-                onClick={() => setCurrentImage(idx)}
-              />
-            ))}
-          </div>
         </div>
 
         {/* Reviews Section */}
@@ -704,31 +753,39 @@ export default function ProductDetailsPage({ onReady }) {
                   <div className="review-header">
                     <FontAwesomeIcon icon={faUser} className="user_icon" />
                     <div className="review-comment">
-                      <strong>{review.username}</strong>
-                      <p>{review.comment}</p>
+                      <strong>{t("product_details.verified_customer", { defaultValue: "Verified customer" })}</strong>
+                      <p>{review.body || review.comment}</p>
                       <small>{new Date(review.created_at).toLocaleDateString()}</small>
                     </div>
                   </div>
                   <div className="review-stars">
                     <span className="stars"><Star size={14} fill="currentColor" /> {review.rating}</span>
-                    {profile?.user_id === review.user_id && canEdit(review.created_at) && (
-                      <button
-                        className="editbtn"
-                        onClick={() => {
-                          if (editingReviewId !== review.id) {
-                            setEditingReviewId(review.id);
-                            setReviewUpdates(prev => ({
-                              ...prev,
-                              [review.id]: review.comment
-                            }));
-                          } else {
-                            setEditingReviewId(null);
-                          }
-                        }}
-                      >
-                        {editingReviewId === review.id ? t("product_details.cancel") : t("product_details.edit_review")}
-                      </button>
-                    )}
+                    {canEdit(review) && <>
+                      <small className="review-edit-window">{t("product_details.review_edit_time_left", { seconds: Math.max(0, Math.ceil((new Date(review.created_at).getTime() + 180_000 - reviewClock) / 1000)), defaultValue: `You can update or delete this review for ${Math.max(0, Math.ceil((new Date(review.created_at).getTime() + 180_000 - reviewClock) / 1000))} more seconds.` })}</small>
+                      <button className="editbtn" type="button" onClick={() => {
+                        if (editingReviewId !== review.id) {
+                          setEditingReviewId(review.id);
+                          setReviewUpdates((prev) => ({ ...prev, [review.id]: { comment: review.body || review.comment || "", rating: Number(review.rating) || 5 } }));
+                        } else setEditingReviewId(null);
+                      }}>{editingReviewId === review.id ? t("product_details.cancel") : t("product_details.edit_review")}</button>
+                      <button className="editbtn review-delete-btn" type="button" onClick={async () => {
+                        const confirmed = await confirmDialog(t("product_details.review_delete_confirm", { defaultValue: "Delete this review? You can only delete it within three minutes after posting." }), t("product_details.delete_review", { defaultValue: "Delete review" }), { confirmLabel: t("product_details.delete_review", { defaultValue: "Delete review" }), tone: "warning" });
+                        if (!confirmed) return;
+                        const { error: deleteError } = await supabase.from("product_reviews").delete().eq("id", review.id);
+                        if (deleteError) {
+                          console.error("Error deleting review:", deleteError);
+                          showAlert(deleteError.message || t("product_details.review_delete_failed", { defaultValue: "The review could not be deleted." }), t("product_details.review_delete_failed_title", { defaultValue: "Review could not be deleted" }), "error");
+                          return;
+                        }
+                        setAllReviews((prev) => prev.filter((item) => item.id !== review.id));
+                        setReviews((prev) => prev.filter((item) => item.id !== review.id));
+                        const publicRatings = allReviews.filter((item) => item.id !== review.id && item.status === "published").map((item) => Number(item.rating)).filter(Number.isFinite);
+                        setRating(publicRatings.length ? publicRatings.reduce((sum, value) => sum + value, 0) / publicRatings.length : 0);
+                        setHasReviewed(false);
+                        setEditingReviewId(null);
+                        showAlert(t("product_details.review_deleted", { defaultValue: "Your review has been deleted." }), t("product_details.review_deleted_title", { defaultValue: "Review deleted" }));
+                      }}><span>{t("product_details.delete_review", { defaultValue: "Delete review" })}</span></button>
+                    </>}
                   </div>
                 </div>
 
@@ -736,7 +793,7 @@ export default function ProductDetailsPage({ onReady }) {
                   <form
                     onSubmit={async (e) => {
                       e.preventDefault();
-                      const updateText = reviewUpdate[review.id]?.trim();
+                      const updateText = reviewUpdate[review.id]?.comment?.trim();
                       if (!updateText) {
                         showAlert("Please enter a valid review.", "Review details needed", "warning");
                         return;
@@ -744,8 +801,9 @@ export default function ProductDetailsPage({ onReady }) {
 
                       const { data, error } = await supabase
                         .from("product_reviews")
-                        .update({ 
-                          comment: updateText,
+                        .update({
+                          body: updateText,
+                          rating: Number(reviewUpdate[review.id]?.rating) || 5,
                           updated_at: new Date().toISOString()
                         })
                         .eq("id", review.id)
@@ -755,24 +813,23 @@ export default function ProductDetailsPage({ onReady }) {
                         console.error("Error updating review:", error);
                         showAlert("Failed to update review.", "Review could not be updated", "error");
                       } else if (data && data.length > 0) {
-                        setReviews(prev =>
-                          prev.map((r) =>
-                            r.id === review.id ? { ...r, ...data[0] } : r
-                          )
-                        );
+                        const updatedReviews = allReviews.map((item) => item.id === review.id ? { ...item, ...data[0] } : item);
+                        setAllReviews(updatedReviews);
+                        setReviews((prev) => prev.map((item) => item.id === review.id ? { ...item, ...data[0] } : item));
+                        const publicRatings = updatedReviews.filter((item) => item.status === "published").map((item) => Number(item.rating)).filter(Number.isFinite);
+                        setRating(publicRatings.length ? publicRatings.reduce((sum, value) => sum + value, 0) / publicRatings.length : 0);
                         setEditingReviewId(null);
                         showAlert("Your review has been updated.", "Review updated");
                       }
                     }}
                   >
+                    <div className="rating-input" aria-label={t("product_details.rating_label")}>
+                      <span>{t("product_details.rating_label")}: </span>
+                      {[1, 2, 3, 4, 5].map((star) => <button key={star} type="button" className={`star ${star <= Number(reviewUpdate[review.id]?.rating || 5) ? "filled" : ""}`} aria-label={t("product_details.rating_out_of_five", { rating: star })} onClick={() => setReviewUpdates((prev) => ({ ...prev, [review.id]: { ...prev[review.id], rating: star } }))}>★</button>)}
+                    </div>
                     <textarea
-                      value={reviewUpdate[review.id] || ""}
-                      onChange={(e) =>
-                        setReviewUpdates(prev => ({
-                          ...prev,
-                          [review.id]: e.target.value
-                        }))
-                      }
+                      value={reviewUpdate[review.id]?.comment || ""}
+                      onChange={(e) => setReviewUpdates((prev) => ({ ...prev, [review.id]: { ...prev[review.id], comment: e.target.value } }))}
                       placeholder={t("product_details.review_placeholder")}
                       required
                     />
@@ -804,17 +861,22 @@ export default function ProductDetailsPage({ onReady }) {
           )}
 
           {/* Add Review Form */}
-          {profile && (
+          {user && (
             <>
               {checkingPurchase ? (
                 <div className="review-form">
                   <p style={{ textAlign: "center", color: "#666" }}>{t("product_details.checking_purchase")}</p>
                 </div>
-              ) : hasPurchased ? (
+              ) : hasReviewed ? (
+                <div className="review-window-note" role="status">{t("product_details.review_already_submitted", { defaultValue: "You have already left a review for this product." })}</div>
+              ) : hasPurchased && reviewWindowOpen ? (
                 <form
                   className="review-form"
                   onSubmit={async (e) => {
                     e.preventDefault();
+                    if (!reviewWindowOpen || hasReviewed) {
+                      return;
+                    }
                     if (!newReview.comment.trim()) {
                       showAlert("Please write a review.", "Review details needed", "warning");
                       return;
@@ -825,18 +887,20 @@ export default function ProductDetailsPage({ onReady }) {
                       .insert([
                         {
                           product_id: product.id,
-                          user_id: profile.user_id,
-                          username: profile.full_name || "Anonymous",
+                          user_id: user.id,
+                          order_item_id: reviewOrderItemId,
                           rating: newReview.rating,
-                          comment: newReview.comment.trim(),
+                          body: newReview.comment.trim(),
+                          status: "pending",
                         },
                       ])
                       .select();
 
                     if (error) {
                       console.error("Error adding review:", error);
-                      showAlert("Failed to add review.", "Review could not be added", "error");
+                      showAlert("The review could not be submitted. A review may already exist for this product.", "Review could not be added", "error");
                     } else if (data && data.length > 0) {
+                      setHasReviewed(true);
                       setAllReviews((prev) => [data[0], ...prev]);
                       setReviews((prev) => {
                         const newReviews = [data[0], ...prev];
@@ -845,38 +909,31 @@ export default function ProductDetailsPage({ onReady }) {
                       setNewReview({ rating: 5, comment: "" });
                       showAlert("Your review has been added.", "Review submitted");
 
-                      // Update product rating
                       const { data: reviewsData } = await supabase
                         .from("product_reviews")
-                        .select("rating")
+                        .select("rating,status")
                         .eq("product_id", product.id);
-
-                      if (reviewsData && reviewsData.length > 0) {
-                        const avgRating =
-                          reviewsData.reduce((sum, r) => sum + r.rating, 0) /
-                          reviewsData.length;
-                        await supabase
-                          .from("products")
-                          .update({ avg_rating: typeof avgRating === 'number' ? parseFloat(avgRating.toFixed(2)) : avgRating })
-                          .eq("id", product.id);
-                        setRating(typeof avgRating === 'number' ? parseFloat(avgRating.toFixed(2)) : avgRating);
-                      }
+                      const publicRatings = (reviewsData || []).filter((review) => review.status === "published").map((review) => Number(review.rating)).filter(Number.isFinite);
+                      setRating(publicRatings.length ? publicRatings.reduce((sum, value) => sum + value, 0) / publicRatings.length : 0);
                     }
                   }}
                 >
                   <h3>{t("product_details.write_review")}</h3>
+                  <p className="review-window-countdown">{t("product_details.review_post_window", { seconds: reviewSecondsLeft, defaultValue: `You have ${reviewSecondsLeft} seconds to post one review for this delivered item. You can update or delete it for three minutes after posting.` })}</p>
                   <div className="rating-input">
                     <span>{t("product_details.rating_label")}: </span>
                     {[1, 2, 3, 4, 5].map((star) => (
-                      <span
+                      <button
                         key={star}
+                        type="button"
                         className={`star ${star <= newReview.rating ? "filled" : ""}`}
+                        aria-label={t("product_details.rating_out_of_five", { rating: star })}
                         onClick={() =>
                           setNewReview({ ...newReview, rating: star })
                         }
                       >
                         ★
-                      </span>
+                      </button>
                     ))}
                   </div>
                   <textarea
@@ -890,22 +947,14 @@ export default function ProductDetailsPage({ onReady }) {
                   />
                   <button className="review-btn" type="submit">{t("product_details.submit_review")}</button>
                 </form>
+              ) : hasPurchased ? (
+                <div className="review-window-note" role="status">Your one-minute review window has ended.</div>
               ) : (
-                <div className="review-form" style={{ 
-                  background: "#fff3cd", 
-                  border: "1px solid #ffc107", 
-                  borderRadius: "8px",
-                  padding: "20px",
-                  textAlign: "center"
-                }}>
-                  <h3 style={{ color: "#856404", marginBottom: "10px" }}>{t("product_details.purchase_required")}</h3>
-                  <p style={{ color: "#856404", margin: 0 }}>
-                    {t("product_details.purchase_required_copy")}
-                  </p>
-                </div>
+                <div className="review-window-note" role="status">Reviews are available after this product has been delivered to you.</div>
               )}
             </>
           )}
+          {!user && <div className="review-window-note" role="status">Sign in to leave a review after your order is delivered.</div>}
         </div>
       </div>
 
@@ -915,21 +964,24 @@ export default function ProductDetailsPage({ onReady }) {
         <h1 className="p-title">{product.name}</h1>
         <p className="p-desc">{product.description}</p>
 
-        <div className="p-meta">
-          <p>
-            <FontAwesomeIcon icon={faTruck} /> {t("product_details.shipped_from")}{" "}
-            <strong>{product.shipped_from}</strong>
-          </p>
-          <p>{t("product_details.base_weight")} <strong>{product.weight && !isNaN(product.weight) ? parseFloat(product.weight).toFixed(2) : product.weight || "0.00"} kg</strong></p>
-          <p>{t("product_details.base_price")} <strong>{convert(product.price, currency)} {currency}</strong></p>
-          {product.category_id?.name && (
-            <p>
-              <FontAwesomeIcon icon={faTags} /> {t("product_details.category")}{" "}
-              {product.category_id.name}
-            </p>
-          )}
-        </div>
-
+        <dl className="p-meta" aria-label={t("product_details.facts_label")}>
+          <div className="p-meta-item">
+            <dt><FontAwesomeIcon icon={faTruck} /> {t("product_details.shipped_from")}</dt>
+            <dd>{product.shipped_from}</dd>
+          </div>
+          <div className="p-meta-item">
+            <dt>{t("product_details.base_weight")}</dt>
+            <dd>{product.weight && !isNaN(product.weight) ? parseFloat(product.weight).toFixed(2) : product.weight || "0.00"} kg</dd>
+          </div>
+          <div className="p-meta-item">
+            <dt>{t("product_details.base_price")}</dt>
+            <dd>{convert(product.price, currency)} {currency}</dd>
+          </div>
+          {product.category_id?.name && <div className="p-meta-item">
+            <dt><FontAwesomeIcon icon={faTags} /> {t("product_details.category")}</dt>
+            <dd>{product.category_id.name}</dd>
+          </div>}
+        </dl>
         {/* Dynamic Options */}
         {product.options &&
           Object.entries(product.options).map(([optionName, optionValues]) => (
@@ -1079,10 +1131,8 @@ export default function ProductDetailsPage({ onReady }) {
               onChange={(e) => setSelectedShipping(e.target.value)}
               className="shipping-select"
             >
-              {Object.entries(shippingMethods).map(([method, price]) => (
-                <option key={method} value={method}>
-                  {method} ({convert(price, currency)} per kg)
-                </option>
+            {Object.keys(shippingMethods).map((method) => (
+                <option key={method} value={method}>{method}</option>
               ))}
             </select>
           </div>

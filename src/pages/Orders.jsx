@@ -3,11 +3,15 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useUserContext } from "../context/useUserContext";
 import { useCurrencyContext } from "../context/CurrencyContext";
 import { supabase } from "../lib/supabase";
+import { sendOrderStatusNotification } from "../utils/sendOrderStatusNotification";
 import "../styles/orders.css";
 import { Link, useLocation } from "react-router-dom";
 import { useModalMessage } from "../context/ModalMessageContext";
 import { useTranslation } from "react-i18next";
 import { BadgeCheck, CalendarDays, ExternalLink, Package, PackageOpen, Truck } from "lucide-react";
+import { useCart } from "../context/CartContext";
+import { removePaidCheckoutCartItems } from "../utils/checkoutCartCleanup";
+import ProductImageFallback from "../assets/imagefallback.jpg";
 
 export default function Orders() {
   const { t, i18n } = useTranslation();
@@ -15,6 +19,7 @@ export default function Orders() {
   const userId = user?.id || profile?.user_id || null;
   const { showAlert, confirmDialog } = useModalMessage();
   const { convert, currency } = useCurrencyContext();
+  const { removeItems } = useCart();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -23,7 +28,7 @@ export default function Orders() {
 
   const ensureImageUrl = async (product, product_images = []) => {
     const primary = product_images.find((img) => img.is_primary) || product_images[0];
-    return primary?.image_url || "/placeholder.png";
+    return primary?.image_url || ProductImageFallback;
   };
 
   const fetchOrders = useCallback(async ({ silent = false } = {}) => {
@@ -47,12 +52,15 @@ export default function Orders() {
       if (error) throw error;
 
       const rows = data || [];
+      await Promise.all(rows
+        .filter((order) => String(order.payment_status || order.status || "").toLowerCase() === "paid")
+        .map((order) => removePaidCheckoutCartItems(order.checkout_id, removeItems)));
       const checkoutIds = rows.map((order) => order.checkout_id).filter(Boolean);
       let checkoutItemsById = {};
       if (checkoutIds.length) {
         const { data: itemRows, error: itemError } = await supabase
           .from("checkout_items")
-          .select("id,checkout_id,product_id,quantity,price,created_at,shipping_method,shipping_fee")
+          .select("id,checkout_id,product_id,quantity,price,size,color,created_at,shipping_method,shipping_fee")
           .in("checkout_id", checkoutIds);
         if (itemError) console.warn("Could not load related checkout items; using saved order snapshots:", itemError);
         else checkoutItemsById = (itemRows || []).reduce((byOrder, item) => {
@@ -95,6 +103,8 @@ export default function Orders() {
           product_id: item.product_id,
           quantity: Number(item.quantity) || 1,
           price: Number(item.price) || 0,
+          size: item.size || null,
+          color: item.color || null,
           shipping_method: item.shipping_method || null,
           shipping_fee: Number(item.shipping_fee) || 0,
           snapshot_name: item.name,
@@ -119,7 +129,7 @@ export default function Orders() {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [userId]);
+  }, [userId, removeItems]);
 
   // Subscribe to checkout changes. Payment confirmation and tracking creation
   // are handled transactionally in the database, not by the customer's browser.
@@ -137,10 +147,14 @@ export default function Orders() {
       .channel("checkouts-updates")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "checkouts" },
+        { event: "*", schema: "public", table: "checkouts", filter: `user_id=eq.${userId}` },
         async (payload) => {
           const newRow = payload.new;
           if (newRow && newRow.user_id === userId) {
+            if (String(newRow.payment_status || newRow.status || "").toLowerCase() === "paid") {
+              await removePaidCheckoutCartItems(newRow.checkout_id, removeItems);
+              fetchOrders({ silent: true });
+            }
             setOrders((prev) => {
               const exists = prev.some((o) => o.checkout_id === newRow.checkout_id);
               return exists
@@ -150,12 +164,14 @@ export default function Orders() {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") fetchOrders({ silent: true });
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userLoading, userId, fetchOrders]);
+  }, [userLoading, userId, fetchOrders, removeItems]);
 
   // The provider redirect returns here with the checkout ID. Verify its status
   // server-side while waiting for the webhook; never trust redirect parameters
@@ -208,7 +224,11 @@ export default function Orders() {
       .update({ status: "cancelled", delivery_status: "cancelled" })
       .eq("checkout_id", orderId);
     if (error) showAlert(t("orders.cancel_error"), t("orders.cancel_error_title"), "error");
-    else fetchOrders();
+    else {
+      fetchOrders();
+      const emailError = await sendOrderStatusNotification(orderId, "order", "cancelled");
+      if (emailError) showAlert(t("orders.cancel_email_failed", { error: emailError }), t("orders.cancel_email_failed_title"), "warning");
+    }
   };
   
   // ---- re-initiate payment ----
@@ -222,8 +242,9 @@ export default function Orders() {
 
   // ---- search filter ----
   const filteredOrders = orders.filter((order) => {
-    const q = search.toLowerCase();
-    const idMatch = order.checkout_id.toString().includes(q);
+    const q = search.trim().toLowerCase();
+    const orderQuery = q.replace(/^order\s*/, "").replace(/^#/, "").trim();
+    const idMatch = String(order.checkout_id).toLowerCase().includes(orderQuery);
     const nameMatch = (order.checkout_items || []).some((i) =>
       i.product?.name?.toLowerCase().includes(q)
     );
@@ -328,11 +349,14 @@ export default function Orders() {
                       <div className="order-item-row" key={it.id}>
                         <img
                           className="order-item-image"
-                          src={it.imageUrl || "/placeholder.png"}
+                          src={it.imageUrl || ProductImageFallback}
                           alt={it.product?.name || t("product.details")}
+                          loading="lazy"
+                          onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = ProductImageFallback; }}
                         />
                         <div className="order-item-meta">
                           <div className="order-item-title">{it.product?.name || t("orders.product_number", { id: it.product_id })}</div>
+                          {(it.color || it.size) && <div className="order-item-variant">{[it.color, it.size].filter(Boolean).join(" · ")}</div>}
                           <div className="order-item-desc">{it.product?.description?.slice(0, 120) || ""}</div>
                           <div className="order-item-extra">
                             <span>{t("orders.weight")}: {it.product?.weight ?? "—"}</span>

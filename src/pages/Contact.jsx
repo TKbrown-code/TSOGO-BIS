@@ -8,10 +8,11 @@ import "../styles/contact.css";
 
 export default function Contact() {
   const { t } = useTranslation();
-  const { siteEmail, sitePhone } = useSiteSettings();
+  const { siteEmail, sitePhone, whatsappPhone } = useSiteSettings();
   const { showAlert } = useModalMessage();
   const [sent, setSent] = useState(false);
   const phoneDigits = (sitePhone || "").replace(/\D/g, "");
+  const whatsappDigits = (whatsappPhone || "").replace(/\D/g, "");
   const emailAddress = (siteEmail || "").trim();
 
   const submitMessage = (event) => {
@@ -50,7 +51,7 @@ export default function Contact() {
           <h2>{t("contact_page.options_title")}</h2>
           {emailAddress ? <a className="contact-method-card" href={`mailto:${emailAddress}`}><span className="contact-method-icon"><Mail size={18} /></span><span><small>{t("contact_page.email")}</small><strong>{emailAddress}</strong><em>{t("contact_page.open_email")}</em></span><ArrowUpRight size={15} /></a> : <div className="contact-method-card is-unavailable"><span className="contact-method-icon"><Mail size={18} /></span><span><small>{t("contact_page.email")}</small><strong>{t("contact_page.email_unavailable_title")}</strong><em>{t("contact_page.use_form")}</em></span></div>}
           {phoneDigits && <a className="contact-method-card" href={`tel:${sitePhone}`}><span className="contact-method-icon"><Phone size={18} /></span><span><small>{t("contact_page.phone")}</small><strong>{sitePhone}</strong><em>{t("contact_page.call_store")}</em></span><ArrowUpRight size={15} /></a>}
-          {phoneDigits && <a className="contact-method-card" href={`https://wa.me/${phoneDigits}`} target="_blank" rel="noreferrer"><span className="contact-method-icon"><MessageCircle size={18} /></span><span><small>WhatsApp</small><strong>{t("contact_page.message_team")}</strong><em>{t("whatsapp.chat_label")}</em></span><ArrowUpRight size={15} /></a>}
+          {whatsappDigits && <a className="contact-method-card" href={`https://wa.me/${whatsappDigits}`} target="_blank" rel="noreferrer"><span className="contact-method-icon"><MessageCircle size={18} /></span><span><small>WhatsApp</small><strong>{t("contact_page.message_team")}</strong><em>{t("whatsapp.chat_label")}</em></span><ArrowUpRight size={15} /></a>}
           <div className="contact-response-note"><MapPin size={16} /><p>{t("contact_page.delivery_note")} <Link to="/logistics">{t("navbar.delivery")}</Link> {t("contact_page.and")} <Link to="/track">{t("nav.track")}</Link>.</p></div>
         </div>
 

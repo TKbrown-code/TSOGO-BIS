@@ -21,10 +21,12 @@ export const AdminProvider = ({ children }) => {
     }
 
     try {
-      const { data, error } = await supabase.rpc("is_admin");
+      const { data, error } = await supabase.rpc("is_admin_role");
 
       if (error) {
         console.error("Admin check error:", error);
+        await supabase.auth.signOut({ scope: "local" }).catch((signOutError) => console.error("Could not end unverified admin session:", signOutError));
+        setUser(null);
         setIsAdmin(false);
         setAdminRole(null);
         return false;
@@ -36,11 +38,15 @@ export const AdminProvider = ({ children }) => {
         return true;
       }
 
+      await supabase.auth.signOut({ scope: "local" }).catch((signOutError) => console.error("Could not end unauthorized admin session:", signOutError));
+      setUser(null);
       setIsAdmin(false);
       setAdminRole(null);
       return false;
     } catch (err) {
       console.error("Admin check exception:", err);
+      await supabase.auth.signOut({ scope: "local" }).catch((signOutError) => console.error("Could not end unverified admin session:", signOutError));
+      setUser(null);
       setIsAdmin(false);
       setAdminRole(null);
       return false;

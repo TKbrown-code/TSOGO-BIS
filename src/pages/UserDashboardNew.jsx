@@ -3,8 +3,10 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { useUserContext } from "../context/useUserContext";
 import { useNavigate, Navigate, useSearchParams, Link } from "react-router-dom";
-import { Home, BarChart3, ShoppingCart, ShoppingBag, FileText, LogOut, DollarSign, Package, Star, Settings, CheckCircle, Clock, Plus, Minus, Menu, X, Gift, Copy, Check } from "lucide-react";
+import { Home, BarChart3, ShoppingCart, ShoppingBag, FileText, LogOut, DollarSign, Package, Star, Settings, CheckCircle, Clock, Plus, Minus, Menu, X, Gift, Copy, Check, Search, ArrowUpRight } from "lucide-react";
 import "../styles/UserDashboardNew.css";
+import BrandMonogram from "../assets/nav-monogram.png";
+import ProductImageFallback from "../assets/imagefallback.jpg";
 import { useModalMessage } from "../context/ModalMessageContext";
 import { useTranslation } from "react-i18next";
 import { useCart } from "../context/CartContext";
@@ -19,9 +21,23 @@ export default function UserDashboardNew() {
   
   // Active section
   const [activeSection, setActiveSection] = useState("overview");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   useEffect(() => {
     if (searchParams.get("section") === "settings") setActiveSection("settings");
   }, [searchParams]);
+  useEffect(() => {
+    if (!sidebarOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setSidebarOpen(false);
+    };
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [sidebarOpen]);
   useEffect(() => {
     const language = i18n.resolvedLanguage?.slice(0, 2);
     if (["en", "fr", "zh"].includes(language)) {
@@ -29,9 +45,10 @@ export default function UserDashboardNew() {
     }
   }, [i18n.resolvedLanguage]);
   const [dataLoading, setDataLoading] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [productNames, setProductNames] = useState({});
   const [copiedReferralLink, setCopiedReferralLink] = useState(false);
+  const [orderSearch, setOrderSearch] = useState("");
+  const [orderFilter, setOrderFilter] = useState("all");
 
   // User data from all tables
   const [userData, setUserData] = useState({
@@ -70,6 +87,34 @@ export default function UserDashboardNew() {
     }
   }, [user]);
 
+  // Delivery changes are written to the checkout row by the admin workflow.
+  // Subscribe only to this customer's rows and patch the visible order card.
+  useEffect(() => {
+    if (!user?.id) return undefined;
+    const channel = supabase
+      .channel(`customer-dashboard-orders:${user.id}`)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "checkouts",
+        filter: `user_id=eq.${user.id}`,
+      }, (payload) => {
+        const changedOrder = payload.new;
+        if (!changedOrder?.checkout_id) return;
+        setUserData((current) => {
+          const hasOrder = current.orders.some((order) => order.checkout_id === changedOrder.checkout_id);
+          return {
+            ...current,
+            orders: hasOrder
+              ? current.orders.map((order) => order.checkout_id === changedOrder.checkout_id ? { ...order, ...changedOrder } : order)
+              : [changedOrder, ...current.orders],
+          };
+        });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id]);
+
   // Keep hooks stable while auth state changes, then redirect signed-out visitors.
   if (!loading && !user) {
     return <Navigate to="/SignUp" replace />;
@@ -92,6 +137,44 @@ export default function UserDashboardNew() {
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
+
+      const checkoutIds = (ordersData || []).map((order) => order.checkout_id).filter(Boolean);
+      const { data: checkoutItemRows, error: checkoutItemsError } = checkoutIds.length
+        ? await supabase.from("checkout_items")
+          .select("checkout_id,product_id,quantity,price,size,color,shipping_method,shipping_fee")
+          .in("checkout_id", checkoutIds)
+        : { data: [], error: null };
+      if (checkoutItemsError) console.warn("Could not load dashboard order items:", checkoutItemsError);
+
+      const parsedOrderItems = (ordersData || []).flatMap((order) => {
+        const items = Array.isArray(order.items) ? order.items : typeof order.items === "string"
+          ? (() => { try { return JSON.parse(order.items); } catch { return []; } })()
+          : [];
+        return items.map((item) => ({ ...item, product_id: item.product_id?.id ?? item.product_id }));
+      });
+      const imageProductIds = [...new Set([
+        ...(checkoutItemRows || []).map((item) => Number(item.product_id)).filter((id) => Number.isFinite(id) && id > 0),
+        ...parsedOrderItems.map((item) => Number(item.product_id)).filter((id) => Number.isFinite(id) && id > 0),
+      ])];
+      const [imagesResult, orderProductsResult] = imageProductIds.length
+        ? await Promise.all([
+          supabase.from("product_images").select("product_id,image_url,is_primary").in("product_id", imageProductIds),
+          supabase.from("products").select("id,name").in("id", imageProductIds),
+        ])
+        : [{ data: [], error: null }, { data: [], error: null }];
+      const { data: orderProductImages, error: orderImagesError } = imagesResult;
+      const { data: orderProducts, error: orderProductsError } = orderProductsResult;
+      if (orderImagesError) console.warn("Could not load dashboard order product images:", orderImagesError);
+      if (orderProductsError) console.warn("Could not load dashboard order product names:", orderProductsError);
+      const productNamesById = (orderProducts || []).reduce((map, product) => ({ ...map, [product.id]: product.name }), {});
+      const imagesByProductId = (orderProductImages || []).reduce((map, image) => {
+        (map[image.product_id] ||= []).push(image);
+        return map;
+      }, {});
+      const itemRowsByCheckoutId = (checkoutItemRows || []).reduce((map, item) => {
+        (map[item.checkout_id] ||= []).push(item);
+        return map;
+      }, {});
 
       // 3. Load Cart with full product details and images
       const { data: cartData } = await supabase
@@ -169,14 +252,32 @@ export default function UserDashboardNew() {
         console.error("Could not load referral store credit:", walletError);
       }
 
-      const normalizedOrders = (ordersData || []).map((order) => ({
-        ...order,
-        items: Array.isArray(order.items)
-          ? order.items
-          : typeof order.items === "string"
-            ? (() => { try { return JSON.parse(order.items); } catch { return []; } })()
-            : [],
-      }));
+      const normalizedOrders = (ordersData || []).map((order) => {
+        const snapshotItems = Array.isArray(order.items) ? order.items : typeof order.items === "string"
+          ? (() => { try { return JSON.parse(order.items); } catch { return []; } })()
+          : [];
+        const checkoutItems = itemRowsByCheckoutId[order.checkout_id] || [];
+        const sourceItems = snapshotItems.length ? snapshotItems : checkoutItems;
+        return {
+          ...order,
+          items: sourceItems.map((item, index) => {
+            const itemProductId = item.product_id?.id ?? item.product_id ?? checkoutItems[index]?.product_id;
+            const itemImages = imagesByProductId[itemProductId] || [];
+            const primaryImage = itemImages.find((image) => image.is_primary) || itemImages[0];
+            return {
+              ...item,
+              product_id: itemProductId,
+              name: item.name || item.product_name || item.product_id?.name || productNamesById[itemProductId] || checkoutItems[index]?.product_name,
+              quantity: Number(item.quantity ?? checkoutItems[index]?.quantity) || 1,
+              price: Number(item.price ?? item.unit_price ?? checkoutItems[index]?.price) || 0,
+              size: item.size || checkoutItems[index]?.size,
+              color: item.color || checkoutItems[index]?.color,
+              shipping_method: item.shipping_method || checkoutItems[index]?.shipping_method,
+              image_url: item.image_url || item.imageUrl || item.image || primaryImage?.image_url || null,
+            };
+          }),
+        };
+      });
 
       // Set user data
       setUserData({
@@ -200,9 +301,9 @@ export default function UserDashboardNew() {
 
       // Calculate statistics
       const totalOrders = normalizedOrders.length;
-      const completedOrders = normalizedOrders.filter(o => (o.payment_status || o.status) === "paid").length;
-      const pendingOrders = normalizedOrders.filter(o => (o.payment_status || o.status) === "pending").length;
-      const totalSpent = normalizedOrders.reduce((sum, o) => (o.payment_status || o.status) === "paid" ? sum + (Number(o.total) || 0) : sum, 0);
+      const completedOrders = normalizedOrders.filter(o => ["paid", "completed"].includes(String(o.payment_status || o.status || "").toLowerCase())).length;
+      const pendingOrders = normalizedOrders.filter(o => ["pending", "awaiting_payment", "awaiting payment"].includes(String(o.payment_status || o.status || "").toLowerCase())).length;
+      const totalSpent = normalizedOrders.reduce((sum, o) => ["paid", "completed"].includes(String(o.payment_status || o.status || "").toLowerCase()) ? sum + (Number(o.total) || 0) : sum, 0);
 
       setStats({
         totalOrders,
@@ -369,12 +470,14 @@ export default function UserDashboardNew() {
   }
 
   return (
-    <div className="user-dashboard-container">
+    <div className={`user-dashboard-container ${sidebarOpen ? "sidebar-is-open" : ""}`}>
       {/* Mobile Menu Toggle */}
       <button 
         className="mobile-menu-toggle"
         onClick={() => setSidebarOpen(!sidebarOpen)}
         aria-label={sidebarOpen ? t("dashboard.close_menu") : t("dashboard.open_menu")}
+        aria-expanded={sidebarOpen}
+        aria-controls="customer-dashboard-sidebar"
       >
         {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
@@ -388,9 +491,9 @@ export default function UserDashboardNew() {
       )}
 
       {/* Sidebar */}
-      <aside className={`user-sidebar ${sidebarOpen ? 'open' : ''}`}>
+      <aside id="customer-dashboard-sidebar" className={`user-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <Link to="/" className="dashboard-brand" aria-label={t("navbar.home_aria")} onClick={() => setSidebarOpen(false)}>
-          <span className="dashboard-brand-mark" aria-hidden="true">T<span>•••</span></span>
+          <span className="dashboard-brand-mark" aria-hidden="true"><img src={BrandMonogram} alt="" /></span>
           <span className="dashboard-brand-name">TSOGO<span>-</span>BIS<small>{t("navbar.tagline")}</small></span>
         </Link>
         <div className="sidebar-header">
@@ -495,7 +598,14 @@ export default function UserDashboardNew() {
         {/* Overview Section */}
         {activeSection === "overview" && (
           <div className="section-content">
-            <h1>{t("dashboard.overview")}</h1>
+            <section className="dashboard-welcome">
+              <div>
+                <span className="dashboard-eyebrow">TSOGO-BIS · {t("dashboard.overview")}</span>
+                <h1>{t("dashboard.welcome_back", { name: (userData.profile?.display_name || user?.user_metadata?.display_name || user?.email?.split("@")[0] || "").split(" ")[0] })}</h1>
+                <p>{t("dashboard.welcome_copy")}</p>
+              </div>
+              <button type="button" className="dashboard-shop-cta" onClick={() => navigate("/shop")}>{t("dashboard.start_shopping")} <ArrowUpRight size={16} /></button>
+            </section>
 
             <div className="stats-grid">
               <div className="stat-card">
@@ -561,8 +671,15 @@ export default function UserDashboardNew() {
               </button>
             </section>
 
+            <section className="dashboard-shortcuts" aria-label={t("dashboard.quick_actions")}>
+              <button type="button" onClick={() => setActiveSection("orders")}><ShoppingCart size={18} /><span>{t("dashboard.orders")}</span><ArrowUpRight size={15} /></button>
+              <button type="button" onClick={() => setActiveSection("cart")}><ShoppingBag size={18} /><span>{t("dashboard.cart")}</span><b>{stats.cartItems}</b></button>
+              <button type="button" onClick={() => setActiveSection("reviews")}><Star size={18} /><span>{t("dashboard.reviews")}</span><b>{stats.reviewsGiven}</b></button>
+              <button type="button" onClick={() => setActiveSection("settings")}><Settings size={18} /><span>{t("dashboard.settings")}</span><ArrowUpRight size={15} /></button>
+            </section>
+
             <div className="recent-section">
-              <h2>{t("dashboard.recent_orders")}</h2>
+              <div className="dashboard-section-heading"><div><span className="dashboard-eyebrow">{t("dashboard.order_activity")}</span><h2>{t("dashboard.recent_orders")}</h2></div><button type="button" className="dashboard-text-action" onClick={() => setActiveSection("orders")}>{t("dashboard.view_all_orders")} <ArrowUpRight size={15} /></button></div>
               {userData.orders.slice(0, 5).length === 0 ? (
                 <div className="empty-state">
                   <p>{t("dashboard.no_orders_copy")}</p>
@@ -578,9 +695,24 @@ export default function UserDashboardNew() {
                           {formatPaymentStatus(order.payment_status || order.status)}
                         </span>
                       </div>
-                      <div className="order-details">
-                        <span>{formatDate(order.created_at)}</span>
-                        <span className="order-total">{formatCurrency(order.total)}</span>
+                      <div className="recent-order-content">
+                        <div className="recent-order-products">
+                          {(order.items || []).length ? (order.items || []).slice(0, 3).map((item, index) => {
+                            const optionDetails = [item.color, item.size].filter(Boolean).join(" · ");
+                            const productName = item.name || item.product_name || item.product_id?.name || t("common.unknown");
+                            return <div className="recent-order-product" key={`${order.checkout_id}-${item.product_id?.id || item.product_id || "item"}-${index}`}>
+                              <img className="recent-order-product-image" src={item.image_url || ProductImageFallback} alt={productName} loading="lazy" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = ProductImageFallback; }} />
+                              <span className="recent-order-product-copy"><strong>{productName}</strong><small>{optionDetails ? `${optionDetails} · ` : ""}× {Number(item.quantity) || 1}</small></span>
+                              <span className="recent-order-product-price">{formatCurrency((Number(item.price ?? item.unit_price) || 0) * (Number(item.quantity) || 1))}</span>
+                            </div>;
+                          }) : <div className="recent-order-no-items">{t("dashboard.no_item_details")}</div>}
+                          {(order.items || []).length > 3 && <small className="recent-order-more">+ {(order.items || []).length - 3} {t("dashboard.more_items")}</small>}
+                        </div>
+                        <div className="recent-order-summary">
+                          <span>{formatDate(order.created_at)}</span>
+                          {(order.delivery_status || order.items?.[0]?.shipping_method || order["method of shipping"]) && <small>{order.delivery_status ? t(`orders.delivery_${order.delivery_status}`, { defaultValue: order.delivery_status }) : order.items?.[0]?.shipping_method || order["method of shipping"]}</small>}
+                          <strong className="order-total">{formatCurrency(order.total)}</strong>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -622,7 +754,7 @@ export default function UserDashboardNew() {
         {/* Orders Section */}
         {activeSection === "orders" && (
           <div className="section-content">
-            <h1>{t("dashboard.orders")}</h1>
+            <div className="dashboard-page-heading"><div><span className="dashboard-eyebrow">{t("dashboard.order_activity")}</span><h1>{t("dashboard.orders")}</h1></div><span className="dashboard-order-count">{userData.orders.length}</span></div>
 
             {userData.orders.length === 0 ? (
               <div className="empty-state">
@@ -632,8 +764,21 @@ export default function UserDashboardNew() {
                 <button onClick={() => navigate("/shop")}>{t("dashboard.browse_products")}</button>
               </div>
             ) : (
+              <>
+              <div className="dashboard-order-tools">
+                <label className="dashboard-order-search"><Search size={17} /><input type="search" value={orderSearch} onChange={(event) => setOrderSearch(event.target.value)} placeholder={t("dashboard.search_orders")} aria-label={t("dashboard.search_orders")} /></label>
+                <div className="dashboard-order-filters" role="group" aria-label={t("dashboard.filter_orders")}>
+                  {["all", "pending", "paid"].map((filter) => <button type="button" key={filter} className={orderFilter === filter ? "active" : ""} onClick={() => setOrderFilter(filter)}>{filter === "all" ? t("dashboard.all_orders") : filter === "pending" ? t("orders.awaiting_payment") : t("orders.payment_completed")}</button>)}
+                </div>
+              </div>
               <div className="orders-list">
-                {userData.orders.map(order => {
+                {userData.orders.filter((order) => {
+                  const query = orderSearch.trim().toLowerCase();
+                  const matchesSearch = !query || String(order.checkout_id).toLowerCase().includes(query) || (order.items || []).some((item) => String(item.name || "").toLowerCase().includes(query));
+                  const status = String(order.payment_status || order.status || "").toLowerCase();
+                  const matchesStatus = orderFilter === "all" || (orderFilter === "pending" ? ["pending", "awaiting_payment", "awaiting payment"].includes(status) : status === orderFilter);
+                  return matchesSearch && matchesStatus;
+                }).map(order => {
                   const items = order.items || [];
                   return (
                     <div key={order.checkout_id} className="order-card">
@@ -652,8 +797,9 @@ export default function UserDashboardNew() {
                           <strong>{t("dashboard.items")}:</strong>
                           {items.map((item, idx) => (
                             <div key={idx} className="order-item">
-                              <span>{item.name} x {item.quantity}</span>
-                              <span>{formatCurrency(item.price * item.quantity)}</span>
+                              <img className="dashboard-order-product-image" src={item.image_url || ProductImageFallback} alt={item.name || t("common.unknown")} loading="lazy" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = ProductImageFallback; }} />
+                              <span className="dashboard-order-product-copy"><strong>{item.name || t("common.unknown")}</strong><small>{[item.color, item.size].filter(Boolean).join(" · ")}{item.color || item.size ? " · " : ""}× {item.quantity}</small></span>
+                              <strong className="dashboard-order-product-price">{formatCurrency((Number(item.price) || 0) * (Number(item.quantity) || 1))}</strong>
                             </div>
                           ))}
                         </div>
@@ -700,6 +846,14 @@ export default function UserDashboardNew() {
                   );
                 })}
               </div>
+              {userData.orders.filter((order) => {
+                const query = orderSearch.trim().toLowerCase();
+                const matchesSearch = !query || String(order.checkout_id).toLowerCase().includes(query) || (order.items || []).some((item) => String(item.name || "").toLowerCase().includes(query));
+                const status = String(order.payment_status || order.status || "").toLowerCase();
+                const matchesStatus = orderFilter === "all" || (orderFilter === "pending" ? ["pending", "awaiting_payment", "awaiting payment"].includes(status) : status === orderFilter);
+                return matchesSearch && matchesStatus;
+              }).length === 0 && <div className="dashboard-no-matches"><Search size={20} /><p>{t("dashboard.no_matching_orders")}</p><button type="button" onClick={() => { setOrderSearch(""); setOrderFilter("all"); }}>{t("dashboard.clear_order_filters")}</button></div>}
+              </>
             )}
           </div>
         )}

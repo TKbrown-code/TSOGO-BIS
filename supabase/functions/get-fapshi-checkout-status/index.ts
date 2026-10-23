@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.58.0";
-import { sendOrderConfirmationEmail } from "../_shared/order-confirmation-email.ts";
+import { sendOrderConfirmationEmail } from "./_shared/order-confirmation-email.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";

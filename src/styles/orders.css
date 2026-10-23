@@ -1171,3 +1171,126 @@
     overflow-wrap: anywhere;
   }
 }
+
+/* Compact customer order cards: product details and the summary sit side by side
+   on wide screens, then stack cleanly on phones without large empty areas. */
+.orders-container-premium .order-card-premium {
+  padding: clamp(14px, 2vw, 22px);
+}
+
+.orders-container-premium .order-card-header {
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+}
+
+.orders-container-premium .order-content {
+  grid-template-columns: minmax(0, 1.5fr) minmax(230px, 0.8fr);
+  align-items: start;
+  gap: 14px;
+}
+
+.orders-container-premium .order-items-column {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+}
+
+.orders-container-premium .order-item-row {
+  grid-template-columns: 68px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 10px 12px;
+}
+
+.orders-container-premium .order-item-image {
+  display: block;
+  width: 68px;
+  height: 68px;
+  border: 1px solid #e7e4dc;
+  border-radius: 7px;
+  background: #f4f1eb;
+  object-fit: cover;
+}
+
+.orders-container-premium .order-item-meta {
+  min-width: 0;
+  gap: 4px;
+}
+
+.orders-container-premium .order-item-title {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.orders-container-premium .order-item-variant {
+  color: #8b7559;
+  font-size: 11px;
+}
+
+.orders-container-premium .order-item-desc {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 11px;
+}
+
+.orders-container-premium .order-item-extra {
+  gap: 5px 10px;
+  margin-top: 2px;
+}
+
+.orders-container-premium .order-item-pricing {
+  align-items: flex-end;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.orders-container-premium .order-sidebar {
+  width: auto;
+  min-width: 0;
+  padding: 14px;
+}
+
+.orders-container-premium .order-summary {
+  gap: 9px;
+}
+
+@media (max-width: 1024px) {
+  .orders-container-premium .order-content {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .orders-container-premium .order-item-row {
+    grid-template-columns: 58px minmax(0, 1fr);
+    align-items: start;
+    gap: 9px 10px;
+    padding: 9px;
+  }
+
+  .orders-container-premium .order-item-image {
+    width: 58px;
+    height: 58px;
+  }
+
+  .orders-container-premium .order-item-pricing {
+    grid-column: 2;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: -3px;
+  }
+
+  .orders-container-premium .order-item-extra {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 420px) {
+  .orders-container-premium .order-item-desc {
+    display: none;
+  }
+}

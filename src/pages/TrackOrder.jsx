@@ -21,7 +21,8 @@ export default function TrackOrder() {
     }
   }, [trackingId]);
 
-  // Keep an already-open tracking page in sync while an admin advances delivery.
+  // Subscribe to the public, status-only delivery broadcast. The page then
+  // reloads full tracking details through the existing tracking RPC.
   useEffect(() => {
     const number = trackingData?.tracking_number;
     if (!number) return undefined;
@@ -31,8 +32,19 @@ export default function TrackOrder() {
       });
       if (!refreshError && data?.length) setTrackingData(data[0]);
     };
-    const intervalId = window.setInterval(refreshStatus, 12000);
-    return () => window.clearInterval(intervalId);
+    const channel = supabase
+      .channel(`delivery:${number}`)
+      .on("broadcast", { event: "delivery_status_updated" }, refreshStatus)
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") refreshStatus();
+      });
+    // Recover from transient socket disconnects; normal updates arrive over
+    // Realtime immediately.
+    const intervalId = window.setInterval(refreshStatus, 60000);
+    return () => {
+      window.clearInterval(intervalId);
+      supabase.removeChannel(channel);
+    };
   }, [trackingData?.tracking_number]);
 
   const handleTrackWithNumber = async (number) => {

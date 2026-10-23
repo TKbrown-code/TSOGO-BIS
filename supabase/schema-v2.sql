@@ -182,6 +182,7 @@ create table public.site_settings (
   site_name text not null default 'TSOGO-BIS',
   contact_email text,
   contact_phone text,
+  whatsapp_phone text,
   base_currency char(3) not null default 'XAF',
   tax_rate numeric(6,5) not null default 0 check (tax_rate between 0 and 1),
   terms_and_policies text not null default $$DRAFT TERMS AND POLICIES — replace this text before launch.

@@ -2,6 +2,7 @@ import React from "react";
 import { ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import BrandMonogram from "../../assets/nav-monogram.png";
 import "../../styles/footer.css";
 
 const linkGroups = [
@@ -16,8 +17,8 @@ export default function Footer() {
       <div className="site-footer-main">
         <div className="site-footer-brand">
           <Link to="/" className="footer-brand-lockup" aria-label={t("navbar.home_aria")}>
-            <span className="footer-brand-mark" aria-hidden="true"><b>T</b><i /><i /><i /></span>
-            <span>TSOGO<span className="footer-brand-dash">-</span>BIS</span>
+            <span className="footer-brand-mark" aria-hidden="true"><img src={BrandMonogram} alt="" /></span>
+            <span className="footer-brand-wordmark">TSOGO<span className="footer-brand-dash">-</span>BIS<small>{t("navbar.tagline")}</small></span>
           </Link>
           <p>{t("footer.brand_copy")}</p>
           <Link className="footer-story-link" to="/about">{t("footer.about_short")} <ArrowUpRight size={14} /></Link>

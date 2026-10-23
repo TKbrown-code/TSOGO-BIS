@@ -877,6 +877,16 @@
 @media(max-width:860px) { .premium-details-container { max-width:760px;margin:0 auto;padding:0 18px 48px;grid-template-columns:minmax(0,1fr);gap:18px; }.premium-details-container>.premium-info { grid-row:1; }.premium-details-container>.right { grid-row:2; }.premium-gallery .carousel-container,.premium-gallery .image-view { min-height:clamp(320px,65vw,500px); } }
 @media(max-width:520px) { .premium-details-container { padding:0 12px 36px;gap:14px; }.premium-info { padding:19px 15px; }.premium-gallery { padding:8px;gap:9px; }.premium-gallery .carousel-container,.premium-gallery .image-view { min-height:300px; } }
 
+/* On phones keep the product journey in a clear order: photos, details, reviews. */
+@media(max-width:900px) {
+  .premium-details-container>.right { display:contents; }
+  .premium-details-container>.premium-info { grid-row:2; }
+  .premium-details-container>.right>.premium-gallery { grid-row:1; }
+  .premium-details-container>.right>.premium-reviews { display:block;grid-row:3; }
+  .premium-details-container { grid-template-rows:auto auto auto; }
+}
+.premium-info .shipping-select { color:#26352e!important;color-scheme:light;background:#fffefa!important;border-color:#d8d5cd!important; }
+
 /* Product-detail loading state mirrors the final gallery and information columns. */
 .product-detail-skeleton { width:100%;display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:clamp(18px,2vw,30px);margin:0;padding:16px clamp(18px,3.2vw,48px) 56px;background:#faf9f6; }
 .detail-skeleton-gallery,.detail-skeleton-info { min-width:0;padding:18px;border:1px solid #e9e6de;border-radius:8px;background:#fffefa; }
@@ -891,4 +901,197 @@
 @keyframes productDetailShimmer { to { transform:translateX(100%); } }
 @media(max-width:860px) { .product-detail-skeleton { max-width:760px;margin:0 auto;grid-template-columns:minmax(0,1fr);padding:0 18px 48px; }.detail-skeleton-info { grid-row:1; }.detail-skeleton-gallery { grid-row:2; }.detail-skeleton-image { min-height:clamp(320px,65vw,500px); } }
 @media(max-width:520px) { .product-detail-skeleton { gap:14px;padding:0 12px 36px; }.detail-skeleton-gallery,.detail-skeleton-info { padding:14px; }.detail-skeleton-image { min-height:300px; }.detail-skeleton-info { gap:11px; } }
+}
+
+/* Stable product detail layout: keep the info panel below the sticky nav and
+   prevent the gallery/reviews column from forcing horizontal overflow. */
+.premium-details-container {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(16px, 2vw, 28px);
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0 clamp(14px, 3.2vw, 48px) 56px;
+  overflow-x: clip;
+}
+.premium-details-container > .right,
+.premium-details-container > .premium-info {
+  grid-row: 1;
+  min-width: 0;
+  width: auto;
+  max-width: 100%;
+}
+.premium-details-container > .right { grid-column: 1; gap: 18px; }
+.premium-details-container > .right,
+.premium-details-container > .premium-info { position: relative; align-self: start; }
+.premium-gallery { position: relative; display: flex; flex: 0 0 auto; flex-direction: column; height: auto !important; }
+.premium-details-container > .premium-info {
+  grid-column: 2;
+  padding: clamp(20px, 2.6vw, 36px);
+}
+.premium-gallery { min-width: 0; }
+.premium-gallery .carousel-container {
+  width: 100%;
+  height: clamp(340px, 40vw, 580px);
+  min-height: 0;
+  flex: 0 0 auto;
+  isolation: isolate;
+}
+.premium-gallery .image-view {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+.premium-gallery .image-view img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  object-fit: contain !important;
+}
+.premium-gallery .product-thumbnails {
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 3px 2px 5px;
+  scrollbar-width: thin;
+}
+.premium-gallery .product-thumbnails button {
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  padding: 2px;
+  border: 1px solid #d9d4c9;
+  border-radius: 50%;
+  background: #fffefa;
+  overflow: hidden;
+  cursor: pointer;
+}
+.premium-gallery .product-thumbnails button.is-active {
+  border: 2px solid #735e44;
+  box-shadow: 0 0 0 2px #735e4426;
+}
+.premium-gallery .product-thumbnails img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.premium-reviews { display: block; min-width: 0; margin: 0; }
+@media (max-width: 960px) {
+  .premium-details-container { grid-template-columns: minmax(0, 1fr); max-width: 760px; margin-inline: auto; padding: 0 18px 48px; }
+  .premium-details-container > .premium-info { grid-column: 1; grid-row: 1; position: static; }
+  .premium-details-container > .right { grid-column: 1; grid-row: 2; }
+  .premium-gallery .carousel-container { height: clamp(320px, 65vw, 500px); }
+}
+@media (max-width: 520px) {
+  .premium-details-container { gap: 14px; padding: 0 12px 36px; }
+  .premium-details-container > .premium-info { padding: 19px 15px; }
+  .premium-gallery { padding: 8px; gap: 9px; }
+  .premium-gallery .carousel-container { height: min(420px, calc(100vw - 48px)); min-height: 280px; }
+}
+
+/* Compact horizontal product facts and a clear one-minute review window. */
+.premium-info dl.p-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  margin: 16px 0 20px;
+  padding: 0;
+  border: 1px solid #e9e6de;
+  border-radius: 6px;
+  background: #faf9f6;
+}
+.premium-info .p-meta-item {
+  min-width: 0;
+  padding: 10px 11px;
+  border-right: 1px solid #e9e6de;
+}
+.premium-info .p-meta-item:last-child { border-right: 0; }
+.premium-info .p-meta-item dt {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 0 4px;
+  color: #777970;
+  font-size: 9px;
+  line-height: 1.35;
+}
+.premium-info .p-meta-item dd {
+  margin: 0;
+  color: #26352e;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.review-window-countdown,
+.review-window-note {
+  margin: 0 0 12px;
+  color: #735e44;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.review-window-note {
+  padding: 12px 14px;
+  border: 1px solid #e9e6de;
+  border-radius: 5px;
+  background: #faf9f6;
+}
+@media (max-width: 520px) {
+  .premium-info dl.p-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .premium-info .p-meta-item:nth-child(2n) { border-right: 0; }
+  .premium-info .p-meta-item:nth-child(n + 3) { border-top: 1px solid #e9e6de; }
+}
+@media(max-width:900px){.premium-details-container .right{display:contents}}
+
+.premium-reviews .rating-input .star {
+  border: 0;
+  padding: 0 2px;
+  color: #c9c4b8;
+  background: transparent;
+  font: inherit;
+  font-size: 23px;
+  line-height: 1;
+  cursor: pointer;
+}
+.premium-reviews .rating-input .star.filled { color: #927b5c; }
+.review-edit-window { flex-basis: 100%; color: #735e44; font-size: 11px; }
+.review-delete-btn { color: #9b493c !important; }
+
+/* Phone layout: flatten the gallery/reviews wrapper and explicitly place each
+   section in a single full-width column. Explicit tracks prevent the info card
+   from sharing the first row with the gallery when the wrapper is display:contents. */
+@media (max-width: 900px) {
+  .premium-details-container {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-flow: row;
+  }
+  .premium-details-container > .right {
+    display: contents;
+  }
+  .premium-details-container > .right > .premium-gallery {
+    grid-column: 1;
+    grid-row: 1;
+    width: 100%;
+  }
+  .premium-details-container > .premium-info {
+    grid-column: 1;
+    grid-row: 2;
+    width: 100%;
+  }
+  .premium-details-container > .right > .premium-reviews {
+    grid-column: 1;
+    grid-row: 3;
+    width: 100%;
+  }
 }

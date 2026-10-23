@@ -38,16 +38,17 @@ export async function sendOrderConfirmationEmail(admin: any, checkoutId: string 
   if (!apiKey || !from) throw new Error("Order email is not configured (RESEND_API_KEY or RESEND_FROM_EMAIL is missing)");
 
   const { data: checkout, error: checkoutError } = await admin.from("checkouts")
-    .select("checkout_id,user_id,user_name,email,total,items,tracking_number,payment_status,payment_method")
+    .select("checkout_id,user_id,user_name,email,email_language,total,amount_due,service_fee,shipping_payment_mode,shipping_due_on_delivery,items,tracking_number,payment_status,payment_method")
     .eq("checkout_id", checkoutId).maybeSingle();
   if (checkoutError || !checkout) throw new Error(checkoutError?.message ?? "Checkout not found for confirmation email");
   if (checkout.payment_status !== "paid") return { sent: false, reason: "payment_not_paid" };
-  if (!checkout.email || !checkout.tracking_number) throw new Error("Paid checkout is missing its email or tracking number");
+  if (!checkout.email) throw new Error("Paid checkout is missing its email address");
 
   const { data: profile, error: profileError } = await admin.from("profiles")
     .select("preferred_language").eq("user_id", checkout.user_id).maybeSingle();
   if (profileError) console.error("Could not read email language preference:", profileError.message);
-  const language = ["en", "fr", "zh"].includes(profile?.preferred_language) ? profile.preferred_language : "fr";
+  const language = [checkout.email_language, profile?.preferred_language, "fr"]
+    .find((value) => ["en", "fr", "zh"].includes(value)) as string;
   const copy = messages[language];
   const formatMoney = (value: unknown) => money(value, language);
 
@@ -66,17 +67,22 @@ export async function sendOrderConfirmationEmail(admin: any, checkoutId: string 
       const quantity = Math.max(Number(item?.quantity) || 1, 1);
       return `<tr><td style="padding:12px 0;border-bottom:1px solid #ece8df;color:#354239">${escapeHtml(name)} <span style="color:#85877f">× ${quantity}</span></td><td style="padding:12px 0;border-bottom:1px solid #ece8df;text-align:right;white-space:nowrap;color:#26352e">${formatMoney((Number(item?.price) || 0) * quantity)}</td></tr>`;
     }).join("");
-    const trackingUrl = `${appUrl}/track/${encodeURIComponent(checkout.tracking_number)}`;
-    const shippingStatus = shippingAmount <= 0 ? copy.noShipping : checkout.payment_status === "paid" ? copy.paid : copy.unpaid;
+    const trackingUrl = checkout.tracking_number ? `${appUrl}/track/${encodeURIComponent(checkout.tracking_number)}` : null;
+    const shippingStatus = shippingAmount <= 0 ? copy.noShipping
+      : checkout.shipping_payment_mode === "arrival" ? "Due on arrival"
+        : checkout.payment_status === "paid" ? copy.paid : copy.unpaid;
     const greeting = copy.greeting.replace("{{name}}", escapeHtml(checkout.user_name || "Customer"));
     const subject = copy.subject.replace("{{id}}", String(checkout.checkout_id));
     const rawPaymentMethod = String(checkout.payment_method || "").toLowerCase();
     const paymentMethod = rawPaymentMethod.includes("bank") ? copy.bank
       : rawPaymentMethod.includes("mobile") || rawPaymentMethod.includes("fapshi") ? copy.mobile
         : copy.online;
-    const html = `<!doctype html><html lang="${language}"><body style="margin:0;padding:28px 14px;background:#f5f4ef;font-family:Arial,sans-serif;color:#29372f"><table role="presentation" style="width:100%;max-width:600px;margin:0 auto;background:#fffefa;border:1px solid #e4e1d8;padding:30px"><tr><td><p style="font-size:11px;letter-spacing:3px;color:#8c7554;font-weight:bold">TSOGO-BIS</p><h1 style="font:normal 28px Georgia,serif;margin:20px 0 8px">${greeting}</h1><p style="font-size:14px;line-height:1.7;color:#687168">${copy.confirmed}</p><p style="margin:24px 0"><a href="${escapeHtml(trackingUrl)}" style="display:inline-block;background:#26372f;color:#fffefa;text-decoration:none;padding:13px 20px;font-size:13px;font-weight:bold">${copy.track}</a></p><p style="font-size:12px;color:#687168">${copy.trackingNumber}: <strong style="color:#26352e">${escapeHtml(checkout.tracking_number)}</strong></p><table role="presentation" style="width:100%;border-collapse:collapse;margin-top:24px"><thead><tr><th style="padding:10px 0;border-bottom:1px solid #dcd7ca;text-align:left;font-size:11px;color:#85877f">${copy.item}</th><th style="padding:10px 0;border-bottom:1px solid #dcd7ca;text-align:right;font-size:11px;color:#85877f">${copy.amount}</th></tr></thead><tbody>${rows}</tbody></table><table role="presentation" style="width:100%;margin-top:12px;font-size:13px"><tr><td style="padding:6px 0;color:#687168">${copy.shipping}</td><td style="padding:6px 0;text-align:right;color:#26352e">${formatMoney(shippingAmount)} · ${shippingStatus}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #dcd7ca;font-weight:bold">${copy.total}</td><td style="padding:8px 0;border-top:1px solid #dcd7ca;text-align:right;font-weight:bold">${formatMoney(checkout.total)}</td></tr></table><p style="margin-top:26px;font-size:11px;line-height:1.6;color:#85877f">${copy.method}: ${paymentMethod}<br>${copy.help}</p></td></tr></table></body></html>`;
+    const trackBlock = checkout.tracking_number ? `<p style="margin:24px 0"><a href="${escapeHtml(trackingUrl)}" style="display:inline-block;background:#26372f;color:#fffefa;text-decoration:none;padding:13px 20px;font-size:13px;font-weight:bold">${copy.track}</a></p><p style="font-size:12px;color:#687168">${copy.trackingNumber}: <strong style="color:#26352e">${escapeHtml(checkout.tracking_number)}</strong></p>` : "";
+    const feeRow = Number(checkout.service_fee) > 0 ? `<tr><td style="padding:6px 0;color:#687168">Service fee</td><td style="padding:6px 0;text-align:right;color:#26352e">${formatMoney(checkout.service_fee)}</td></tr>` : "";
+    const paidAmount = Number(checkout.amount_due ?? checkout.total);
+    const html = `<!doctype html><html lang="${language}"><body style="margin:0;padding:28px 14px;background:#f5f4ef;font-family:Arial,sans-serif;color:#29372f"><table role="presentation" style="width:100%;max-width:600px;margin:0 auto;background:#fffefa;border:1px solid #e4e1d8;padding:30px"><tr><td><p style="font-size:11px;letter-spacing:3px;color:#8c7554;font-weight:bold">TSOGO-BIS</p><h1 style="font:normal 28px Georgia,serif;margin:20px 0 8px">${greeting}</h1><p style="font-size:14px;line-height:1.7;color:#687168">${copy.confirmed}</p>${trackBlock}<table role="presentation" style="width:100%;border-collapse:collapse;margin-top:24px"><thead><tr><th style="padding:10px 0;border-bottom:1px solid #dcd7ca;text-align:left;font-size:11px;color:#85877f">${copy.item}</th><th style="padding:10px 0;border-bottom:1px solid #dcd7ca;text-align:right;font-size:11px;color:#85877f">${copy.amount}</th></tr></thead><tbody>${rows}</tbody></table><table role="presentation" style="width:100%;margin-top:12px;font-size:13px"><tr><td style="padding:6px 0;color:#687168">${copy.shipping}</td><td style="padding:6px 0;text-align:right;color:#26352e">${formatMoney(shippingAmount)} · ${shippingStatus}</td></tr>${feeRow}<tr><td style="padding:8px 0;border-top:1px solid #dcd7ca;font-weight:bold">${copy.total}</td><td style="padding:8px 0;border-top:1px solid #dcd7ca;text-align:right;font-weight:bold">${formatMoney(paidAmount)}</td></tr></table><p style="margin-top:26px;font-size:11px;line-height:1.6;color:#85877f">${copy.method}: ${paymentMethod}<br>${copy.help}</p></td></tr></table></body></html>`;
     const textItems = items.map((item: any) => `- ${String(item?.name || "Product")} × ${Math.max(Number(item?.quantity) || 1, 1)}: ${formatMoney((Number(item?.price) || 0) * Math.max(Number(item?.quantity) || 1, 1))}`).join("\n");
-    const text = `${greeting}\n\n${copy.confirmed}\n${copy.trackingNumber}: ${checkout.tracking_number}\n${copy.track}: ${trackingUrl}\n\n${copy.item}:\n${textItems}\n\n${copy.shipping}: ${formatMoney(shippingAmount)} — ${shippingStatus}\n${copy.total}: ${formatMoney(checkout.total)}\n${copy.method}: ${paymentMethod}\n${copy.help}`;
+    const text = `${greeting}\n\n${copy.confirmed}${checkout.tracking_number ? `\n${copy.trackingNumber}: ${checkout.tracking_number}\n${copy.track}: ${trackingUrl}` : ""}\n\n${copy.item}:\n${textItems}\n\n${copy.shipping}: ${formatMoney(shippingAmount)} — ${shippingStatus}${Number(checkout.service_fee) > 0 ? `\nService fee: ${formatMoney(checkout.service_fee)}` : ""}\n${copy.total}: ${formatMoney(paidAmount)}\n${copy.method}: ${paymentMethod}\n${copy.help}`;
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", "Idempotency-Key": `checkout-confirmation/${checkout.checkout_id}` },

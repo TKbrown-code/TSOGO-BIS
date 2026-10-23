@@ -1,10 +1,12 @@
 import React from "react";
 import { FaWhatsapp } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
+import { useSiteSettings } from "../../context/SiteSettingsContext";
 
 export default function WhatsAppButton() {
   const { t } = useTranslation();
-  const phoneNumber = "237680633832";
+  const { whatsappPhone } = useSiteSettings();
+  const phoneNumber = (whatsappPhone || "237680633832").replace(/\D/g, "");
   const message = encodeURIComponent(t('whatsapp.message'));
 
   return (

@@ -454,6 +454,13 @@ box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.178);
 .checkout-page .input-group{margin:0 0 15px}
 .checkout-left .input-group .input-icon{left:13px;color:#8d7154;font-size:13px}
 .checkout-left .input-group input[type="text"],.checkout-left .input-group input[type="tel"]{min-height:43px;padding:10px 12px 10px 38px;border:1px solid #d8d5cd;border-radius:3px;color:#26352e;background:#fff;font:inherit;font-size:12px;box-shadow:none}
+.checkout-left .checkout-phone-group .checkout-phone-prefix{position:absolute;z-index:1;left:38px;top:50%;transform:translateY(-50%);padding-right:9px;border-right:1px solid #e7e4dc;color:#49544b;font-size:12px;line-height:18px;pointer-events:none}
+.checkout-left .checkout-phone-group input[type="tel"]{padding-left:91px}
+.checkout-service-fee-consent{margin:14px 0;padding:13px 14px;border:1px solid #d9c8a8;border-radius:4px;background:#fbf8f1;color:#455148;font-size:11px;line-height:1.55}
+.checkout-service-fee-consent h2{margin:0 0 5px;color:#26352e;font-size:12px;font-weight:700}
+.checkout-service-fee-consent p{margin:0 0 10px}
+.checkout-service-fee-consent label{display:flex;align-items:flex-start;gap:8px;padding-top:9px;border-top:1px solid #e7e0d2;color:#26352e;font-weight:600;cursor:pointer}
+.checkout-service-fee-consent input[type="checkbox"]{flex:0 0 auto;width:15px;height:15px;margin:1px 0 0;accent-color:#1d3029}
 .checkout-left input:hover{border-color:#bcb19f}
 .checkout-left input:focus{border-color:#8d7154;outline:2px solid #8d715422;outline-offset:0;background:#fff;box-shadow:none}
 .checkout-left .input-group:focus-within .input-icon{color:#735e44}
@@ -490,6 +497,27 @@ box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.178);
 .checkout-page .order-total{gap:15px;margin-top:15px;padding:15px 2px 0;border:0;border-top:1px solid #e7e4dc;border-radius:0;color:#26352e;background:transparent;font-size:12px}
 .checkout-page .order-total strong{margin:0;color:#636960;font-size:12px}
 .checkout-page .order-total>span{color:#26352e;font-size:16px;font-weight:700}
+.checkout-page .checkout-left>.input-group,
+.checkout-page .checkout-left>.payment-method-badge,
+.checkout-page .checkout-left>.checkout-delivery-payment,
+.checkout-page .checkout-left>.checkout-service-fee-consent{width:100%;max-width:none;box-sizing:border-box}
+.checkout-page .checkout-left>.input-group{margin-left:0;margin-right:0}
+.checkout-page .payment-method-badge{display:flex;align-items:center;min-height:43px}
+.checkout-page .checkout-delivery-payment{grid-template-columns:minmax(0,1fr);gap:7px;padding:12px}
+.checkout-page .checkout-delivery-payment label{min-height:40px;padding:8px 2px}
+.checkout-page .checkout-delivery-payment label span{margin-left:auto}
+.checkout-prices-table{width:min(100%,440px);margin:16px auto 0;border-collapse:collapse;table-layout:fixed;color:#26352e;font-size:11px}
+.checkout-prices-table tr+tr{border-top:1px solid #e7e4dc}
+.checkout-prices-table th,.checkout-prices-table td{padding:12px 10px}
+.checkout-prices-table th{color:#636960;text-align:left;font-size:11px;font-weight:600}
+.checkout-prices-table td{text-align:right;font-size:14px;font-weight:650;white-space:nowrap}
+.checkout-payment-totals{width:min(100%,440px);margin:8px auto 0;padding-top:2px;border-top:1px solid #d8d5cd}
+.checkout-payment-totals .order-total{margin-top:0;padding:12px 10px 0;border-top:0}
+.checkout-payment-totals .checkout-amount-due{padding-top:14px}
+.checkout-payment-totals .checkout-amount-due strong{color:#26352e;font-size:13px}
+.checkout-payment-totals .checkout-amount-due>span{font-size:19px}
+.checkout-payment-totals .checkout-whatsapp-total{padding:12px 10px 10px;border-top:1px solid #eeece6}
+.checkout-payment-totals .checkout-whatsapp-total>span{font-size:15px}
 .checkout-empty{display:grid;justify-items:center;max-width:510px;margin:36px auto;padding:50px 28px;text-align:center;border:1px solid #e7e4dc;border-radius:6px;background:#fffefa}
 .checkout-empty-mark{display:grid;width:48px;height:48px;place-items:center;border:1px solid #e7e4dc;border-radius:50%;color:#735e44;background:#f7f5ef}
 .checkout-empty h1{margin:6px 0;color:#26352e;font:400 30px Georgia,serif}
@@ -504,3 +532,6 @@ box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.178);
 .checkout-referral-credit>span{font-weight:600;white-space:nowrap}
 .checkout-amount-due{padding-top:9px;color:#26352e}
 @media(max-width:480px){.checkout-referral-credit{align-items:flex-start;flex-direction:column}}
+.checkout-whatsapp-button{display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;margin-top:9px;padding:10px 14px;border:1px solid #c8d4ca;border-radius:3px;color:#26352e;background:#f2f6f1;font:600 12px Inter,system-ui,sans-serif;cursor:pointer}.checkout-whatsapp-button:hover{background:#e6eee6}.checkout-whatsapp-button:disabled{opacity:.55;cursor:not-allowed}.checkout-service-fee-note{margin:10px 0 0;color:#697168;font-size:11px;line-height:1.6}.checkout-service-fee-note strong{color:#26352e}@media(max-width:900px){.checkout-left{position:static}}
+.checkout-delivery-payment{display:grid;gap:10px;margin:13px 0 0;padding:13px;border:1px solid #e7e4dc;border-radius:4px;background:#faf9f6}.checkout-delivery-payment legend{padding:0 5px;color:#26352e;font-size:11px;font-weight:650}.checkout-delivery-payment label{display:flex;align-items:center;gap:8px;color:#566057;font-size:11px;line-height:1.45;cursor:pointer}.checkout-delivery-payment input{width:15px;height:15px;margin:0;accent-color:#26352e}.checkout-delivery-payment label span{margin-left:auto;color:#26352e;font-weight:650;white-space:nowrap}
+.checkout-location-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.checkout-location-field{min-width:0}.checkout-location-field .input-group{width:100%}.checkout-location-field .input-group input{width:100%;min-width:0}.checkout-location-field input[readonly]{color:#46534a;background:#f7f5ef;cursor:default}.checkout-location-field input[readonly]:focus{outline:0;border-color:#d8d5cd}@media(max-width:480px){.checkout-location-fields{grid-template-columns:1fr;gap:0}}

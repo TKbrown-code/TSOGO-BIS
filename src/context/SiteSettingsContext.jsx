@@ -9,6 +9,7 @@ export const SiteSettingsProvider = ({ children }) => {
     site_name: "TSOGO-BIS",
     site_email: "",
     site_phone: "",
+    whatsapp_phone: "237680633832",
     terms_and_policies: "",
     currency: "XAF",
     tax_rate: 0
@@ -34,6 +35,7 @@ export const SiteSettingsProvider = ({ children }) => {
           site_name: data.site_name || "TSOGO-BIS",
           site_email: data.contact_email || "",
           site_phone: data.contact_phone || "",
+          whatsapp_phone: data.whatsapp_phone || "237680633832",
           terms_and_policies: data.terms_and_policies || "",
           currency: data.base_currency || "XAF",
           tax_rate: data.tax_rate || 0
@@ -59,6 +61,7 @@ export const SiteSettingsProvider = ({ children }) => {
     siteName: settings.site_name,
     siteEmail: settings.site_email,
     sitePhone: settings.site_phone,
+    whatsappPhone: settings.whatsapp_phone,
     termsAndPolicies: settings.terms_and_policies,
     currency: settings.currency,
     taxRate: settings.tax_rate

@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.58.0";
-import { sendOrderConfirmationEmail } from "../_shared/order-confirmation-email.ts";
+import { sendOrderConfirmationEmail } from "./_shared/order-confirmation-email.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -46,14 +46,14 @@ Deno.serve(async (req) => {
     const checkoutId = event.externalId.slice("checkout_".length);
     const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
     const { data: checkout, error: lookupError } = await admin.from("checkouts")
-      .select("checkout_id,total,payment_reference,payment_provider")
+      .select("checkout_id,total,amount_due,payment_reference,payment_provider")
       .eq("checkout_id", checkoutId).maybeSingle();
     if (lookupError || !checkout || checkout.payment_provider !== "fapshi") {
       console.error("Fapshi webhook checkout lookup failed:", lookupError?.message ?? "not found");
       return new Response("Checkout not found", { status: 404 });
     }
     if ((checkout.payment_reference && checkout.payment_reference !== verified.transId)
-      || Math.round(Number(checkout.total)) !== Number(verified.amount)) {
+      || Math.round(Number(checkout.amount_due ?? checkout.total)) !== Number(verified.amount)) {
       console.error("Fapshi webhook transaction does not match checkout:", checkout.checkout_id);
       return new Response("Payment does not match checkout", { status: 409 });
     }

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { useUserContext } from "./useUserContext";
 
@@ -8,6 +8,7 @@ export const CartProvider = ({ children }) => {
   const { user } = useUserContext();
   const [cartItems, setCartItems] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const removedCartItemIdsRef = useRef(new Set());
 
   const fetchCart = useCallback(async () => {
     if (!user?.id) { setCartItems([]); return; }
@@ -16,7 +17,9 @@ export const CartProvider = ({ children }) => {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     if (error) { console.error("Unable to load cart:", error.message); return; }
-    setCartItems((data || []).map((item) => ({ ...item, selected_option: item.selected_options || {} })));
+    setCartItems((data || [])
+      .filter((item) => !removedCartItemIdsRef.current.has(String(item.id)))
+      .map((item) => ({ ...item, selected_option: item.selected_options || {} })));
   }, [user?.id]);
 
   const addToCart = async (product, quantity = 1, options = {}) => {
@@ -46,6 +49,24 @@ export const CartProvider = ({ children }) => {
     if (!error) setCartItems((items) => items.filter((item) => item.id !== cartItemId));
   };
 
+  const removeItems = useCallback(async (cartItemIds = []) => {
+    if (!Array.isArray(cartItemIds) || cartItemIds.length === 0) return true;
+    if (!user?.id) return false;
+    const ids = [...new Set(cartItemIds)];
+    ids.forEach((id) => removedCartItemIdsRef.current.add(String(id)));
+    const { error } = await supabase.from("cart_items")
+      .delete()
+      .eq("user_id", user.id)
+      .in("id", ids);
+    if (error) {
+      ids.forEach((id) => removedCartItemIdsRef.current.delete(String(id)));
+      console.error("Unable to remove purchased items from cart:", error.message);
+      return false;
+    }
+    setCartItems((items) => items.filter((item) => !ids.includes(item.id)));
+    return true;
+  }, [user?.id]);
+
   const updateQuantity = async (cartItemId, newQuantity) => {
     if (!user?.id) return;
     if (newQuantity < 1) return removeItem(cartItemId);
@@ -62,7 +83,7 @@ export const CartProvider = ({ children }) => {
 
   useEffect(() => { fetchCart(); }, [fetchCart]);
 
-  return <CartContext.Provider value={{ cartItems, cartOpen, setCartOpen, addToCart, removeItem, updateQuantity, clearCart, refreshCart: fetchCart }}>{children}</CartContext.Provider>;
+  return <CartContext.Provider value={{ cartItems, cartOpen, setCartOpen, addToCart, removeItem, removeItems, updateQuantity, clearCart, refreshCart: fetchCart }}>{children}</CartContext.Provider>;
 };
 
 export const useCart = () => useContext(CartContext);
