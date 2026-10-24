@@ -201,37 +201,23 @@ Deno.serve(async (request: Request) => {
           message: referrerError?.message ?? "Auth user not found",
         });
       } else {
-        const { error: profileError } = await supabase.from("profiles").upsert(
-          {
-            user_id: referrerUserId,
-            display_name: String(referrerData.user.user_metadata?.display_name ?? "") || null,
-          },
-          { onConflict: "user_id", ignoreDuplicates: true },
-        );
-        if (profileError) {
-          console.error("Could not ensure the referral owner's profile exists:", {
-            referrer_user_id: referrerUserId,
-            code: profileError.code,
-            message: profileError.message,
-          });
-        } else {
-          const { error: referralError } = await supabase.from("referrals").insert({
+        // The RPC runs with its migration owner, so account attribution can
+        // ensure a legacy profile exists without granting broad profile-table
+        // write access to service_role.
+        const { data: saved, error: referralError } = await supabase.rpc("record_signup_referral", {
+          p_referrer_user_id: referrerUserId,
+          p_referred_user_id: createdUserId,
+          p_referral_code: String(body.referralCode),
+        });
+        if (referralError) {
+          console.error("Referral attribution could not be saved; continuing signup:", {
             referrer_user_id: referrerUserId,
             referred_user_id: createdUserId,
-            // Referral URLs use an opaque user-id token, not the optional
-            // human-readable profile referral_code column.
-            referral_code: String(body.referralCode),
+            code: referralError.code,
+            message: referralError.message,
           });
-          if (referralError && referralError.code !== "23505") {
-            console.error("Referral attribution could not be saved; continuing signup:", {
-              referrer_user_id: referrerUserId,
-              referred_user_id: createdUserId,
-              code: referralError.code,
-              message: referralError.message,
-            });
-          } else if (!referralError) {
-            console.info("Referral attribution saved", { referrer_user_id: referrerUserId, referred_user_id: createdUserId });
-          }
+        } else if (saved) {
+          console.info("Referral attribution saved", { referrer_user_id: referrerUserId, referred_user_id: createdUserId });
         }
       }
     }
