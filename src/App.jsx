@@ -13,6 +13,7 @@ import CookieConsent from "./components/shared/CookieConsent";
 import StoreAdPopup from "./components/content/StoreAdPopup";
 import BackToTop from "./components/navigation/BackToTop";
 import { updatePageMetadata } from "./utils/seo";
+import { supabase } from "./lib/supabase";
 import "./styles/route-errors.css";
 
 const Home = lazy(() => import("./pages/Home"));
@@ -36,10 +37,26 @@ function ReferralSignupRedirect() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (/^[A-Za-z0-9_-]+$/.test(encodedUserId || "") && /^[A-Fa-f0-9]{7}$/.test(userIdPrefix || "")) {
-      localStorage.setItem("tsogo_referral_code", `${encodedUserId}.${userIdPrefix.toUpperCase()}`);
-    }
-    navigate("/SignUp", { replace: true });
+    let active = true;
+    const continueReferral = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      if (!active) return;
+      if (!error && data.session?.user) {
+        // A referral link is for new-account attribution. Never carry its
+        // token through an already signed-in session.
+        localStorage.removeItem("tsogo_referral_code");
+        navigate("/dashboard", { replace: true });
+        return;
+      }
+      if (/^[A-Za-z0-9_-]+$/.test(encodedUserId || "") && /^[A-Fa-f0-9]{7}$/.test(userIdPrefix || "")) {
+        localStorage.setItem("tsogo_referral_code", `${encodedUserId}.${userIdPrefix.toUpperCase()}`);
+      } else {
+        localStorage.removeItem("tsogo_referral_code");
+      }
+      navigate("/SignUp", { replace: true });
+    };
+    continueReferral();
+    return () => { active = false; };
   }, [encodedUserId, userIdPrefix, navigate]);
 
   return <main className="app-route-loading" role="status" aria-live="polite"><span className="app-route-loading-mark">TS</span><span>Opening account signup…</span></main>;

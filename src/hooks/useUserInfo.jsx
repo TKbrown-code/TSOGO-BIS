@@ -33,7 +33,10 @@ export default function useUserinfo({form, isSignUp, setLoading}) {
       confirmMessage(
         t("auth.signup_email_message"),
         t("auth.signup_email_title"),
-        <button className="modalbtn" onClick={() => closeMessage(true)}>{t("auth.next")}</button>,
+        <>
+          <button className="modalbtn modalbtn-secondary" onClick={() => closeMessage(true)}>{t("auth.next")}</button>
+          <button className="modalbtn" onClick={() => { closeMessage(true); navigate("/SignUp?mode=signin"); }}>{t("auth.signin")}</button>
+        </>,
       );
     } catch (err) {
       console.error("Unexpected error during Sign Up:", err);

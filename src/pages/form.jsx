@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowRight, Check, Eye, EyeOff, ShieldCheck, Sparkles } from "lucide-react";
 import { supabase } from "../lib/supabase";
@@ -57,7 +57,9 @@ function PasswordResetModalContent({ initialEmail = "" }) {
 
 export default function Form() {
   const { t } = useTranslation();
-  const [isSignUp, setIsSignUp] = useState(true);
+  const [searchParams] = useSearchParams();
+  const signInMode = searchParams.get("mode") === "signin";
+  const [isSignUp, setIsSignUp] = useState(!signInMode);
   const [showPassword, setShowPassword] = useState(false);
   const [showVerifyPassword, setShowVerifyPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -67,6 +69,10 @@ export default function Form() {
   const { SignIn, SignUP } = useUserInfo({ form, isSignUp, setLoading });
   const { openMessage } = useModalMessage();
   const { user, loading: authLoading } = useUserContext();
+
+  useEffect(() => {
+    if (searchParams.has("mode")) setIsSignUp(!signInMode);
+  }, [searchParams, signInMode]);
 
   const handleForgotPassword = () => openMessage({
     title: t("auth.reset_title"),
