@@ -82,7 +82,16 @@ Deno.serve(async (request: Request) => {
       if (adminRole) return respond({ error: "Administrator accounts cannot be suspended here" }, 400);
       const { data, error } = await supabase.auth.admin.updateUserById(userId, { ban_duration: body.action === "suspend_user" ? "876000h" : "none" });
       if (error) throw error;
-      return respond({ success: true, user_id: userId, banned_until: data.user?.banned_until ?? null });
+      let revokedSessions = 0;
+      if (body.action === "suspend_user") {
+        const { data: revokedCount, error: revokeError } = await supabase.rpc("revoke_user_auth_sessions", { target_user_id: userId });
+        if (revokeError) {
+          console.error("Account was banned but active Auth sessions could not be revoked:", revokeError);
+          return respond({ error: "The account was suspended, but existing sessions could not be revoked. Apply the latest database migration and retry.", detail: revokeError.message }, 500);
+        }
+        revokedSessions = Number(revokedCount) || 0;
+      }
+      return respond({ success: true, user_id: userId, banned_until: data.user?.banned_until ?? null, revoked_sessions: revokedSessions });
     }
 
     if (body.action === "list") {

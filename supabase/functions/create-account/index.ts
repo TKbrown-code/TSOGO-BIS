@@ -134,32 +134,23 @@ Deno.serve(async (request: Request) => {
     }
 
     if (referrerUserId && referrerUserId !== createdUserId) {
-      const { data: referrer, error: referrerError } = await supabase
-        .from("profiles")
-        .select("user_id")
-        .eq("user_id", referrerUserId)
-        .maybeSingle();
-      if (referrerError) {
-        // Referral attribution is optional: a stale code or a referral schema
-        // mismatch must not prevent the customer from creating an account.
-        console.error("Referral lookup failed; continuing signup without attribution:", {
-          code: referrerError.code,
-          message: referrerError.message,
+      // Let the referrals table's FK validate the referrer. Looking up profiles
+      // here required a separate column-level GRANT and caused signup to silently
+      // lose attribution in production (42501 permission denied).
+      const { error: referralError } = await supabase.from("referrals").insert({
+        referrer_user_id: referrerUserId,
+        referred_user_id: createdUserId,
+        // Referral URLs use an opaque user-id token, not the optional
+        // human-readable profile referral_code column.
+        referral_code: String(body.referralCode),
+      });
+      if (referralError && referralError.code !== "23505") {
+        console.error("Referral attribution could not be saved; continuing signup:", {
+          code: referralError.code,
+          message: referralError.message,
         });
-      } else if (referrer) {
-        const { error: referralError } = await supabase.from("referrals").insert({
-          referrer_user_id: referrer.user_id,
-          referred_user_id: createdUserId,
-          // Referral URLs use an opaque user-id token, not the optional
-          // human-readable profile referral_code column.
-          referral_code: String(body.referralCode),
-        });
-        if (referralError && referralError.code !== "23505") {
-          console.error("Referral attribution could not be saved; continuing signup:", {
-            code: referralError.code,
-            message: referralError.message,
-          });
-        }
+      } else if (!referralError) {
+        console.info("Referral attribution saved", { referrer_user_id: referrerUserId, referred_user_id: createdUserId });
       }
     }
 
