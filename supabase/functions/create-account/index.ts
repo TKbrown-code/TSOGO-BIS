@@ -7,7 +7,7 @@ const resendFrom = Deno.env.get("RESEND_FROM_EMAIL") ?? "";
 const appUrl = (Deno.env.get("APP_URL") ?? "").replace(/\/$/, "");
 const rateLimitSecret = Deno.env.get("RESET_RATE_LIMIT_SECRET") ?? "";
 const allowedOrigins = new Set(
-  [appUrl, ...(Deno.env.get("ALLOWED_ORIGINS") ?? "").split(",")]
+  [appUrl, "http://localhost:5173", "http://127.0.0.1:5173", ...(Deno.env.get("ALLOWED_ORIGINS") ?? "").split(",")]
     .map((value) => value.trim())
     .filter(Boolean)
     .map((value) => { try { return new URL(value).origin; } catch { return ""; } })
@@ -137,17 +137,30 @@ Deno.serve(async (request: Request) => {
     if (referrerUserId && referrerUserId !== createdUserId) {
       const { data: referrer, error: referrerError } = await supabase
         .from("profiles")
-        .select("user_id, referral_code")
+        .select("user_id")
         .eq("user_id", referrerUserId)
         .maybeSingle();
-      if (referrerError) throw new Error("Could not validate referral code");
-      if (referrer) {
+      if (referrerError) {
+        // Referral attribution is optional: a stale code or a referral schema
+        // mismatch must not prevent the customer from creating an account.
+        console.error("Referral lookup failed; continuing signup without attribution:", {
+          code: referrerError.code,
+          message: referrerError.message,
+        });
+      } else if (referrer) {
         const { error: referralError } = await supabase.from("referrals").insert({
           referrer_user_id: referrer.user_id,
           referred_user_id: createdUserId,
-          referral_code: referrer.referral_code,
+          // Referral URLs use an opaque user-id token, not the optional
+          // human-readable profile referral_code column.
+          referral_code: String(body.referralCode),
         });
-        if (referralError && referralError.code !== "23505") throw new Error("Could not record referral attribution");
+        if (referralError && referralError.code !== "23505") {
+          console.error("Referral attribution could not be saved; continuing signup:", {
+            code: referralError.code,
+            message: referralError.message,
+          });
+        }
       }
     }
 

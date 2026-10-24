@@ -49,14 +49,12 @@ function storeConsent(consent) {
 export default function CookieConsent() {
   const { t, i18n } = useTranslation();
   const [showBanner, setShowBanner] = useState(false);
-  const [consent, setConsent] = useState(null);
   const [preferences, setPreferences] = useState({ preferences: false, analytics: false });
   const dialogRef = useRef(null);
 
   useEffect(() => {
     const existing = readConsent();
     if (existing) {
-      setConsent(existing);
       setPreferences({ preferences: existing.preferences, analytics: existing.analytics });
       // Migrate the old consent cookie format to the current preference record.
       if (!localStorage.getItem(CONSENT_KEY)) storeConsent(existing);
@@ -65,6 +63,16 @@ export default function CookieConsent() {
 
     const timer = window.setTimeout(() => setShowBanner(true), 500);
     return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const openSettings = () => {
+      const existing = readConsent();
+      setPreferences({ preferences: Boolean(existing?.preferences), analytics: Boolean(existing?.analytics) });
+      setShowBanner(true);
+    };
+    window.addEventListener("tsogo:open-cookie-settings", openSettings);
+    return () => window.removeEventListener("tsogo:open-cookie-settings", openSettings);
   }, []);
 
   useEffect(() => {
@@ -97,7 +105,6 @@ export default function CookieConsent() {
     const next = { necessary: true, ...choice };
     storeConsent(next);
     if (next.preferences && i18n.resolvedLanguage) localStorage.setItem("language", i18n.resolvedLanguage);
-    setConsent(next);
     setShowBanner(false);
   };
 
@@ -105,10 +112,7 @@ export default function CookieConsent() {
   const rejectOptional = () => save({ preferences: false, analytics: false });
   const saveSelection = () => save(preferences);
 
-  if (!showBanner) {
-    if (!consent) return null;
-    return <button type="button" className="cookie-settings-trigger" aria-label={t("cookie.manage")} title={t("cookie.manage")} onClick={() => { setPreferences({ preferences: consent.preferences, analytics: consent.analytics }); setShowBanner(true); }}><Cookie size={18} /></button>;
-  }
+  if (!showBanner) return null;
 
   return (
     <div className="cookie-consent-overlay">

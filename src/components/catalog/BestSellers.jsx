@@ -5,6 +5,7 @@ import { useCurrencyContext } from "../../context/CurrencyContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faStar, faTrophy } from "@fortawesome/free-solid-svg-icons";
 import { preloadAllImages, getCachedImage } from "../../utils/imageCache";
+import { productDetailPath } from "../../utils/productRoutes";
 import "../../styles/bestSellers.css";
 
 export default function BestSellers() {
@@ -72,7 +73,7 @@ export default function BestSellers() {
 
         <div className="best-sellers-grid">
           {products.map((product, index) => (
-            <Link key={product.id} to={`/ProductDetails/${product.id}/${product.name}`} className="bestseller-card">
+            <Link key={product.id} to={productDetailPath(product)} className="bestseller-card">
               <div className="rank-badge">#{index + 1}</div>
               <div className="product-image-container">
                 <img src={images[product.id] || "/placeholder.png"} alt={product.name} className="product-image" />

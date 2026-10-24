@@ -473,6 +473,9 @@
       "awaiting_payment": "等待付款",
       "amount_due": "当前应付金额",
       "delivery_due": "收货时应付配送费",
+      "customer": "客户",
+      "phone": "电话",
+      "delivery_address": "配送地址",
       "stamp_paid": "已付款",
       "stamp_pending": "待付款"
     },

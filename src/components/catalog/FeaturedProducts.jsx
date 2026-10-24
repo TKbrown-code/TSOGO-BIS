@@ -8,6 +8,7 @@ import "../../styles/featured-products.css";
 import "../../styles/featured-products-fixes.css";
 import { useModalMessage } from "../../context/ModalMessageContext";
 import { useTranslation } from "react-i18next";
+import { productDetailPath } from "../../utils/productRoutes";
 
 const formatXaf = (price) => `${new Intl.NumberFormat("fr-CM", { maximumFractionDigits: 0 }).format(Number(price || 0))} FCFA`;
 
@@ -67,12 +68,12 @@ export default function FeaturedProducts() {
         <div className="featured-grid">
           {products.map((product, index) => (
             <article className="featured-card" key={product.id}>
-              <Link className="featured-image" to={`/ProductDetails/${product.id}/${product.slug || product.name}`} aria-label={t("featured.view_product", { name: product.name })}>
+              <Link className="featured-image" to={productDetailPath(product)} aria-label={t("featured.view_product", { name: product.name })}>
                 {product.imageUrl ? <img src={product.imageUrl} alt={product.name} loading={index > 1 ? "lazy" : "eager"} /> : <span className="featured-image-placeholder">TSOGO-BIS</span>}
                 <span className="featured-tag">{new Date(product.created_at).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000 ? t("featured.just_added") : t("featured.title")}</span>
               </Link>
               <div className="featured-card-copy">
-                <div><Link to={`/ProductDetails/${product.id}/${product.slug || product.name}`} className="featured-name">{product.name}</Link><p>{formatXaf(product.price)}</p></div>
+                <div><Link to={productDetailPath(product)} className="featured-name">{product.name}</Link><p>{formatXaf(product.price)}</p></div>
                 <button className="featured-add" onClick={() => addProduct(product)} disabled={Number(product.stock_quantity) < 1} aria-label={t("featured.add_to_bag", { name: product.name })} title={Number(product.stock_quantity) < 1 ? t("product.out_of_stock") : t("featured.add_to_bag_short")}>
                   <ShoppingBag size={17} strokeWidth={1.7} />
                 </button>

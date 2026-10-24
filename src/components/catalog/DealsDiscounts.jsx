@@ -5,6 +5,7 @@ import { useCurrencyContext } from "../../context/CurrencyContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFire, faClock, faPercent } from "@fortawesome/free-solid-svg-icons";
 import { preloadAllImages, getCachedImage } from "../../utils/imageCache";
+import { productDetailPath } from "../../utils/productRoutes";
 import "../../styles/dealsDiscounts.css";
 
 export default function DealsDiscounts() {
@@ -75,7 +76,7 @@ export default function DealsDiscounts() {
 
         <div className="deals-grid">
           {products.map(product => (
-            <Link key={product.id} to={`/ProductDetails/${product.id}/${product.name}`} className="deal-card">
+            <Link key={product.id} to={productDetailPath(product)} className="deal-card">
               <div className="discount-badge">
                 <FontAwesomeIcon icon={faPercent} />
                 <span>{product.discount}% OFF</span>

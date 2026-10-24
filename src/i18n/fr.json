@@ -473,6 +473,9 @@
       "awaiting_payment": "En attente de paiement",
       "amount_due": "Montant restant à payer",
       "delivery_due": "Frais de livraison à payer à l’arrivée",
+      "customer": "Client",
+      "phone": "Téléphone",
+      "delivery_address": "Adresse de livraison",
       "stamp_paid": "PAYÉE",
       "stamp_pending": "PAIEMENT EN ATTENTE"
     },

@@ -12,6 +12,7 @@ import { motion } from "framer-motion";
 import FallBackImage from "../assets/imagefallback.jpg";
 import { useModalMessage } from "../context/ModalMessageContext";
 import { MessageSquareText, Star } from "lucide-react";
+import { updatePageMetadata } from "../utils/seo";
 
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_KEY;
 const productDataCache = new Map();
@@ -97,6 +98,9 @@ export default function ProductDetailsPage({ onReady }) {
         setProductError(true);
         return;
       }
+
+      const previewImage = data.product_images?.find((image) => image.is_primary)?.image_url || data.product_images?.[0]?.image_url;
+      updatePageMetadata(window.location.pathname, previewImage);
 
       if (data) {
         setRating(data.avg_rating);
@@ -729,6 +733,9 @@ export default function ProductDetailsPage({ onReady }) {
               <img 
                 src={images[currentImage]?.url || FallBackImage}
                 alt={images[currentImage]?.alt || product.name}
+                decoding="async"
+                loading={currentImage === 0 ? "eager" : "lazy"}
+                fetchPriority={currentImage === 0 ? "high" : "auto"}
                 className={`zoomable-img ${imageStates[images[currentImage]?.path]?.loaded ? 'loaded' : 'loading'} ${imageStates[images[currentImage]?.path]?.error ? 'error' : ''}`}
                 onLoad={() => handleImageLoad(images[currentImage]?.path)}
                 onError={(e) => handleImageError(images[currentImage]?.path, e)}
@@ -770,7 +777,7 @@ export default function ProductDetailsPage({ onReady }) {
           </div>
           
           {/* Thumbnails */}
-          {images.length > 1 && <div className="product-thumbnails" aria-label="Product photos">{images.map((img, idx) => <button type="button" key={`${img.url}-${idx}`} className={idx === currentImage ? "is-active" : ""} onClick={() => setCurrentImage(idx)} aria-label={`Show product photo ${idx + 1}`}><img src={img.url || FallBackImage} alt="" /></button>)}</div>}
+          {images.length > 1 && <div className="product-thumbnails" aria-label="Product photos">{images.map((img, idx) => <button type="button" key={`${img.url}-${idx}`} className={idx === currentImage ? "is-active" : ""} onClick={() => setCurrentImage(idx)} aria-label={`Show product photo ${idx + 1}`}><img src={img.url || FallBackImage} alt="" loading="lazy" decoding="async" /></button>)}</div>}
         </div>
 
         {imageViewerOpen && (

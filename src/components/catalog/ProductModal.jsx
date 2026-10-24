@@ -4,6 +4,7 @@ import "../../styles/productModal.css";
 import { useCurrencyContext } from "../../context/CurrencyContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTruck, faTags } from "@fortawesome/free-solid-svg-icons";
+import { productDetailPath } from "../../utils/productRoutes";
 
 export default function ProductModal({ product, onClose, addToCart, categoriesMap = {} }) {
   const [currentImage, setCurrentImage] = useState(0);
@@ -336,7 +337,7 @@ export default function ProductModal({ product, onClose, addToCart, categoriesMa
               <button
                 className="btn-view-details"
                 onClick={() =>
-                  navigate(`/ProductDetails/${encodeURIComponent(product.id)}/${product.name}`)
+                  navigate(productDetailPath(product))
                 }
               >
                 View Details

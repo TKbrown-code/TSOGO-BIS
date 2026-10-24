@@ -14,6 +14,19 @@ const parseItems = (items) => {
   }
   return [];
 };
+const isSuspended = (user) => Boolean(user.banned_until && new Date(user.banned_until).getTime() > Date.now());
+
+async function suspensionErrorMessage(error, data) {
+  if (data?.error) return data.detail ? `${data.error}: ${data.detail}` : data.error;
+  const response = error?.context;
+  if (response && typeof response.clone === "function") {
+    try {
+      const payload = await response.clone().json();
+      if (payload?.error || payload?.message) return payload.detail ? `${payload.error || payload.message}: ${payload.detail}` : payload.error || payload.message;
+    } catch { /* Use the SDK message below. */ }
+  }
+  return error?.message || "The account status could not be changed. Please retry.";
+}
 
 export default function AdminUsers() {
   const { showAlert, confirmDialog } = useModalMessage();
@@ -55,12 +68,12 @@ export default function AdminUsers() {
   }
 
   async function toggleSuspension(user) {
-    const suspended = Boolean(user.banned_until && new Date(user.banned_until).getTime() > Date.now());
+    const suspended = isSuspended(user);
     const action = suspended ? "restore_user" : "suspend_user";
     const confirmed = await confirmDialog(`${suspended ? "Restore" : "Suspend"} ${user.display_name || user.email || "this customer"}'s account?`, `${suspended ? "Restore" : "Suspend"} account`, { confirmLabel: suspended ? "Restore account" : "Suspend account", tone: suspended ? "default" : "danger" });
     if (!confirmed) return;
     const { data, error } = await supabase.functions.invoke("manage-admins", { body: { action, user_id: user.user_id } });
-    if (error || data?.error) return showAlert(data?.error || error.message, "Account status was not changed", "error");
+    if (error || data?.error) return showAlert(await suspensionErrorMessage(error, data), "Account status was not changed", "error");
     showAlert(suspended ? "The customer can sign in again." : "The customer account has been suspended.", suspended ? "Account restored" : "Account suspended", "success");
     await loadUsers();
     setSelectedUser((current) => current?.user_id === user.user_id ? { ...current, banned_until: data.banned_until } : current);
@@ -119,7 +132,7 @@ export default function AdminUsers() {
             <td className="users-paid-total">{formatMoney(user.paid_total)}</td>
             <td><span className="users-language">{String(user.preferred_language || "fr").toUpperCase()}</span></td>
             <td>{formatDate(user.created_at)}</td>
-            <td><div className="users-row-actions"><button type="button" className="users-view-button" onClick={() => viewUserDetails(user)}>View account</button>{!user.is_admin&&<button type="button" className="users-suspend-button" title={user.banned_until?"Restore account":"Suspend account"} aria-label={user.banned_until?"Restore account":"Suspend account"} onClick={()=>toggleSuspension(user)}>{user.banned_until?<UserCheck size={15}/>:<Ban size={15}/>}</button>}</div></td>
+            <td><div className="users-row-actions"><button type="button" className="users-view-button" onClick={() => viewUserDetails(user)}>View account</button>{!user.is_admin&&<button type="button" className="users-suspend-button" title={isSuspended(user)?"Restore account":"Suspend account"} aria-label={isSuspended(user)?"Restore account":"Suspend account"} onClick={()=>toggleSuspension(user)}>{isSuspended(user)?<UserCheck size={15}/>:<Ban size={15}/>}</button>}</div></td>
           </tr>)}
         </tbody></table></div>}
       </section>
@@ -131,7 +144,7 @@ export default function AdminUsers() {
           <div><span>JOINED</span><strong>{formatDate(selectedUser.created_at)}</strong></div><div><span>ACCOUNT ID</span><strong className="admin-user-id">{selectedUser.user_id}</strong></div>
           <div><span>ORDER COUNT</span><strong>{selectedUser.order_count || 0}</strong></div><div><span>PAID ORDER VALUE</span><strong>{formatMoney(selectedUser.paid_total)}</strong></div>
         </div>
-        {!selectedUser.is_admin&&<button type="button" className="users-suspend-detail" onClick={()=>toggleSuspension(selectedUser)}>{selectedUser.banned_until?<UserCheck size={15}/>:<Ban size={15}/>} {selectedUser.banned_until?"Restore account":"Suspend account"}</button>}
+        {!selectedUser.is_admin&&<button type="button" className="users-suspend-detail" onClick={()=>toggleSuspension(selectedUser)}>{isSuspended(selectedUser)?<UserCheck size={15}/>:<Ban size={15}/>} {isSuspended(selectedUser)?"Restore account":"Suspend account"}</button>}
         <section className="admin-user-order-history"><div className="admin-user-order-heading"><div><h3>Order history</h3><p>{userOrders.length} {userOrders.length === 1 ? "order" : "orders"}</p></div><ShoppingBag size={18} /></div>
           {detailsLoading ? <div className="admin-user-orders-loading"><i /><i /></div> : userOrders.length ? <div className="admin-user-orders-list">{userOrders.map((order) => <article key={order.checkout_id}>
             <div className="admin-user-order-top"><strong>Order #{order.checkout_id}</strong><span className={`admin-user-order-status status-${String(order.payment_status || order.status || "pending").toLowerCase()}`}>{String(order.payment_status || order.status || "pending").replaceAll("_", " ")}</span></div>

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { useUserContext } from "../context/useUserContext";
 import { useNavigate, Navigate, useSearchParams, Link } from "react-router-dom";
-import { Home, BarChart3, ShoppingCart, ShoppingBag, FileText, LogOut, DollarSign, Package, Star, Settings, CheckCircle, Clock, Plus, Minus, Menu, X, Gift, Copy, Check, Search, ArrowUpRight, Download } from "lucide-react";
+import { Home, BarChart3, ShoppingCart, ShoppingBag, FileText, LogOut, DollarSign, Package, Star, Settings, CheckCircle, Clock, Plus, Minus, Menu, X, Gift, Copy, Check, Search, ArrowUpRight, Download, Cookie } from "lucide-react";
 import { jsPDF } from "jspdf";
 import "../styles/UserDashboardNew.css";
 import "../styles/dashboard-invoice.css";
@@ -13,6 +13,8 @@ import { useModalMessage } from "../context/ModalMessageContext";
 import { useTranslation } from "react-i18next";
 import { useCart } from "../context/CartContext";
 import NotificationCenter from "../components/shared/NotificationCenter";
+import ProfileAvatar from "../components/shared/ProfileAvatar";
+import ProfileImageUploader from "../components/shared/ProfileImageUploader";
 
 export default function UserDashboardNew() {
   const { user, profile, loading } = useUserContext();
@@ -494,102 +496,188 @@ export default function UserDashboardNew() {
       awaitingPayment: invoiceT("dashboard.invoice.awaiting_payment"),
       amountDue: invoiceT("dashboard.invoice.amount_due"),
       deliveryDue: invoiceT("dashboard.invoice.delivery_due"),
+      customer: invoiceT("dashboard.invoice.customer"),
+      phone: invoiceT("dashboard.invoice.phone"),
+      addressLabel: invoiceT("dashboard.invoice.delivery_address"),
     };
     const invoiceCurrency = (amount) => formatCurrency(amount, invoiceLanguage);
-    const doc = new jsPDF({ unit: "mm", format: "a4" });
-    const left = 18;
-    const right = 192;
-    let y = 22;
-    doc.setTextColor(38, 53, 46);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.text("TSOGO-BIS", left, y);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.text(invoiceText.title, right, y, { align: "right" });
-    y += 13;
-    doc.setFont("times", "normal");
-    doc.setFontSize(23);
-    doc.text(invoiceText.order, left, y);
-    y += 9;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(100, 108, 101);
-    doc.text(invoiceText.date, left, y);
-    doc.text(invoiceText.payment, right, y, { align: "right" });
-    const isPaid = ["paid", "succeeded", "successful"].includes(rawPaymentStatus);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(15);
-    doc.setTextColor(isPaid ? 35 : 174, isPaid ? 112 : 112, isPaid ? 82 : 70);
-    doc.text(invoiceT(isPaid ? "dashboard.invoice.stamp_paid" : "dashboard.invoice.stamp_pending"), right, y + 13, { align: "right", angle: -12 });
-    doc.setTextColor(100, 108, 101);
-    y += 7;
-    if (order.address) {
-      const address = doc.splitTextToSize(invoiceText.address, 174);
-      doc.text(address, left, y);
-      y += address.length * 5 + 4;
-    }
-    doc.setDrawColor(220, 215, 204);
-    doc.line(left, y, right, y);
-    y += 8;
-    doc.setTextColor(38, 53, 46);
-    doc.setFont("helvetica", "bold");
-    doc.text(invoiceText.product, left + 24, y);
-    doc.text(invoiceText.quantity, 144, y, { align: "right" });
-    doc.text(invoiceText.amount, right, y, { align: "right" });
-    y += 5;
-    doc.line(left, y, right, y);
-    y += 7;
-    doc.setFont("helvetica", "normal");
-    const productImageData = (url) => new Promise((resolve) => {
+    const imageToJpeg = async (url) => new Promise((resolve) => {
       if (!url) { resolve(null); return; }
       const image = new Image();
       image.crossOrigin = "anonymous";
       image.onload = () => {
         try {
-          const canvas = document.createElement("canvas");
-          canvas.width = 96;
-          canvas.height = 96;
-          canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
-          resolve(canvas.toDataURL("image/jpeg", 0.82));
+          const canvas = document.createElement("canvas"); canvas.width = 96; canvas.height = 96;
+          canvas.getContext("2d").drawImage(image, 0, 0, 96, 96);
+          resolve(canvas.toDataURL("image/jpeg", 0.8));
         } catch { resolve(null); }
       };
       image.onerror = () => resolve(null);
       image.src = url;
     });
-    for (const item of (order.items || [])) {
-      const name = item.name || item.product_name || "Product";
-      const details = [item.color, item.size].filter(Boolean).join(" / ");
-      const detail = item.description || details;
-      const lines = doc.splitTextToSize([details ? `${name} (${details})` : name, detail].filter(Boolean).join("\n"), 105);
-      const rowHeight = Math.max(18, lines.length * 4.5 + 5);
-      if (y + rowHeight > 270) { doc.addPage(); y = 22; }
-      const imageData = await productImageData(item.image_url);
-      if (imageData) {
-        try { doc.addImage(imageData, "JPEG", left, y - 4, 18, 18, undefined, "FAST"); } catch { /* Product images are optional in invoices. */ }
-      }
-      doc.text(lines, left + 24, y);
-      doc.text(String(Number(item.quantity) || 1), 150, y, { align: "right" });
-      doc.text(invoiceCurrency((Number(item.price) || 0) * (Number(item.quantity) || 1)), right, y, { align: "right" });
-      y += rowHeight;
+    const profilePath = userData.profile?.avatar_path || profile?.avatar_path;
+    let customerPhoto = null;
+    if (profilePath) {
+      try {
+        const { data } = await supabase.storage.from("profile-images").createSignedUrl(profilePath, 300);
+        if (data?.signedUrl) customerPhoto = await imageToJpeg(data.signedUrl);
+      } catch { /* A profile image is optional in the invoice. */ }
     }
-    y += 2;
-    doc.line(left, y, right, y);
-    y += 10;
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.text(invoiceText.total, left, y);
-    doc.text(invoiceCurrency(order.total), right, y, { align: "right" });
-    y += 7;
-    const paid = ["paid", "succeeded", "successful", "completed"].includes(String(order.payment_status || order.status || "").toLowerCase());
+    const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
+    const left = 18;
+    const right = 192;
+    const ink = [36, 53, 46];
+    const muted = [105, 113, 106];
+    const line = [225, 221, 211];
+    const isPaid = ["paid", "succeeded", "successful", "completed"].includes(rawPaymentStatus);
+    const customerName = order.user_name || order.customer_name || userData.profile?.display_name || profile?.display_name || user?.user_metadata?.display_name || "Customer";
+    const customerPhone = order.phone_number || order.customer_phone || userData.profile?.phone || profile?.phone || "";
+    const drawHeader = () => {
+      doc.setFillColor(...ink);
+      doc.rect(0, 0, 210, 5, "F");
+      doc.setTextColor(...ink);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text("TSOGO-BIS", left, 19);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(...muted);
+      doc.text(invoiceText.title, right, 19, { align: "right" });
+      doc.setDrawColor(...line);
+      doc.line(left, 25, right, 25);
+    };
+    drawHeader();
+
+    doc.setTextColor(...ink);
+    doc.setFont("times", "normal");
+    doc.setFontSize(23);
+    doc.text(invoiceText.order, left, 40);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    doc.text(`${invoiceText.paymentStatus}: ${paid ? invoiceText.paid : invoiceText.awaitingPayment}`, left, y);
-    doc.text(`${invoiceText.amountDue}: ${invoiceCurrency(paid ? 0 : (order.amount_due ?? order.total))}`, right, y, { align: "right" });
-    if (Number(order.shipping_due_on_delivery) > 0) {
-      y += 6;
-      doc.text(`${invoiceText.deliveryDue}: ${invoiceCurrency(order.shipping_due_on_delivery)}`, right, y, { align: "right" });
+    doc.setTextColor(...muted);
+    doc.text(invoiceText.date, left, 48);
+    doc.setFillColor(...(isPaid ? [231, 241, 233] : [250, 239, 222]));
+    doc.roundedRect(155, 31, 37, 11, 2, 2, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(...(isPaid ? [42, 105, 70] : [151, 97, 43]));
+    doc.text(invoiceT(isPaid ? "dashboard.invoice.stamp_paid" : "dashboard.invoice.stamp_pending"), 173.5, 38, { align: "center" });
+
+    // Customer and delivery details share a quiet, structured panel.
+    doc.setFillColor(249, 248, 244);
+    doc.setDrawColor(...line);
+    doc.roundedRect(left, 56, right - left, 30, 2, 2, "FD");
+    if (customerPhoto) {
+      try { doc.addImage(customerPhoto, "JPEG", left + 4, 62, 18, 18, undefined, "FAST"); } catch { /* Optional profile photo. */ }
     }
+    const buyerX = left + 27;
+    doc.setTextColor(...muted);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.text(invoiceText.customer.toUpperCase(), buyerX, 64);
+    doc.setTextColor(...ink);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text(doc.splitTextToSize(String(customerName), 63), buyerX, 70);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...muted);
+    if (customerPhone) doc.text(`${invoiceText.phone}: ${customerPhone}`, buyerX, 77);
+    const addressText = order.address ? doc.splitTextToSize(invoiceText.address, 73) : [];
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.text(invoiceText.addressLabel.toUpperCase(), 112, 64);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...ink);
+    if (addressText.length) doc.text(addressText, 112, 71);
+
+    let y = 99;
+    const tableHeader = () => {
+      doc.setFillColor(...ink);
+      doc.roundedRect(left, y, right - left, 10, 1.5, 1.5, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.text(invoiceText.product, left + 27, y + 6.5);
+      doc.text(invoiceText.quantity, 157, y + 6.5, { align: "right" });
+      doc.text(invoiceText.amount, right - 4, y + 6.5, { align: "right" });
+      y += 10;
+    };
+    tableHeader();
+    const items = Array.isArray(order.items) ? order.items : [];
+    for (const [index, item] of items.entries()) {
+      const name = item.name || item.product_name || "Product";
+      const details = [item.color, item.size].filter(Boolean).join(" / ");
+      const description = item.description || details;
+      const nameLines = doc.splitTextToSize(String(name), 78);
+      const detailLines = description ? doc.splitTextToSize(String(description), 78) : [];
+      const rowHeight = Math.max(25, 8 + nameLines.length * 4.5 + Math.min(detailLines.length, 3) * 3.5);
+      if (y + rowHeight + 52 > 276) { doc.addPage(); drawHeader(); y = 36; tableHeader(); }
+      if (index % 2 === 0) { doc.setFillColor(250, 249, 246); doc.rect(left, y, right - left, rowHeight, "F"); }
+      const imageData = await imageToJpeg(item.image_url);
+      if (imageData) {
+        try { doc.addImage(imageData, "JPEG", left + 3, y + (rowHeight - 19) / 2, 19, 19, undefined, "FAST"); } catch { /* Product images are optional. */ }
+      }
+      doc.setTextColor(...ink);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.text(nameLines, left + 27, y + 7);
+      if (detailLines.length) {
+        doc.setTextColor(...muted);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7.5);
+        doc.text(detailLines.slice(0, 3), left + 27, y + 7 + nameLines.length * 4.5);
+      }
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(...ink);
+      doc.text(String(Number(item.quantity) || 1), 157, y + 12, { align: "right" });
+      doc.text(invoiceCurrency((Number(item.price) || 0) * (Number(item.quantity) || 1)), right - 4, y + 12, { align: "right" });
+      doc.setDrawColor(...line);
+      doc.line(left, y + rowHeight, right, y + rowHeight);
+      y += rowHeight;
+    }
+    y += 12;
+    const paid = isPaid;
+    const dueNow = paid ? 0 : Number(order.amount_due ?? order.total) || 0;
+    const deliveryDue = Number(order.shipping_due_on_delivery) || 0;
+    const summaryHeight = deliveryDue > 0 ? 40 : 34;
+    if (y + summaryHeight > 274) { doc.addPage(); drawHeader(); y = 38; }
+    doc.setFillColor(249, 248, 244);
+    doc.setDrawColor(...line);
+    doc.roundedRect(103, y, right - 103, summaryHeight, 2, 2, "FD");
+    doc.setTextColor(...muted);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.text(invoiceText.paymentStatus, 108, y + 8);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...(paid ? [42, 105, 70] : [151, 97, 43]));
+    doc.text(paid ? invoiceText.paid : invoiceText.awaitingPayment, right - 5, y + 8, { align: "right" });
+    doc.setDrawColor(...line);
+    doc.line(108, y + 12, right - 5, y + 12);
+    doc.setTextColor(...ink);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text(invoiceText.total, 108, y + 20);
+    doc.setFontSize(12);
+    doc.text(invoiceCurrency(order.total), right - 5, y + 20, { align: "right" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...muted);
+    doc.text(invoiceText.amountDue, 108, y + 28);
+    doc.setTextColor(...ink);
+    doc.text(invoiceCurrency(dueNow), right - 5, y + 28, { align: "right" });
+    if (deliveryDue > 0) {
+      doc.setTextColor(...muted);
+      doc.text(invoiceText.deliveryDue, 108, y + 35);
+      doc.setTextColor(...ink);
+      doc.text(invoiceCurrency(deliveryDue), right - 5, y + 35, { align: "right" });
+    }
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(...muted);
+    doc.text("TSOGO-BIS · Thoughtful finds, simply delivered", left, 282);
     doc.save(`TSOGO-BIS-invoice-${order.checkout_id}.pdf`);
   };
 
@@ -632,9 +720,7 @@ export default function UserDashboardNew() {
           <span className="dashboard-brand-name">TSOGO<span>-</span>BIS<small>{t("navbar.tagline")}</small></span>
         </Link>
         <div className="sidebar-header">
-          <div className="user-avatar">
-            {(userData.profile?.display_name || user?.user_metadata?.display_name || user?.email || "U").charAt(0).toUpperCase()}
-          </div>
+          <ProfileAvatar userId={user?.id} avatarPath={userData.profile?.avatar_path} name={userData.profile?.display_name || user?.user_metadata?.display_name || user?.email || "U"} className="user-avatar" />
           <h3>{userData.profile?.display_name || user?.user_metadata?.display_name || user?.email?.split("@")[0] || ""}</h3>
           <p>{user?.email}</p>
         </div>
@@ -1136,6 +1222,12 @@ export default function UserDashboardNew() {
             <div className="settings-section">
               <h2>{t("dashboard.profile_info")}</h2>
               <div className="settings-form">
+                <ProfileImageUploader
+                  userId={user?.id}
+                  name={userData.profile?.display_name || user?.email}
+                  avatarPath={userData.profile?.avatar_path}
+                  onChange={(avatar_path) => setUserData((current) => ({ ...current, profile: { ...current.profile, avatar_path } }))}
+                />
                 <div className="form-group">
                   <label>{t("dashboard.full_name")}</label>
                   <input
@@ -1210,6 +1302,14 @@ export default function UserDashboardNew() {
                   {saving ? t("dashboard.changing_password") : t("dashboard.update_password")}
                 </button>
               </div>
+            </div>
+
+            <div className="settings-section">
+              <h2>{t("cookie.manage")}</h2>
+              <p className="dashboard-cookie-copy">{t("cookie.message")}</p>
+              <button type="button" className="dashboard-cookie-manage" onClick={() => window.dispatchEvent(new Event("tsogo:open-cookie-settings"))}>
+                <Cookie size={17} />{t("cookie.manage")}
+              </button>
             </div>
 
             <div className="settings-section">

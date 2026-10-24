@@ -65,6 +65,12 @@ Deno.serve(async (request: Request) => {
 
   let body: { action?: string; email?: string; user_id?: string };
   try {
+    body = await request.json();
+  } catch {
+    return respond({ error: "Invalid JSON body" }, 400);
+  }
+
+  try {
     if (body.action === "suspend_user" || body.action === "restore_user") {
       const userId = body.user_id?.trim();
       if (!userId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId)) {
@@ -79,12 +85,6 @@ Deno.serve(async (request: Request) => {
       return respond({ success: true, user_id: userId, banned_until: data.user?.banned_until ?? null });
     }
 
-    body = await request.json();
-  } catch {
-    return respond({ error: "Invalid JSON body" }, 400);
-  }
-
-  try {
     if (body.action === "list") {
       const { data: roles, error } = await callerClient
         .from("user_roles")

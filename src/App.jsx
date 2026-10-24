@@ -1,36 +1,49 @@
-import React, { useCallback, useEffect, useLayoutEffect, useState } from "react";
-import { Routes, Route, useLocation, Link } from "react-router-dom";
+import React, { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { Routes, Route, useLocation, Link, useNavigate, useParams } from "react-router-dom";
 import Navbar from "./components/navigation/Navbar";
 import Footer from "./components/navigation/Footer";
-import Home from "./pages/Home";       // create Home page
-import Checkout from "./pages/Checkout"; // create Checkout page
-import AdminApp from "./admin/app/AdminApp";
 import Cart from "./components/checkout/CartSidebar";
-import Logistics from "./pages/logistics";
-import  Form  from "./pages/form"
 import AppModal from './hooks/AppModal'
 import { ModalMessageProvider } from "./context/ModalMessageContext";
-import Userdashboard from "./pages/userDashboard";
-import UserDashboardComplete from "./pages/UserDashboardComplete";
-import UserDashboardNew from "./pages/UserDashboardNew";
 import ProtectedRoute from "./admin/auth/ProtectedRoute";
-import ProductDetails from "./pages/productDetailspage";
-import Shop from "./pages/shop";
-import Orders from "./pages/Orders";
-import About from "./pages/About";
-import Contact from "./pages/Contact";
-import TrackOrder from "./pages/TrackOrder";
 import Languagebtn from "./components/navigation/languagebtn";
 import WhatsAppButton from "./components/navigation/whatsappbtn";
 import ErrorBoundary from "./components/shared/ErrorBoundary";
 import CookieConsent from "./components/shared/CookieConsent";
 import StoreAdPopup from "./components/content/StoreAdPopup";
 import BackToTop from "./components/navigation/BackToTop";
-import Fapshi from "./pages/Fapshi";
-import TermsAndPolicies from "./pages/TermsAndPolicies";
-import ResetPassword from "./pages/ResetPassword";
 import { updatePageMetadata } from "./utils/seo";
 import "./styles/route-errors.css";
+
+const Home = lazy(() => import("./pages/Home"));
+const Checkout = lazy(() => import("./pages/Checkout"));
+const AdminApp = lazy(() => import("./admin/app/AdminApp"));
+const Logistics = lazy(() => import("./pages/logistics"));
+const Form = lazy(() => import("./pages/form"));
+const UserDashboardNew = lazy(() => import("./pages/UserDashboardNew"));
+const ProductDetails = lazy(() => import("./pages/productDetailspage"));
+const Shop = lazy(() => import("./pages/shop"));
+const Orders = lazy(() => import("./pages/Orders"));
+const About = lazy(() => import("./pages/About"));
+const Contact = lazy(() => import("./pages/Contact"));
+const TrackOrder = lazy(() => import("./pages/TrackOrder"));
+const Fapshi = lazy(() => import("./pages/Fapshi"));
+const TermsAndPolicies = lazy(() => import("./pages/TermsAndPolicies"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+
+function ReferralSignupRedirect() {
+  const { encodedUserId, userIdPrefix } = useParams();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (/^[A-Za-z0-9_-]+$/.test(encodedUserId || "") && /^[A-Fa-f0-9]{7}$/.test(userIdPrefix || "")) {
+      localStorage.setItem("tsogo_referral_code", `${encodedUserId}.${userIdPrefix.toUpperCase()}`);
+    }
+    navigate("/SignUp", { replace: true });
+  }, [encodedUserId, userIdPrefix, navigate]);
+
+  return <main className="app-route-loading" role="status" aria-live="polite"><span className="app-route-loading-mark">TS</span><span>Opening account signup…</span></main>;
+}
 
 function AppContent() {
   const location = useLocation();
@@ -47,10 +60,6 @@ function AppContent() {
   useEffect(() => {
     updatePageMetadata(location.pathname);
     if (!isProductRoute) setProductReadyPath(null);
-    const match = location.pathname.match(/^\/referrals\/([A-Za-z0-9_-]+)\/([A-Fa-f0-9]{7})\/?$/);
-    if (match) {
-      localStorage.setItem("tsogo_referral_code", `${match[1]}.${match[2].toUpperCase()}`);
-    }
   }, [location.pathname, isProductRoute]);
   // Check if current route is admin or user dashboard
   const isAdminRoute = location.pathname.startsWith('/admin');
@@ -62,12 +71,13 @@ function AppContent() {
      <ModalMessageProvider>
       {!isAdminRoute && !isDashboardRoute && <Navbar />}
       
+      <Suspense fallback={<main className="app-route-loading" role="status" aria-live="polite"><span className="app-route-loading-mark">TS</span><span>Loading TSOGO-BIS…</span></main>}>
       <Routes>
         <Route
           path="/"
           element={<Home />}
         />
-        <Route path="/referrals/:encodedUserId/:userIdPrefix" element={<Home />} />
+        <Route path="/referrals/:encodedUserId/:userIdPrefix" element={<ReferralSignupRedirect />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/admin/*" element={
           <ProtectedRoute>
@@ -96,6 +106,7 @@ function AppContent() {
         <Route path="/fapshi" element={<Fapshi/>}/>
         <Route path="*" element={<main className="route-not-found"><span>TSOGO-BIS</span><h1>We can’t find that page</h1><p>The page may have moved, or the address may be incorrect.</p><Link to="/">Return to the home page</Link></main>} />
       </Routes>
+      </Suspense>
       
       {!isAdminRoute && !isDashboardRoute && (!isProductRoute || productContentReady) && (
         <>

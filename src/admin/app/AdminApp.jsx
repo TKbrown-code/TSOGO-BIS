@@ -20,6 +20,7 @@ import { BarChart3, TrendingUp, Package, ShoppingCart, MapPin, Users, FolderTree
 import "./AdminAppComplete.css";
 import Logo from "../../assets/brand-logo.png";
 import NotificationCenter from "../../components/shared/NotificationCenter";
+import ProfileAvatar from "../../components/shared/ProfileAvatar";
 
 function AdminContent() {
   const { user, isAdmin, loading, signOut } = useAdmin();
@@ -146,7 +147,7 @@ function AdminContent() {
         <div className="sidebar-footer">
           <div className="admin-info">
             <div className="admin-avatar">
-              {user.email?.charAt(0).toUpperCase() || "A"}
+              <ProfileAvatar userId={user.id} name={user.user_metadata?.display_name || user.email || "A"} />
             </div>
             {showSidebarLabels && (
               <div className="admin-details">
@@ -174,7 +175,7 @@ function AdminContent() {
           <div className="admin-topbar-actions">
             <NotificationCenter userId={user.id} audience="admin" onOpen={() => navigateTo("orders")} />
             <span className="admin-live-indicator"><i /> Admin workspace</span>
-            <div className="admin-topbar-avatar" title={user.email}>{user.email?.charAt(0).toUpperCase()}</div>
+            <div className="admin-topbar-avatar" title={user.email}><ProfileAvatar userId={user.id} name={user.user_metadata?.display_name || user.email || "A"} /></div>
           </div>
         </header>
         <div className="content-wrapper">

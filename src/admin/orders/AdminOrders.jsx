@@ -17,6 +17,8 @@ export default function AdminOrders() {
   const [loadError, setLoadError] = useState("");
   const [savingOrderId, setSavingOrderId] = useState(null);
   const [deletingAll, setDeletingAll] = useState(false);
+  const [deleteGroup, setDeleteGroup] = useState("awaiting_payment");
+  const [deletingGroup, setDeletingGroup] = useState(false);
 
   const loadOrders = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
@@ -78,6 +80,44 @@ export default function AdminOrders() {
     setSelectedOrder(null);
     await loadOrders();
     window.alert("All order and shipment records were deleted.");
+  }
+
+  function getPaymentGroup(order) {
+    const payment = String(order.payment_status || "").toLowerCase();
+    const status = String(order.status || "").toLowerCase();
+    if (["paid", "succeeded", "successful", "completed"].includes(payment) || ["paid", "succeeded", "successful", "completed", "confirmed"].includes(status)) return "paid";
+    if (["failed", "expired"].includes(payment) || ["failed", "expired"].includes(status)) return "failed";
+    if (payment === "refunded" || status === "refunded") return "refunded";
+    if (payment === "cancelled" || status === "cancelled") return "cancelled";
+    if (["pending", "pending_payment", "awaiting_payment", "initiating", "processing"].includes(payment) || ["pending", "pending_payment", "awaiting_payment", "initiating"].includes(status)) return "awaiting_payment";
+    return "other";
+  }
+
+  const orderGroupCounts = orders.reduce((counts, order) => {
+    const group = getPaymentGroup(order);
+    counts[group] = (counts[group] || 0) + 1;
+    return counts;
+  }, {});
+
+  async function deleteOrdersByGroup() {
+    const count = orderGroupCounts[deleteGroup] || 0;
+    if (!count || deletingGroup) return;
+    const labels = {
+      awaiting_payment: "awaiting payment",
+      failed: "failed or expired",
+      cancelled: "cancelled",
+      paid: "paid or completed",
+      refunded: "refunded",
+      other: "other payment statuses",
+    };
+    if (!window.confirm(`Permanently delete ${count} ${labels[deleteGroup]} order${count === 1 ? "" : "s"}, including related shipment and payment records? This cannot be undone.`)) return;
+    setDeletingGroup(true);
+    const { data, error } = await supabase.rpc("admin_delete_orders_by_group", { p_group: deleteGroup });
+    setDeletingGroup(false);
+    if (error) { window.alert(`Orders were not deleted: ${error.message}`); return; }
+    setSelectedOrder(null);
+    await loadOrders();
+    window.alert(`Deleted ${Number(data) || 0} ${labels[deleteGroup]} order${Number(data) === 1 ? "" : "s"}.`);
   }
 
   useEffect(() => {
@@ -226,7 +266,7 @@ export default function AdminOrders() {
     <main className="admin-orders">
       <header className="orders-page-heading">
         <div><span className="orders-kicker">COMMERCE OPERATIONS</span><h1>Orders</h1><p>Review payments, prepare deliveries, and keep every customer order moving.</p></div>
-        <div className="orders-heading-actions"><button type="button" className="orders-refresh" onClick={() => exportCsv("tsogo-orders.csv", orders.map(({ items, ...order }) => ({ ...order, items })))} disabled={!orders.length}><Download size={15} />Export orders</button><button type="button" className="orders-refresh orders-delete-all" onClick={deleteAllOrders} disabled={!orders.length||deletingAll}><Trash2 size={15}/>{deletingAll?"Deleting…":"Delete all orders"}</button><button type="button" className="orders-refresh" onClick={loadOrders} disabled={loading}><RotateCcw size={15} className={loading ? "is-spinning" : ""} />Refresh orders</button></div>
+        <div className="orders-heading-actions"><button type="button" className="orders-refresh" onClick={() => exportCsv("tsogo-orders.csv", orders.map(({ items, ...order }) => ({ ...order, items })))} disabled={!orders.length}><Download size={15} />Export orders</button><label className="orders-delete-group-control"><span className="sr-only">Payment status group to delete</span><select aria-label="Payment status group to delete" value={deleteGroup} onChange={(event) => setDeleteGroup(event.target.value)}><option value="awaiting_payment">Awaiting payment ({orderGroupCounts.awaiting_payment || 0})</option><option value="failed">Failed / expired ({orderGroupCounts.failed || 0})</option><option value="cancelled">Cancelled ({orderGroupCounts.cancelled || 0})</option><option value="paid">Paid / completed ({orderGroupCounts.paid || 0})</option><option value="refunded">Refunded ({orderGroupCounts.refunded || 0})</option><option value="other">Other ({orderGroupCounts.other || 0})</option></select></label><button type="button" className="orders-refresh orders-delete-all" onClick={deleteOrdersByGroup} disabled={!orderGroupCounts[deleteGroup]||deletingGroup}><Trash2 size={15}/>{deletingGroup?"Deleting…":"Delete group"}</button><button type="button" className="orders-refresh orders-delete-all" onClick={deleteAllOrders} disabled={!orders.length||deletingAll}><Trash2 size={15}/>{deletingAll?"Deleting…":"Delete all orders"}</button><button type="button" className="orders-refresh" onClick={loadOrders} disabled={loading}><RotateCcw size={15} className={loading ? "is-spinning" : ""} />Refresh orders</button></div>
       </header>
 
       <section className="orders-stats" aria-label="Order summary">

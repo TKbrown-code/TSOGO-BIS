@@ -59,7 +59,7 @@ export default function AdminTracking() {
       const shipmentIds = rows.map((row) => row.id).filter(Boolean);
       const [ordersResult, checkoutsResult, eventsResult] = await Promise.all([
         orderIds.length ? supabase.from("orders").select("id,customer_name,customer_email,customer_phone,grand_total,shipping_address").in("id", orderIds) : Promise.resolve({ data: [], error: null }),
-        orderIds.length ? supabase.from("checkouts").select("checkout_id,order_id,user_name,email,phone_number,address,total,amount_due,service_fee,shipping_payment_mode,shipping_due_on_delivery,payment_method,delivery_status,payment_status,items,tracking_link").in("order_id", orderIds) : Promise.resolve({ data: [], error: null }),
+        orderIds.length ? supabase.from("checkouts").select("checkout_id,order_id,user_id,user_name,email,phone_number,address,total,amount_due,service_fee,shipping_payment_mode,shipping_due_on_delivery,payment_method,delivery_status,payment_status,items,tracking_link").in("order_id", orderIds) : Promise.resolve({ data: [], error: null }),
         shipmentIds.length ? supabase.from("shipment_events").select("id,shipment_id,status,location,message,occurred_at").in("shipment_id", shipmentIds).order("occurred_at", { ascending: false }) : Promise.resolve({ data: [], error: null }),
       ]);
       if (ordersResult.error) throw ordersResult.error;
@@ -67,6 +67,12 @@ export default function AdminTracking() {
       if (eventsResult.error) console.warn("Could not load shipment event history:", eventsResult.error);
 
       const checkoutRows = checkoutsResult.data || [];
+      const customerIds = [...new Set(checkoutRows.map((checkout) => checkout.user_id).filter(Boolean))];
+      const profileResult = customerIds.length
+        ? await supabase.from("profiles").select("user_id,avatar_path").in("user_id", customerIds)
+        : { data: [], error: null };
+      if (profileResult.error) console.warn("Could not load customer profile photos for invoices:", profileResult.error);
+      const profileByUserId = Object.fromEntries((profileResult.data || []).map((profile) => [profile.user_id, profile]));
       const productIds = [...new Set(checkoutRows.flatMap((checkout) => {
         const items = Array.isArray(checkout.items) ? checkout.items : [];
         return items.map((item) => item?.product_id?.id ?? item?.product_id).filter(Boolean);
@@ -98,6 +104,7 @@ export default function AdminTracking() {
         return {
           ...shipment,
           checkout_id: checkout.checkout_id,
+          customer_avatar_path: profileByUserId[checkout.user_id]?.avatar_path || "",
           customer_name: checkout.user_name || order.customer_name || "Customer",
           customer_email: checkout.email || order.customer_email || "",
           customer_phone: checkout.phone_number || order.customer_phone || "",
@@ -434,9 +441,18 @@ export default function AdminTracking() {
       doc.setFillColor(246, 248, 251);
       doc.setDrawColor(190, 199, 211);
       doc.rect(14, 59, 182, 27, "FD");
-      write(`SOLD TO: ${shipment.customer_name || "Customer"}`, 19, 66, 10, "bold");
-      write(`Address: ${shipment.address || "Address not provided"}`, 19, 72, 8);
-      write(`Tel: ${shipment.customer_phone || "Phone not provided"}`, 19, 78, 8);
+      let customerAvatarUrl = "";
+      if (shipment.customer_avatar_path) {
+        const { data } = await supabase.storage.from("profile-images").createSignedUrl(shipment.customer_avatar_path, 300);
+        customerAvatarUrl = data?.signedUrl || "";
+      }
+      const customerImage = await productImagePng(customerAvatarUrl);
+      if (customerImage) {
+        try { doc.addImage(customerImage, "PNG", 18, 64, 16, 16, undefined, "FAST"); } catch { /* A customer photo is optional on invoices. */ }
+      }
+      write(`SOLD TO: ${shipment.customer_name || "Customer"}`, 38, 66, 10, "bold");
+      write(`Address: ${shipment.address || "Address not provided"}`, 38, 72, 8);
+      write(`Tel: ${shipment.customer_phone || "Phone not provided"}`, 38, 78, 8);
       write(`Email: ${shipment.customer_email || ""}`, 105, 78, 8);
       if (barcode) doc.addImage(barcode, "PNG", 70, 89, 70, 12, undefined, "FAST");
       write(code, pageWidth / 2, 105, 8, "bold", "center");

@@ -8,6 +8,7 @@ import { useCurrencyContext } from "../../context/CurrencyContext";
 import { preloadAllImages } from "../../utils/imageCache";
 import { useTranslation } from "react-i18next";
 import FallBackImage from "../../assets/imagefallback.jpg";
+import { productDetailPath } from "../../utils/productRoutes";
 
 export default function Products({ selectedCategory }) {
   const { t } = useTranslation();
@@ -203,7 +204,7 @@ export default function Products({ selectedCategory }) {
           };
 
           return (
-            <Link key={product.id} to={`/ProductDetails/${product.id}/${product.name}`} className="product-link">
+            <Link key={product.id} to={productDetailPath(product)} className="product-link">
               <div className="product-card">
                 <div className="product-image-wrapper">
                   <img 

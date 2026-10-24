@@ -33,7 +33,7 @@ function setMeta(attribute, key, value) {
   element.setAttribute("content", value);
 }
 
-export function updatePageMetadata(pathname) {
+export function updatePageMetadata(pathname, imageUrl) {
   const normalizedPath = pathname.length > 1 ? pathname.replace(/\/$/, "") : "/";
   const productMatch = normalizedPath.match(/^\/ProductDetails\/([^/]+)\/([^/]+)$/i);
   const isAdmin = normalizedPath.toLowerCase().startsWith("/admin");
@@ -72,6 +72,9 @@ export function updatePageMetadata(pathname) {
   setMeta("property", "og:title", metadata.title);
   setMeta("property", "og:description", metadata.description);
   setMeta("property", "og:url", canonical);
+  setMeta("property", "og:image", imageUrl || `${baseUrl}/favicon.png`);
+  setMeta("name", "twitter:image", imageUrl || `${baseUrl}/favicon.png`);
+  setMeta("property", "og:type", imageUrl ? "product" : "website");
   let canonicalLink = document.head.querySelector('link[rel="canonical"]');
   if (!canonicalLink) {
     canonicalLink = document.createElement("link");

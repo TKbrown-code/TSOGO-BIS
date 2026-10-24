@@ -5,6 +5,7 @@ import { useCart } from "../../context/CartContext";
 import { useUserContext } from "../../context/useUserContext";
 import { useCurrencyContext } from "../../context/CurrencyContext";
 import { supabase } from "../../lib/supabase";
+import { productDetailPath } from "../../utils/productRoutes";
 import { useTranslation } from "react-i18next";
 import BrandMonogram from "../../assets/nav-monogram.png";
 import "../../styles/navbar-redesign.css";
@@ -70,7 +71,7 @@ export default function Navbar() {
   const closeMenu = () => { setMenuOpen(false); setUserOpen(false); };
   const selectProduct = (product) => {
     setSearchQuery(""); setSuggestions([]); setSearchOpen(false); closeMenu();
-    navigate(`/ProductDetails/${product.id}/${product.name}`);
+    navigate(productDetailPath(product));
   };
   const logout = async () => { await supabase.auth.signOut(); closeMenu(); navigate("/"); };
 

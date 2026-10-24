@@ -475,6 +475,9 @@
       "awaiting_payment": "Awaiting payment",
       "amount_due": "Amount due now",
       "delivery_due": "Delivery due on arrival",
+      "customer": "Customer",
+      "phone": "Phone",
+      "delivery_address": "Delivery address",
       "stamp_paid": "PAID",
       "stamp_pending": "PAYMENT PENDING"
     },

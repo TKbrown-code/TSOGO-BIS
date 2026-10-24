@@ -608,6 +608,14 @@
 .orders-refresh:hover, .order-tracking-action:hover, .orders-empty button:hover, .orders-error button:hover, .orders-modal-cancel:hover, .orders-clear:hover { border-color: #c9bdab; background: #f4f1e9; }
 .orders-refresh:disabled, .order-tracking-action:disabled, .orders-modal-save:disabled { cursor: wait; opacity: .65; }
 .orders-refresh .is-spinning { animation: orders-spin .8s linear infinite; }
+.orders-heading-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+.orders-delete-group-control { display: flex; min-width: 190px; }
+.orders-delete-group-control select { min-width: 0; min-height: 42px; padding: 0 30px 0 12px; border: 1px solid var(--orders-border); border-radius: 9px; background: var(--orders-white); color: var(--orders-ink); font: inherit; font-size: 12px; }
+.orders-delete-group-control select:focus { outline: 2px solid #6b806f; outline-offset: 2px; }
+.orders-delete-all { border-color: #e8d1c8; background: #fff8f5; color: #8b4c3c; }
+.orders-delete-all:hover:not(:disabled) { border-color: #d9b8aa; background: #fbede8; }
+.orders-delete-all:disabled { cursor: not-allowed; opacity: .55; }
+.orders-delete-group-control .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 @keyframes orders-spin { to { transform: rotate(360deg); } }
 .orders-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 13px; margin-bottom: 22px; }
 .orders-stat { display: flex; min-width: 0; min-height: 94px; align-items: center; gap: 13px; padding: 17px; border: 1px solid var(--orders-border); border-radius: 12px; background: var(--orders-white); box-shadow: 0 5px 18px #25392c08; }
@@ -709,6 +717,9 @@
 @media (max-width: 760px) {
   .admin-orders { padding: 20px 15px; }
   .orders-page-heading { align-items: flex-start; flex-direction: column; gap: 16px; }
+  .orders-heading-actions { width: 100%; justify-content: flex-start; }
+  .orders-heading-actions > button { flex: 1 1 145px; }
+  .orders-delete-group-control { flex: 1 1 220px; }
   .orders-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
   .orders-stat { min-height: 78px; gap: 10px; padding: 12px; }
   .orders-stat-icon { width: 34px; height: 34px; }

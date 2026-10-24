@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "../../lib/supabase";
 import { useAdmin } from "../../context/AdminContext";
 import { useSiteSettings } from "../../context/SiteSettingsContext";
+import ProfileImageUploader from "../../components/shared/ProfileImageUploader";
 import { Users, Globe, Save, Lock, User, Settings, ShieldCheck, RefreshCw, Store } from "lucide-react";
 import "./AdminSettings.css";
 import "../../styles/checkout-coupon.css";
@@ -43,6 +44,7 @@ export default function AdminSettings() {
   const [admins, setAdmins] = useState([]);
   const [newAdminEmail, setNewAdminEmail] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
+  const [avatarPath, setAvatarPath] = useState(null);
 
   // Site settings
   const [siteName, setSiteName] = useState("TSOGO-BIS");
@@ -71,6 +73,12 @@ export default function AdminSettings() {
     loadAdmins();
     loadSiteSettings();
   }, []);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase.from("profiles").select("avatar_path").eq("user_id", user.id).maybeSingle()
+      .then(({ data }) => setAvatarPath(data?.avatar_path || null));
+  }, [user?.id]);
 
   async function loadAdmins() {
     setAdminsLoading(true);
@@ -551,6 +559,7 @@ export default function AdminSettings() {
           <div><h2><User className="inline-block mr-2" size={20} /> Your Account</h2><p>Identity and access details for the signed-in administrator.</p></div>
         </div>
 
+        <ProfileImageUploader userId={user?.id} name={user?.user_metadata?.display_name || user?.email} avatarPath={avatarPath} onChange={setAvatarPath} />
         <div className="account-info">
           <div className="info-row">
             <span className="label">Email:</span>

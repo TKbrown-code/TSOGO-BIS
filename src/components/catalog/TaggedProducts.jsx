@@ -7,6 +7,7 @@ import { getProductImageUrl } from "../../hooks/productimages";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBullhorn } from "@fortawesome/free-solid-svg-icons";
 import { Link } from "react-router-dom";
+import { productDetailPath } from "../../utils/productRoutes";
 
 export default function Promotions({ tag = "promotion" }) {
   const [products, setProducts] = useState([]);
@@ -81,7 +82,7 @@ export default function Promotions({ tag = "promotion" }) {
          <h2 className="promotions-title">{tag.toUpperCase()} Products <FontAwesomeIcon icon={faBullhorn} style={{ color: "white", fontSize: "24px" }} /></h2>
       <div className="promotions-grid">
         {products.map((product) => (
-          <Link key={product.id} to={`/ProductDetails/${product.id}/${product.name}`} className="promotion-link">
+          <Link key={product.id} to={productDetailPath(product)} className="promotion-link">
             <div className="promotion-card">
               <div className="promotion-badge">
                 <FaTag className="promotion-icon" />

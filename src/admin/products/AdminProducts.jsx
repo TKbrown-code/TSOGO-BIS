@@ -3,10 +3,11 @@ import { Link } from "react-router-dom";
 import { useModalMessage } from "../../context/ModalMessageContext";
 import { supabase } from "../../lib/supabase";
 import AdminProductFormEnhanced from "./AdminProductFormEnhanced";
-import { ArrowUpRight, Boxes, CheckCircle2, CircleDollarSign, Edit3, ExternalLink, Filter, Package, Plus, RefreshCw, Search, Trash2, XCircle, Download } from "lucide-react";
+import { ArrowUpRight, Boxes, Check, CheckCircle2, CircleDollarSign, Copy, Edit3, ExternalLink, Filter, Package, Plus, RefreshCw, Search, Share2, Trash2, XCircle, Download } from "lucide-react";
 import { exportCsv } from "../utils/exportCsv";
 import "./AdminProducts.css";
 import Fallbackimage from "../../assets/imagefallback.jpg";
+import { productDetailPath } from "../../utils/productRoutes";
 
 function getStock(product) {
   if (product.stock_quantity !== null && product.stock_quantity !== undefined) {
@@ -18,7 +19,7 @@ function getStock(product) {
 }
 
 function productRoute(product) {
-  return `/ProductDetails/${product.id}/${encodeURIComponent(product.name || "product")}`;
+  return productDetailPath(product);
 }
 
 export default function AdminProducts() {
@@ -28,6 +29,7 @@ export default function AdminProducts() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [copiedProductId, setCopiedProductId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [filterTag, setFilterTag] = useState("");
@@ -101,6 +103,31 @@ export default function AdminProducts() {
     showAlert("Product removed from the catalog.", "Product deleted", "success");
   }
 
+  async function copyProductId(product) {
+    try {
+      await navigator.clipboard.writeText(String(product.id));
+      setCopiedProductId(product.id);
+      window.setTimeout(() => setCopiedProductId(null), 1800);
+      showAlert("Product ID copied to clipboard.", "Copied", "success");
+    } catch {
+      showAlert(String(product.id), "Copy this product ID", "info");
+    }
+  }
+
+  async function shareProduct(product) {
+    const url = `${window.location.origin}${productRoute(product)}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: product.name, text: product.description || product.name, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        showAlert("Product link copied. It will include the product preview image when shared.", "Link copied", "success");
+      }
+    } catch (shareError) {
+      if (shareError?.name !== "AbortError") showAlert("Could not share this product link.", "Share failed", "error");
+    }
+  }
+
   const activeFilters = Boolean(searchQuery || filterCategory || filterTag || filterStock);
 
   return (
@@ -146,7 +173,7 @@ export default function AdminProducts() {
             const category = product.category_id?.name || "Uncategorized";
             return <article className="catalog-product-card" key={product.id}>
               <Link className="catalog-product-image" to={productRoute(product)} aria-label={`View ${product.name} in the storefront`}><img src={primaryImage?.publicUrl || Fallbackimage} alt={product.name} loading="lazy" onError={(event) => { event.currentTarget.src = Fallbackimage; }} /><span className={`catalog-stock-pill ${stock.state}`}>{stock.state === "out" ? "Out of stock" : stock.state === "low" ? `Low · ${stock.quantity} left` : stock.quantity === null ? "Available" : `${stock.quantity} in stock`}</span><span className="catalog-view-overlay">View storefront <ExternalLink size={14} /></span></Link>
-              <div className="catalog-product-body"><div className="catalog-product-meta"><span>{category}</span><span>SKU · {product.id}</span></div><Link to={productRoute(product)} className="catalog-product-title">{product.name}</Link><p className="catalog-product-description">{product.description || "No product description has been added yet."}</p><div className="catalog-product-bottom"><strong>{Number(product.price || 0).toLocaleString()} <small>XAF</small></strong><span className={`catalog-stock-label ${stock.state}`}><i />{stock.state === "out" ? "Unavailable" : stock.state === "low" ? "Low stock" : "In stock"}</span></div>{tags.length > 0 && <div className="catalog-product-tags">{tags.map((tag) => <span key={tag}>{tag.replaceAll("_", " ")}</span>)}</div>}<div className="catalog-product-actions"><Link to={productRoute(product)} className="catalog-view-link">Preview product <ArrowUpRight size={14} /></Link><div><button type="button" className="catalog-edit-button" onClick={() => setEditing(product)} aria-label={`Edit ${product.name}`} title="Edit product"><Edit3 size={15} /></button><button type="button" className="catalog-delete-button" onClick={() => handleDelete(product)} aria-label={`Delete ${product.name}`} title="Delete product"><Trash2 size={15} /></button></div></div></div>
+              <div className="catalog-product-body"><div className="catalog-product-meta"><span>{category}</span><span>SKU · {product.id}</span></div><Link to={productRoute(product)} className="catalog-product-title">{product.name}</Link><p className="catalog-product-description">{product.description || "No product description has been added yet."}</p><div className="catalog-product-bottom"><strong>{Number(product.price || 0).toLocaleString()} <small>XAF</small></strong><span className={`catalog-stock-label ${stock.state}`}><i />{stock.state === "out" ? "Unavailable" : stock.state === "low" ? "Low stock" : "In stock"}</span></div>{tags.length > 0 && <div className="catalog-product-tags">{tags.map((tag) => <span key={tag}>{tag.replaceAll("_", " ")}</span>)}</div>}<div className="catalog-product-actions"><Link to={productRoute(product)} className="catalog-view-link">Preview product <ArrowUpRight size={14} /></Link><div className="catalog-product-action-buttons"><button type="button" className="catalog-copy-id-button" onClick={() => copyProductId(product)} aria-label={`Copy ID for ${product.name}`} title="Copy product ID">{copiedProductId === product.id ? <Check size={15} /> : <Copy size={15} />}<span>ID</span></button><button type="button" className="catalog-share-button" onClick={() => shareProduct(product)} aria-label={`Share ${product.name}`} title="Share product"><Share2 size={15} /></button><button type="button" className="catalog-edit-button" onClick={() => setEditing(product)} aria-label={`Edit ${product.name}`} title="Edit product"><Edit3 size={15} /></button><button type="button" className="catalog-delete-button" onClick={() => handleDelete(product)} aria-label={`Delete ${product.name}`} title="Delete product"><Trash2 size={15} /></button></div></div></div>
             </article>;
           })}</section>}
     </main>

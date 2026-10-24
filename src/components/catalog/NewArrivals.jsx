@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import ProductModal from "./ProductModal";
 import "../../styles/newArrivals.css";
 import { preloadAllImages, getCachedImage } from "../../utils/imageCache";
+import { productDetailPath } from "../../utils/productRoutes";
 
 /**
  * NewArrivals
@@ -213,7 +214,7 @@ useEffect(() => {
           <div className="na-grid">
             {items.map((p) => (
               <Link
-                to={`/ProductDetails/${p.id}/${p.name.replace(/\s+/g, '-')}`}
+                to={productDetailPath(p)}
                 className="na-card"
                 key={p.id}
               >
