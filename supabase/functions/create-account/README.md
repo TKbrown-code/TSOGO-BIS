@@ -1,6 +1,6 @@
 # Signup confirmation email
 
-Signup confirmation is sent directly through Resend by this Edge Function. Supabase Auth SMTP and the Auth email template are not used for signup confirmation.
+Signup confirmation is sent directly through Resend by this Edge Function. Supabase Auth SMTP and the Auth email template are not used for signup confirmation. The same public function accepts `action: "resend_confirmation"` to issue a fresh confirmation link for an existing, unconfirmed account. Unknown and already confirmed addresses receive the same generic response.
 
 Required Supabase Edge Function secrets (the same sender credentials used by the other Resend functions):
 

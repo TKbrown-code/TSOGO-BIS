@@ -62,7 +62,7 @@
 .modal-close:hover { color: #26352e; background: #f0eee8; }
 .modal-body { margin: 20px 0 23px; color: #626b63; font-size: 14px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
 .modal-body p { margin: 0; }
-.modal-body:has(.password-reset-modal-form), .modal-body:has(.password-reset-modal-success) { white-space: normal; }
+.modal-body:has(.password-reset-modal-form), .modal-body:has(.password-reset-modal-success), .modal-body:has(.auth-confirmation-actions) { white-space: normal; }
 .password-reset-modal-form p { margin: 0 0 18px; }
 .password-reset-modal-form label { display: block; margin-bottom: 7px; color: #38443c; font-size: 12px; font-weight: 650; }
 .password-reset-modal-form input { width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid #dcd9d0; border-radius: 4px; outline: none; color: #29372f; background: #fff; font: inherit; font-size: 14px; }
@@ -74,9 +74,14 @@
 .password-reset-modal-actions .auth-spinner { width: 14px; height: 14px; border-color: rgba(255,255,255,.35); border-top-color: #fff; }
 .password-reset-modal-success { display: grid; justify-items: start; gap: 15px; }
 .password-reset-modal-success p { margin: 0; color: #626b63; font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
+.password-reset-modal-success .password-reset-modal-success-note { color: #3e6b4d; font-size: 12px; }
 .password-reset-modal-success strong { color: #29372f; }
 .password-reset-modal-check { display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid #d7e3d8; border-radius: 50%; color: #3e6b4d; background: #edf4ed; }
 .password-reset-modal-success .modalbtn { justify-self: end; min-width: 96px; }
+.auth-confirmation-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 9px; width: 100%; }
+.auth-confirmation-actions .modalbtn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.auth-confirmation-actions .modalbtn:disabled { opacity: .7; cursor: wait; }
+.auth-confirmation-actions .auth-spinner { width: 14px; height: 14px; border-color: rgba(255,255,255,.35); border-top-color: #fff; }
 .modal-footer { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 9px; padding-top: 16px; border-top: 1px solid #eeece6; }
 .modalbtn {
   min-height: 40px;

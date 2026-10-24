@@ -85,16 +85,17 @@ Deno.serve(async (request: Request) => {
     return respond({ error: "Account creation is temporarily unavailable" }, 503, origin);
   }
 
-  let body: { email?: unknown; password?: unknown; fullName?: unknown; language?: unknown; referralCode?: unknown };
+  let body: { action?: unknown; email?: unknown; password?: unknown; fullName?: unknown; language?: unknown; referralCode?: unknown };
   try { body = await request.json(); } catch { return respond({ error: "Invalid request" }, 400, origin); }
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
   const password = typeof body.password === "string" ? body.password : "";
   const fullName = typeof body.fullName === "string" ? body.fullName.trim() : "";
   const language = typeof body.language === "string" && ["en", "fr", "zh"].includes(body.language) ? body.language : "fr";
+  const isResendConfirmation = body.action === "resend_confirmation";
   const referrerUserId = decodeReferralToken(body.referralCode);
   if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return respond({ error: "Enter a valid email address" }, 400, origin);
-  if (password.length < 6 || password.length > 72) return respond({ error: "Password must be between 6 and 72 characters" }, 400, origin);
-  if (!fullName || fullName.length > 120) return respond({ error: "Enter a valid name" }, 400, origin);
+  if (!isResendConfirmation && (password.length < 6 || password.length > 72)) return respond({ error: "Password must be between 6 and 72 characters" }, 400, origin);
+  if (!isResendConfirmation && (!fullName || fullName.length > 120)) return respond({ error: "Enter a valid name" }, 400, origin);
 
   const clientIp = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   let createdUserId: string | null = null;
@@ -107,6 +108,62 @@ Deno.serve(async (request: Request) => {
   } catch (error) {
     console.error("Signup rate limit check failed:", error);
     return respond({ error: "Account creation is temporarily unavailable" }, 503, origin);
+  }
+
+  if (isResendConfirmation) {
+    try {
+      let pendingUser = null;
+      for (let page = 1; !pendingUser; page += 1) {
+        const { data: usersPage, error: usersError } = await supabase!.auth.admin.listUsers({ page, perPage: 1000 });
+        if (usersError) throw usersError;
+        pendingUser = usersPage.users.find((user) => user.email?.toLowerCase() === email) ?? null;
+        if (pendingUser || usersPage.users.length < 1000) break;
+      }
+      // Keep the endpoint's response identical for unknown or already verified addresses.
+      if (!pendingUser || pendingUser.email_confirmed_at) {
+        return respond({ success: true, message: "If this account still needs verification, another email will arrive shortly." }, 200, origin);
+      }
+
+      // For an existing unconfirmed user, generateLink rotates the confirmation
+      // token without changing the user's password. The password is ignored for
+      // an existing account by GoTrue; it is only required by the SDK type.
+      const { data: linkData, error: linkError } = await supabase!.auth.admin.generateLink({
+        type: "signup",
+        email,
+        password: `Resend-${crypto.randomUUID()}-Aa1!`,
+        options: { redirectTo: new URL("/", appUrl).toString() },
+      });
+      if (linkError || !linkData?.properties?.action_link) throw linkError ?? new Error("Confirmation link was not generated");
+      const actionLink = new URL(linkData.properties.action_link);
+      if (actionLink.origin !== new URL(supabaseUrl).origin) throw new Error("Unexpected confirmation link origin");
+      const message = copy[language];
+      const greeting = message.greeting.replace("{{name}}", escapeHtml(pendingUser.user_metadata?.display_name ?? ""));
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          "Content-Type": "application/json",
+          "Idempotency-Key": `signup-resend/${pendingUser.id}/${linkData.properties.hashed_token ?? Date.now()}`,
+        },
+        body: JSON.stringify({
+          from: resendFrom,
+          to: [email],
+          subject: message.subject,
+          html: `<!doctype html><html lang="${language}"><body style="margin:0;padding:32px 16px;background:#f5f4ef;font-family:Arial,sans-serif;color:#29372f"><table role="presentation" style="max-width:560px;margin:0 auto;background:#fffefa;border:1px solid #e4e1d8;padding:36px;width:100%"><tr><td><p style="font-size:11px;letter-spacing:3px;color:#8c7554;font-weight:bold">TSOGO-BIS</p><h1 style="font:normal 30px Georgia,serif;margin:26px 0 12px">${message.title}</h1><p style="font-size:14px;line-height:1.7;color:#687168">${greeting}<br>${message.intro}</p><p style="margin:28px 0"><a href="${escapeHtml(actionLink.toString())}" style="display:inline-block;background:#26372f;color:#fffefa;text-decoration:none;padding:14px 22px;font-size:13px;font-weight:bold">${message.action}</a></p><p style="font-size:12px;line-height:1.6;color:#7b8179">${message.ignore}</p></td></tr></table></body></html>`,
+          text: `${message.title}\n\n${greeting}\n${message.intro}\n\n${message.action}: ${actionLink}\n\n${message.ignore}`,
+        }),
+        signal: AbortSignal.timeout(12000),
+      });
+      const resendResult = await response.json().catch(() => null);
+      if (!response.ok) {
+        console.error("Resend rejected signup confirmation retry:", response.status, resendResult?.message ?? "request failed");
+        return respond({ error: "The confirmation email could not be sent. Please try again later." }, 502, origin);
+      }
+      return respond({ success: true, message: "If this account still needs verification, another email will arrive shortly." }, 200, origin);
+    } catch (error) {
+      console.error("Signup confirmation resend failed:", error);
+      return respond({ error: "The confirmation email could not be sent. Please try again later." }, 502, origin);
+    }
   }
 
   try {
@@ -134,23 +191,48 @@ Deno.serve(async (request: Request) => {
     }
 
     if (referrerUserId && referrerUserId !== createdUserId) {
-      // Let the referrals table's FK validate the referrer. Looking up profiles
-      // here required a separate column-level GRANT and caused signup to silently
-      // lose attribution in production (42501 permission denied).
-      const { error: referralError } = await supabase.from("referrals").insert({
-        referrer_user_id: referrerUserId,
-        referred_user_id: createdUserId,
-        // Referral URLs use an opaque user-id token, not the optional
-        // human-readable profile referral_code column.
-        referral_code: String(body.referralCode),
-      });
-      if (referralError && referralError.code !== "23505") {
-        console.error("Referral attribution could not be saved; continuing signup:", {
-          code: referralError.code,
-          message: referralError.message,
+      // The referral FK targets profiles.user_id. Repair a missing profile for
+      // an existing Auth user (for example, an account created before the
+      // profile trigger was installed) before recording the attribution.
+      const { data: referrerData, error: referrerError } = await supabase.auth.admin.getUserById(referrerUserId);
+      if (referrerError || !referrerData.user) {
+        console.warn("Referral link points to a missing Auth user; continuing signup without attribution:", {
+          referrer_user_id: referrerUserId,
+          message: referrerError?.message ?? "Auth user not found",
         });
-      } else if (!referralError) {
-        console.info("Referral attribution saved", { referrer_user_id: referrerUserId, referred_user_id: createdUserId });
+      } else {
+        const { error: profileError } = await supabase.from("profiles").upsert(
+          {
+            user_id: referrerUserId,
+            display_name: String(referrerData.user.user_metadata?.display_name ?? "") || null,
+          },
+          { onConflict: "user_id", ignoreDuplicates: true },
+        );
+        if (profileError) {
+          console.error("Could not ensure the referral owner's profile exists:", {
+            referrer_user_id: referrerUserId,
+            code: profileError.code,
+            message: profileError.message,
+          });
+        } else {
+          const { error: referralError } = await supabase.from("referrals").insert({
+            referrer_user_id: referrerUserId,
+            referred_user_id: createdUserId,
+            // Referral URLs use an opaque user-id token, not the optional
+            // human-readable profile referral_code column.
+            referral_code: String(body.referralCode),
+          });
+          if (referralError && referralError.code !== "23505") {
+            console.error("Referral attribution could not be saved; continuing signup:", {
+              referrer_user_id: referrerUserId,
+              referred_user_id: createdUserId,
+              code: referralError.code,
+              message: referralError.message,
+            });
+          } else if (!referralError) {
+            console.info("Referral attribution saved", { referrer_user_id: referrerUserId, referred_user_id: createdUserId });
+          }
+        }
       }
     }
 

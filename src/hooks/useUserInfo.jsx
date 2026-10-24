@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase";
 import { useModalMessage } from "../context/ModalMessageContext"; // import context
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import SignupConfirmationActions from "../components/auth/SignupConfirmationActions";
 
 export default function useUserinfo({form, isSignUp, setLoading}) {
   // get all modal helpers from context
@@ -32,16 +33,25 @@ export default function useUserinfo({form, isSignUp, setLoading}) {
       localStorage.removeItem("tsogo_referral_code");
       if (data.account_exists) {
         confirmMessage(
-          t("auth.signup_existing_account"),
-          t("auth.signup_existing_title"),
-          <button className="modalbtn" onClick={() => { closeMessage(true); navigate("/SignUp?mode=signin"); }}>{t("auth.signin")}</button>,
+          t("auth.signup_email_message"),
+          t("auth.signup_email_title"),
+          <SignupConfirmationActions
+            email={form.email.trim()}
+            language={(i18n.resolvedLanguage || localStorage.getItem("language") || "fr").slice(0, 2)}
+            onClose={() => closeMessage(true)}
+            onSignIn={() => { closeMessage(true); navigate("/SignUp?mode=signin"); }}
+          />,
         );
         return;
       }
       confirmMessage(
         t("auth.signup_email_message"),
         t("auth.signup_email_title"),
-        <button className="modalbtn" onClick={() => closeMessage(true)}>{t("auth.next")}</button>,
+        <SignupConfirmationActions
+          email={form.email.trim()}
+          language={(i18n.resolvedLanguage || localStorage.getItem("language") || "fr").slice(0, 2)}
+          onClose={() => closeMessage(true)}
+        />,
       );
     } catch (err) {
       console.error("Unexpected error during Sign Up:", err);

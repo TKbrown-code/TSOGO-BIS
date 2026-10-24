@@ -13,6 +13,7 @@ function PasswordResetModalContent({ initialEmail = "" }) {
   const [email, setEmail] = useState(initialEmail);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [resent, setResent] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const { closeMessage } = useModalMessage();
   const { t, i18n } = useTranslation();
@@ -27,6 +28,7 @@ function PasswordResetModalContent({ initialEmail = "" }) {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      if (sent) setResent(true);
       setSent(true);
     } catch (error) {
       setErrorMessage(t("auth.reset_error"));
@@ -39,7 +41,14 @@ function PasswordResetModalContent({ initialEmail = "" }) {
     return <div className="password-reset-modal-success">
       <span className="password-reset-modal-check"><Check size={18} /></span>
       <p>{t("auth.reset_sent", { email: email.trim() })}</p>
-      <button type="button" className="modalbtn" onClick={() => closeMessage(true)}>{t("auth.next")}</button>
+      {resent && <p className="password-reset-modal-success-note" role="status">{t("auth.resend_reset_sent")}</p>}
+      {errorMessage && <p className="password-reset-modal-error" role="alert">{errorMessage}</p>}
+      <div className="auth-confirmation-actions">
+        <button type="button" className="modalbtn modalbtn-secondary" onClick={() => sendResetLink({ preventDefault() {} })} disabled={sending} aria-busy={sending}>
+          {sending ? <><span className="auth-spinner" aria-hidden="true" /> {t("auth.sending")}</> : t("auth.resend_reset_link")}
+        </button>
+        <button type="button" className="modalbtn" onClick={() => closeMessage(true)}>{t("auth.next")}</button>
+      </div>
     </div>;
   }
 
