@@ -3,13 +3,16 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { useUserContext } from "../context/useUserContext";
 import { useNavigate, Navigate, useSearchParams, Link } from "react-router-dom";
-import { Home, BarChart3, ShoppingCart, ShoppingBag, FileText, LogOut, DollarSign, Package, Star, Settings, CheckCircle, Clock, Plus, Minus, Menu, X, Gift, Copy, Check, Search, ArrowUpRight } from "lucide-react";
+import { Home, BarChart3, ShoppingCart, ShoppingBag, FileText, LogOut, DollarSign, Package, Star, Settings, CheckCircle, Clock, Plus, Minus, Menu, X, Gift, Copy, Check, Search, ArrowUpRight, Download } from "lucide-react";
+import { jsPDF } from "jspdf";
 import "../styles/UserDashboardNew.css";
+import "../styles/dashboard-invoice.css";
 import BrandMonogram from "../assets/nav-monogram.png";
 import ProductImageFallback from "../assets/imagefallback.jpg";
 import { useModalMessage } from "../context/ModalMessageContext";
 import { useTranslation } from "react-i18next";
 import { useCart } from "../context/CartContext";
+import NotificationCenter from "../components/shared/NotificationCenter";
 
 export default function UserDashboardNew() {
   const { user, profile, loading } = useUserContext();
@@ -23,7 +26,8 @@ export default function UserDashboardNew() {
   const [activeSection, setActiveSection] = useState("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   useEffect(() => {
-    if (searchParams.get("section") === "settings") setActiveSection("settings");
+    const section = searchParams.get("section");
+    if (["settings", "referrals"].includes(section)) setActiveSection(section);
   }, [searchParams]);
   useEffect(() => {
     if (!sidebarOpen) return undefined;
@@ -159,7 +163,7 @@ export default function UserDashboardNew() {
       const [imagesResult, orderProductsResult] = imageProductIds.length
         ? await Promise.all([
           supabase.from("product_images").select("product_id,image_url,is_primary").in("product_id", imageProductIds),
-          supabase.from("products").select("id,name").in("id", imageProductIds),
+          supabase.from("products").select("id,name,description").in("id", imageProductIds),
         ])
         : [{ data: [], error: null }, { data: [], error: null }];
       const { data: orderProductImages, error: orderImagesError } = imagesResult;
@@ -167,6 +171,7 @@ export default function UserDashboardNew() {
       if (orderImagesError) console.warn("Could not load dashboard order product images:", orderImagesError);
       if (orderProductsError) console.warn("Could not load dashboard order product names:", orderProductsError);
       const productNamesById = (orderProducts || []).reduce((map, product) => ({ ...map, [product.id]: product.name }), {});
+      const productDescriptionsById = (orderProducts || []).reduce((map, product) => ({ ...map, [product.id]: product.description || "" }), {});
       const imagesByProductId = (orderProductImages || []).reduce((map, image) => {
         (map[image.product_id] ||= []).push(image);
         return map;
@@ -268,6 +273,7 @@ export default function UserDashboardNew() {
               ...item,
               product_id: itemProductId,
               name: item.name || item.product_name || item.product_id?.name || productNamesById[itemProductId] || checkoutItems[index]?.product_name,
+              description: item.product_description || item.description || productDescriptionsById[itemProductId] || "",
               quantity: Number(item.quantity ?? checkoutItems[index]?.quantity) || 1,
               price: Number(item.price ?? item.unit_price ?? checkoutItems[index]?.price) || 0,
               size: item.size || checkoutItems[index]?.size,
@@ -429,13 +435,13 @@ export default function UserDashboardNew() {
     }
   }
 
-  const formatCurrency = (amount) => {
-    const locale = { en: "en-CM", fr: "fr-CM", zh: "zh-CN" }[i18n.resolvedLanguage?.slice(0, 2)] || "fr-CM";
+  const formatCurrency = (amount, language = i18n.resolvedLanguage) => {
+    const locale = { en: "en-CM", fr: "fr-CM", zh: "zh-CN" }[language?.slice(0, 2)] || "fr-CM";
     return new Intl.NumberFormat(locale, { style: "currency", currency: "XAF", maximumFractionDigits: 0 }).format(Number(amount) || 0);
   };
 
-  const formatDate = (dateString) => {
-    const locale = { en: "en-CM", fr: "fr-CM", zh: "zh-CN" }[i18n.resolvedLanguage?.slice(0, 2)] || "fr-CM";
+  const formatDate = (dateString, language = i18n.resolvedLanguage) => {
+    const locale = { en: "en-CM", fr: "fr-CM", zh: "zh-CN" }[language?.slice(0, 2)] || "fr-CM";
     return new Date(dateString).toLocaleDateString(locale, {
       year: "numeric",
       month: "short",
@@ -456,6 +462,135 @@ export default function UserDashboardNew() {
       delivered: t("orders.delivery_delivered"),
     };
     return translated[status] || status || t("common.unknown");
+  };
+
+  const downloadInvoice = async (order) => {
+    const invoiceLanguage = (userData.profile?.preferred_language || profile?.preferred_language || i18n.resolvedLanguage || "fr").slice(0, 2);
+    const invoiceT = i18n.getFixedT(invoiceLanguage);
+    const rawPaymentStatus = String(order.payment_status || order.status || "").toLowerCase();
+    const localizedPaymentStatus = ({
+      paid: invoiceT("orders.payment_completed"),
+      pending: invoiceT("orders.awaiting_payment"),
+      cancelled: invoiceT("orders.cancelled"),
+      failed: invoiceT("payment_modal.failed_title"),
+      expired: invoiceT("payment_modal.expired_title"),
+      processing: invoiceT("orders.delivery_processing"),
+      shipped: invoiceT("orders.delivery_shipped"),
+      out_for_delivery: invoiceT("orders.delivery_out_for_delivery"),
+      delivered: invoiceT("orders.delivery_delivered"),
+    })[rawPaymentStatus] || order.payment_status || order.status || invoiceT("common.unknown");
+    const invoiceText = {
+      title: invoiceT("dashboard.invoice.title"),
+      order: invoiceT("dashboard.invoice.order", { id: order.checkout_id }),
+      date: invoiceT("dashboard.invoice.date", { date: formatDate(order.created_at, invoiceLanguage) }),
+      payment: invoiceT("dashboard.invoice.payment", { status: localizedPaymentStatus }),
+      address: invoiceT("dashboard.invoice.address", { address: order.address }),
+      product: invoiceT("dashboard.invoice.product"),
+      quantity: invoiceT("dashboard.invoice.quantity"),
+      amount: invoiceT("dashboard.invoice.amount"),
+      total: invoiceT("dashboard.invoice.total"),
+      paymentStatus: invoiceT("dashboard.invoice.payment_status"),
+      paid: invoiceT("dashboard.invoice.paid"),
+      awaitingPayment: invoiceT("dashboard.invoice.awaiting_payment"),
+      amountDue: invoiceT("dashboard.invoice.amount_due"),
+      deliveryDue: invoiceT("dashboard.invoice.delivery_due"),
+    };
+    const invoiceCurrency = (amount) => formatCurrency(amount, invoiceLanguage);
+    const doc = new jsPDF({ unit: "mm", format: "a4" });
+    const left = 18;
+    const right = 192;
+    let y = 22;
+    doc.setTextColor(38, 53, 46);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text("TSOGO-BIS", left, y);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text(invoiceText.title, right, y, { align: "right" });
+    y += 13;
+    doc.setFont("times", "normal");
+    doc.setFontSize(23);
+    doc.text(invoiceText.order, left, y);
+    y += 9;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(100, 108, 101);
+    doc.text(invoiceText.date, left, y);
+    doc.text(invoiceText.payment, right, y, { align: "right" });
+    const isPaid = ["paid", "succeeded", "successful"].includes(rawPaymentStatus);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(15);
+    doc.setTextColor(isPaid ? 35 : 174, isPaid ? 112 : 112, isPaid ? 82 : 70);
+    doc.text(invoiceT(isPaid ? "dashboard.invoice.stamp_paid" : "dashboard.invoice.stamp_pending"), right, y + 13, { align: "right", angle: -12 });
+    doc.setTextColor(100, 108, 101);
+    y += 7;
+    if (order.address) {
+      const address = doc.splitTextToSize(invoiceText.address, 174);
+      doc.text(address, left, y);
+      y += address.length * 5 + 4;
+    }
+    doc.setDrawColor(220, 215, 204);
+    doc.line(left, y, right, y);
+    y += 8;
+    doc.setTextColor(38, 53, 46);
+    doc.setFont("helvetica", "bold");
+    doc.text(invoiceText.product, left + 24, y);
+    doc.text(invoiceText.quantity, 144, y, { align: "right" });
+    doc.text(invoiceText.amount, right, y, { align: "right" });
+    y += 5;
+    doc.line(left, y, right, y);
+    y += 7;
+    doc.setFont("helvetica", "normal");
+    const productImageData = (url) => new Promise((resolve) => {
+      if (!url) { resolve(null); return; }
+      const image = new Image();
+      image.crossOrigin = "anonymous";
+      image.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = 96;
+          canvas.height = 96;
+          canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL("image/jpeg", 0.82));
+        } catch { resolve(null); }
+      };
+      image.onerror = () => resolve(null);
+      image.src = url;
+    });
+    for (const item of (order.items || [])) {
+      const name = item.name || item.product_name || "Product";
+      const details = [item.color, item.size].filter(Boolean).join(" / ");
+      const detail = item.description || details;
+      const lines = doc.splitTextToSize([details ? `${name} (${details})` : name, detail].filter(Boolean).join("\n"), 105);
+      const rowHeight = Math.max(18, lines.length * 4.5 + 5);
+      if (y + rowHeight > 270) { doc.addPage(); y = 22; }
+      const imageData = await productImageData(item.image_url);
+      if (imageData) {
+        try { doc.addImage(imageData, "JPEG", left, y - 4, 18, 18, undefined, "FAST"); } catch { /* Product images are optional in invoices. */ }
+      }
+      doc.text(lines, left + 24, y);
+      doc.text(String(Number(item.quantity) || 1), 150, y, { align: "right" });
+      doc.text(invoiceCurrency((Number(item.price) || 0) * (Number(item.quantity) || 1)), right, y, { align: "right" });
+      y += rowHeight;
+    }
+    y += 2;
+    doc.line(left, y, right, y);
+    y += 10;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text(invoiceText.total, left, y);
+    doc.text(invoiceCurrency(order.total), right, y, { align: "right" });
+    y += 7;
+    const paid = ["paid", "succeeded", "successful", "completed"].includes(String(order.payment_status || order.status || "").toLowerCase());
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text(`${invoiceText.paymentStatus}: ${paid ? invoiceText.paid : invoiceText.awaitingPayment}`, left, y);
+    doc.text(`${invoiceText.amountDue}: ${invoiceCurrency(paid ? 0 : (order.amount_due ?? order.total))}`, right, y, { align: "right" });
+    if (Number(order.shipping_due_on_delivery) > 0) {
+      y += 6;
+      doc.text(`${invoiceText.deliveryDue}: ${invoiceCurrency(order.shipping_due_on_delivery)}`, right, y, { align: "right" });
+    }
+    doc.save(`TSOGO-BIS-invoice-${order.checkout_id}.pdf`);
   };
 
   if (loading || dataLoading) {
@@ -604,7 +739,10 @@ export default function UserDashboardNew() {
                 <h1>{t("dashboard.welcome_back", { name: (userData.profile?.display_name || user?.user_metadata?.display_name || user?.email?.split("@")[0] || "").split(" ")[0] })}</h1>
                 <p>{t("dashboard.welcome_copy")}</p>
               </div>
-              <button type="button" className="dashboard-shop-cta" onClick={() => navigate("/shop")}>{t("dashboard.start_shopping")} <ArrowUpRight size={16} /></button>
+              <div className="dashboard-welcome-actions">
+                <NotificationCenter userId={user?.id} audience="customer" onOpen={() => { setActiveSection("orders"); setSidebarOpen(false); }} />
+                <button type="button" className="dashboard-shop-cta" onClick={() => navigate("/shop")}>{t("dashboard.start_shopping")} <ArrowUpRight size={16} /></button>
+              </div>
             </section>
 
             <div className="stats-grid">
@@ -841,6 +979,7 @@ export default function UserDashboardNew() {
                         <div className="order-total-display">
                           {t("dashboard.total")}: <strong>{formatCurrency(order.total)}</strong>
                         </div>
+                        <button type="button" className="dashboard-invoice-download" onClick={() => downloadInvoice(order)}><Download size={15} />{t("dashboard.download_invoice")}</button>
                       </div>
                     </div>
                   );

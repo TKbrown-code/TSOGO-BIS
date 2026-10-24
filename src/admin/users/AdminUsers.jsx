@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
-import { CalendarDays, CheckCircle2, Clock3, Mail, Phone, Search, ShieldCheck, ShoppingBag, UserRound, Users, X, RefreshCw, ExternalLink } from "lucide-react";
+import { CalendarDays, CheckCircle2, Clock3, Mail, Phone, Search, ShieldCheck, ShoppingBag, UserRound, Users, X, RefreshCw, ExternalLink, Download, Ban, UserCheck, Trash2 } from "lucide-react";
+import { exportCsv } from "../utils/exportCsv";
+import { useModalMessage } from "../../context/ModalMessageContext";
 import "./AdminUsers.css";
 
 const formatMoney = (amount) => `${Number(amount || 0).toLocaleString()} XAF`;
@@ -14,6 +16,7 @@ const parseItems = (items) => {
 };
 
 export default function AdminUsers() {
+  const { showAlert, confirmDialog } = useModalMessage();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -51,6 +54,18 @@ export default function AdminUsers() {
     setDetailsLoading(false);
   }
 
+  async function toggleSuspension(user) {
+    const suspended = Boolean(user.banned_until && new Date(user.banned_until).getTime() > Date.now());
+    const action = suspended ? "restore_user" : "suspend_user";
+    const confirmed = await confirmDialog(`${suspended ? "Restore" : "Suspend"} ${user.display_name || user.email || "this customer"}'s account?`, `${suspended ? "Restore" : "Suspend"} account`, { confirmLabel: suspended ? "Restore account" : "Suspend account", tone: suspended ? "default" : "danger" });
+    if (!confirmed) return;
+    const { data, error } = await supabase.functions.invoke("manage-admins", { body: { action, user_id: user.user_id } });
+    if (error || data?.error) return showAlert(data?.error || error.message, "Account status was not changed", "error");
+    showAlert(suspended ? "The customer can sign in again." : "The customer account has been suspended.", suspended ? "Account restored" : "Account suspended", "success");
+    await loadUsers();
+    setSelectedUser((current) => current?.user_id === user.user_id ? { ...current, banned_until: data.banned_until } : current);
+  }
+
   const filteredUsers = useMemo(() => {
     const needle = searchQuery.trim().toLowerCase();
     return users.filter((user) => {
@@ -74,7 +89,7 @@ export default function AdminUsers() {
     <main className="admin-users-page">
       <header className="admin-users-heading">
         <div><span className="admin-users-eyebrow">CUSTOMER RELATIONSHIPS</span><h1>Users</h1><p>Explore customer accounts, order activity, and account preferences.</p></div>
-        <button type="button" className="users-refresh-button" onClick={loadUsers} disabled={loading}><RefreshCw size={15} className={loading ? "users-spin" : ""} />Refresh directory</button>
+        <div className="admin-users-heading-actions"><button type="button" className="users-refresh-button" onClick={() => exportCsv("tsogo-users.csv", filteredUsers)} disabled={!filteredUsers.length}><Download size={15} />Export users</button><button type="button" className="users-refresh-button" onClick={loadUsers} disabled={loading}><RefreshCw size={15} className={loading ? "users-spin" : ""} />Refresh directory</button></div>
       </header>
 
       <section className="admin-users-summary" aria-label="User summary">
@@ -104,7 +119,7 @@ export default function AdminUsers() {
             <td className="users-paid-total">{formatMoney(user.paid_total)}</td>
             <td><span className="users-language">{String(user.preferred_language || "fr").toUpperCase()}</span></td>
             <td>{formatDate(user.created_at)}</td>
-            <td><button type="button" className="users-view-button" onClick={() => viewUserDetails(user)}>View account</button></td>
+            <td><div className="users-row-actions"><button type="button" className="users-view-button" onClick={() => viewUserDetails(user)}>View account</button>{!user.is_admin&&<button type="button" className="users-suspend-button" title={user.banned_until?"Restore account":"Suspend account"} aria-label={user.banned_until?"Restore account":"Suspend account"} onClick={()=>toggleSuspension(user)}>{user.banned_until?<UserCheck size={15}/>:<Ban size={15}/>}</button>}</div></td>
           </tr>)}
         </tbody></table></div>}
       </section>
@@ -116,6 +131,7 @@ export default function AdminUsers() {
           <div><span>JOINED</span><strong>{formatDate(selectedUser.created_at)}</strong></div><div><span>ACCOUNT ID</span><strong className="admin-user-id">{selectedUser.user_id}</strong></div>
           <div><span>ORDER COUNT</span><strong>{selectedUser.order_count || 0}</strong></div><div><span>PAID ORDER VALUE</span><strong>{formatMoney(selectedUser.paid_total)}</strong></div>
         </div>
+        {!selectedUser.is_admin&&<button type="button" className="users-suspend-detail" onClick={()=>toggleSuspension(selectedUser)}>{selectedUser.banned_until?<UserCheck size={15}/>:<Ban size={15}/>} {selectedUser.banned_until?"Restore account":"Suspend account"}</button>}
         <section className="admin-user-order-history"><div className="admin-user-order-heading"><div><h3>Order history</h3><p>{userOrders.length} {userOrders.length === 1 ? "order" : "orders"}</p></div><ShoppingBag size={18} /></div>
           {detailsLoading ? <div className="admin-user-orders-loading"><i /><i /></div> : userOrders.length ? <div className="admin-user-orders-list">{userOrders.map((order) => <article key={order.checkout_id}>
             <div className="admin-user-order-top"><strong>Order #{order.checkout_id}</strong><span className={`admin-user-order-status status-${String(order.payment_status || order.status || "pending").toLowerCase()}`}>{String(order.payment_status || order.status || "pending").replaceAll("_", " ")}</span></div>

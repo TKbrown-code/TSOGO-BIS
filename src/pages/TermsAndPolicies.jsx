@@ -6,9 +6,11 @@ import { useSiteSettings } from "../context/SiteSettingsContext";
 import "../styles/terms-and-policies.css";
 
 export default function TermsAndPolicies() {
-  const { t } = useTranslation();
-  const { termsAndPolicies, loading } = useSiteSettings();
-  const sections = (termsAndPolicies || "").trim().split(/\n\s*\n/).filter(Boolean);
+  const { t, i18n } = useTranslation();
+  const { termsAndPolicies, termsAndPoliciesEn, termsAndPoliciesFr, loading } = useSiteSettings();
+  const language = i18n.resolvedLanguage?.slice(0, 2);
+  const policy = language === "fr" ? (termsAndPoliciesFr || termsAndPoliciesEn || termsAndPolicies) : (termsAndPoliciesEn || termsAndPolicies);
+  const sections = (policy || "").trim().split(/\n\s*\n/).filter(Boolean);
 
   return (
     <main className="terms-page">

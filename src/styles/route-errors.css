@@ -1,0 +1,10 @@
+.route-not-found,.app-error-page{min-height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 22px;text-align:center;background:#f3f1eb;color:#26352e}
+.route-not-found>span,.app-error-brand{color:#92724f;font-size:10px;font-weight:700;letter-spacing:.2em}
+.route-not-found h1,.app-error-page h1{margin:18px 0 8px;font:400 clamp(32px,6vw,48px)/1.1 Georgia,"Times New Roman",serif}
+.route-not-found p,.app-error-page p{max-width:420px;margin:0 0 24px;color:#687168;font-size:14px;line-height:1.65}
+.route-not-found a,.app-error-actions button,.app-error-actions a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border:1px solid #1e342b;border-radius:4px;background:#1e342b;color:#fffefa;text-decoration:none;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.app-error-page{min-height:100vh;background:radial-gradient(ellipse at top,#fffefa 0,#f3f1eb 65%)}
+.app-error-mark{display:grid;width:60px;height:60px;place-items:center;border:1px solid #d9c7ad;border-radius:50%;color:#92724f;font:28px Georgia,serif}
+.app-error-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+.app-error-actions button.secondary{background:transparent;color:#26352e;border-color:#d8d5cd}
+@media(max-width:600px){.route-not-found,.app-error-page{min-height:65vh}.route-not-found h1,.app-error-page h1{max-width:350px}}

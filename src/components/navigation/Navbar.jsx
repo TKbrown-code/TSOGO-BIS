@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ArrowUpRight, Menu, Search, ShoppingBag, UserRound, X } from "lucide-react";
+import { ArrowUpRight, Camera, Menu, Search, ShoppingBag, UserRound, X } from "lucide-react";
 import { useCart } from "../../context/CartContext";
 import { useUserContext } from "../../context/useUserContext";
 import { useCurrencyContext } from "../../context/CurrencyContext";
@@ -8,6 +8,7 @@ import { supabase } from "../../lib/supabase";
 import { useTranslation } from "react-i18next";
 import BrandMonogram from "../../assets/nav-monogram.png";
 import "../../styles/navbar-redesign.css";
+import "../../styles/nav-fr-layout.css";
 
 export default function Navbar() {
   const { cartItems, setCartOpen } = useCart();
@@ -76,7 +77,7 @@ export default function Navbar() {
   return (
     <>
       {!location.pathname.startsWith("/ProductDetails/") && <div className="nav-announcement"><span>TSOGO-BIS</span><i /> {t("navbar.announcement")} <Link to="/about">{t("navbar.discover_story")} <ArrowUpRight size={13} /></Link></div>}
-      <header className={`site-header ${menuOpen ? "menu-is-open" : ""}`}>
+      <header className={`site-header ${location.pathname === "/shop" ? "shop-page-header" : ""} ${menuOpen ? "menu-is-open" : ""}`}>
         <Link to="/" className="brand-lockup" aria-label={t("navbar.home_aria")} onClick={closeMenu}>
           <span className="brand-mark" aria-hidden="true"><span className="brand-mark-ring"><img className="brand-mark-monogram" src={BrandMonogram} alt="" /></span></span>
           <span className="brand-wordmark">TSOGO<span>-</span>BIS<small>{t("navbar.tagline")}</small></span>
@@ -84,6 +85,7 @@ export default function Navbar() {
         <div className={`site-search ${searchOpen ? "is-open" : ""}`} ref={searchRef}>
           <Search size={17} strokeWidth={1.8} />
           <input aria-label={t("navbar.search_products")} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder={t("navbar.search_placeholder")} />
+          <button type="button" className="site-image-search" aria-label={t("products.find_by_image")} title={t("products.find_by_image")} onClick={() => { setSearchQuery(""); setSearchOpen(false); setSuggestions([]); navigate("/shop", { state: { openImageFinder: true } }); }}><Camera size={17} strokeWidth={1.8} /></button>
           {searchQuery && <button className="search-clear" onClick={() => setSearchQuery("")} aria-label={t("common.clear")}><X size={15} /></button>}
           {(searchLoading || suggestions.length > 0 || (searchQuery && !searchLoading)) && <div className="search-results">
             {searchLoading ? <p className="search-message">{t("navbar.searching")}</p> : suggestions.length ? suggestions.map((product) => {

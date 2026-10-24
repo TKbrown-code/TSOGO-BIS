@@ -20,7 +20,7 @@ class Analytics {
   }
 
   init() {
-    if (this.isInitialized) return;
+    if (this.isInitialized || !this.hasAnalyticsConsent()) return;
     
     this.userId = this.generateUserId();
     this.isInitialized = true;
@@ -35,6 +35,11 @@ class Analytics {
   }
 
   trackEvent(eventName, properties = {}) {
+    if (!this.hasAnalyticsConsent()) {
+      this.isInitialized = false;
+      this.userId = null;
+      return;
+    }
     if (!this.isInitialized) this.init();
 
     const eventData = {
@@ -52,6 +57,14 @@ class Analytics {
     // Log for development
     if (import.meta.env.DEV) {
       console.log('Analytics Event:', eventName, eventData);
+    }
+  }
+
+  hasAnalyticsConsent() {
+    try {
+      return JSON.parse(localStorage.getItem('tsogo_cookie_consent') || 'null')?.analytics === true;
+    } catch {
+      return false;
     }
   }
 

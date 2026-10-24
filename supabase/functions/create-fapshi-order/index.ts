@@ -187,10 +187,93 @@ Deno.serve(async (req) => {
       return respond({ error: "Could not save your email language preference. Please retry checkout." }, 500, headers);
     }
     const { data: persistedCheckout, error: persistedCheckoutError } = await admin.from("checkouts")
-      .select("checkout_id,total,service_fee,amount_due,shipping_due_on_delivery,shipping_payment_mode,email_language,items,payment_status,payment_url,payment_reference")
+      .select("checkout_id,total,service_fee,amount_due,shipping_due_on_delivery,shipping_payment_mode,email_language,items,payment_status,payment_url,payment_reference,referral_credit_applied,coupon_code,coupon_discount")
       .eq("checkout_id", checkout.checkout_id).maybeSingle();
     if (persistedCheckoutError || !persistedCheckout) return respond({ error: "Could not load your order details." }, 500, headers);
     Object.assign(checkout, persistedCheckout);
+
+    const requestedCouponCode = typeof body.couponCode === "string" ? body.couponCode.trim().toUpperCase() : "";
+    let couponDiscount = Number(checkout.coupon_discount) || 0;
+    if (requestedCouponCode) {
+      const { data: managedCoupon, error: managedCouponError } = await admin.from("coupons")
+        .select("code,discount_type,discount_value,minimum_amount,product_id,category_id,subcategory_id,active,starts_at,expires_at")
+        .eq("code", requestedCouponCode).maybeSingle();
+      if (managedCouponError && managedCouponError.code !== "42P01") {
+        console.error("Could not verify managed coupon:", managedCouponError.message);
+        return respond({ error: "Could not verify this coupon. Please retry." }, 503, headers);
+      }
+      const { data: legacyPromotion, error: promotionError } = managedCoupon ? { data: null, error: null } : await admin.from("site_settings")
+        .select("coupon_code,coupon_discount_type,coupon_discount_value,coupon_minimum,coupon_active").maybeSingle();
+      if (promotionError) {
+        console.error("Could not verify checkout coupon:", promotionError.message);
+        return respond({ error: "Could not verify this coupon. Please retry." }, 503, headers);
+      }
+      const promotion = managedCoupon || (legacyPromotion ? {
+        code: legacyPromotion.coupon_code,
+        discount_type: legacyPromotion.coupon_discount_type,
+        discount_value: legacyPromotion.coupon_discount_value,
+        minimum_amount: legacyPromotion.coupon_minimum,
+        product_id: null,
+        category_id: null,
+        subcategory_id: null,
+        active: legacyPromotion.coupon_active,
+      } : null);
+      const codeIsValid = promotion?.active === true
+        && String(promotion.code || "").trim().toUpperCase() === requestedCouponCode
+        && Number(promotion.discount_value) > 0
+        && ["percent", "fixed"].includes(promotion.discount_type)
+        && (!promotion.starts_at || new Date(promotion.starts_at).getTime() <= Date.now())
+        && (!promotion.expires_at || new Date(promotion.expires_at).getTime() > Date.now());
+      const checkoutItemsForCoupon = Array.isArray(checkout.items) ? checkout.items : [];
+      let scopedProductIds: Set<number> | null = null;
+      if (promotion?.product_id || promotion?.category_id || promotion?.subcategory_id) {
+        let productQuery = admin.from("products").select("id");
+        if (promotion.product_id) productQuery = productQuery.eq("id", promotion.product_id);
+        else if (promotion.category_id) productQuery = productQuery.eq("category_id", promotion.category_id);
+        else productQuery = productQuery.eq("subcategory_id", promotion.subcategory_id);
+        const { data: scopedProducts, error: scopeError } = await productQuery;
+        if (scopeError) {
+          console.error("Could not load coupon product scope:", scopeError.message);
+          return respond({ error: "Could not verify this coupon's product scope." }, 503, headers);
+        }
+        scopedProductIds = new Set((scopedProducts || []).map((product: any) => Number(product.id)));
+      }
+      const eligibleItems = scopedProductIds
+        ? checkoutItemsForCoupon.filter((item: any) => scopedProductIds?.has(Number(item.product_id?.id ?? item.product_id)))
+        : checkoutItemsForCoupon;
+      const merchandiseSubtotal = checkoutItemsForCoupon
+        .reduce((sum: number, item: any) => sum + (Number(item.price) || 0) * Math.max(Number(item.quantity) || 1, 1), 0);
+      const eligibleSubtotal = eligibleItems
+        .reduce((sum: number, item: any) => sum + (Number(item.price) || 0) * Math.max(Number(item.quantity) || 1, 1), 0);
+      const isRepriced = checkout.referral_credit_applied !== null && checkout.referral_credit_applied !== undefined
+        || checkout.payment_url || checkout.payment_reference;
+      if (!codeIsValid || !eligibleItems.length || eligibleSubtotal < Number(promotion?.minimum_amount || 0)) {
+        await admin.from("checkouts").update({ status: "cancelled", payment_status: "failed" })
+          .eq("checkout_id", checkout.checkout_id).eq("payment_status", "initiating");
+        return respond({ error: "This coupon is unavailable or your order does not meet its minimum spend." }, 400, headers);
+      }
+      if (couponDiscount > 0 && checkout.coupon_code !== requestedCouponCode) {
+        return respond({ error: "A different coupon is already attached to this order. Refresh checkout and try again." }, 409, headers);
+      }
+      if (couponDiscount === 0) {
+        if (isRepriced) return respond({ error: "This checkout has already been priced. Refresh checkout to apply a coupon." }, 409, headers);
+        couponDiscount = promotion.discount_type === "fixed"
+          ? Math.min(eligibleSubtotal, Number(promotion.discount_value))
+          : Math.min(eligibleSubtotal, Math.round(eligibleSubtotal * Number(promotion.discount_value) / 100));
+        const { error: couponSaveError } = await admin.from("checkouts").update({
+          total: Math.max(0, Number(checkout.total) - couponDiscount),
+          coupon_code: requestedCouponCode,
+          coupon_discount: couponDiscount,
+        }).eq("checkout_id", checkout.checkout_id);
+        if (couponSaveError) {
+          console.error("Could not save coupon discount:", couponSaveError.message);
+          return respond({ error: "Could not save your coupon. Please retry checkout." }, 500, headers);
+        }
+        checkout.total = Math.max(0, Number(checkout.total) - couponDiscount);
+        checkout.coupon_code = requestedCouponCode;
+        checkout.coupon_discount = couponDiscount;
+      }
+    }
 
     const { data: checkoutTotal, error: creditError } = await admin.rpc("apply_referral_store_credit", {
       p_checkout_id: Number(checkout.checkout_id),
@@ -207,7 +290,8 @@ Deno.serve(async (req) => {
     const subtotal = Math.max(0, (Number(checkout.total) || 0) - existingFee);
     const checkoutItems = Array.isArray(checkout.items) ? checkout.items : [];
     const merchandiseSubtotal = checkoutItems.reduce((sum: number, item: any) => sum + (Number(item.price) || 0) * Math.max(Number(item.quantity) || 1, 1), 0);
-    const serviceFee = isWhatsApp ? 0 : existingFee || (merchandiseSubtotal > 100000 ? Math.round(merchandiseSubtotal * 0.03) : 0);
+    const netMerchandiseSubtotal = Math.max(0, merchandiseSubtotal - couponDiscount);
+    const serviceFee = isWhatsApp ? 0 : existingFee || (netMerchandiseSubtotal > 100000 ? Math.round(netMerchandiseSubtotal * 0.03) : 0);
     const amountDue = Math.max(0, (Number(checkoutTotal.amount_due) || 0) - existingFee) + serviceFee;
     const { error: feeError } = await admin.from("checkouts").update({
       total: subtotal + serviceFee,

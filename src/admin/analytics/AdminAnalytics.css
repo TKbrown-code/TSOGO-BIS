@@ -11,6 +11,7 @@
 .analytics-refresh:hover { background:#f1eee7;transform:translateY(-1px); }
 .analytics-refresh:disabled { opacity:.65;cursor:wait; }
 .analytics-refresh .is-refreshing { animation:spin .8s linear infinite; }
+.analytics-heading-actions .analytics-refresh { white-space:nowrap; }
 .analytics-error { padding:13px 15px;color:#8b4b37;background:#fff1eb;border:1px solid #f1d4c7;border-radius:10px;font-size:12px;line-height:1.5; }
 .analytics-metrics-grid { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px; }
 .analytics-metric { min-width:0;min-height:112px;display:flex;align-items:flex-start;gap:12px;padding:16px;background:var(--analytics-paper);border:1px solid var(--analytics-line);border-radius:14px;box-shadow:0 8px 24px rgba(40,48,41,.03); }

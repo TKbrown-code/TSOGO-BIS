@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import React, { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { Routes, Route, useLocation, Link } from "react-router-dom";
 import Navbar from "./components/navigation/Navbar";
 import Footer from "./components/navigation/Footer";
 import Home from "./pages/Home";       // create Home page
@@ -24,11 +24,13 @@ import Languagebtn from "./components/navigation/languagebtn";
 import WhatsAppButton from "./components/navigation/whatsappbtn";
 import ErrorBoundary from "./components/shared/ErrorBoundary";
 import CookieConsent from "./components/shared/CookieConsent";
+import StoreAdPopup from "./components/content/StoreAdPopup";
 import BackToTop from "./components/navigation/BackToTop";
 import Fapshi from "./pages/Fapshi";
 import TermsAndPolicies from "./pages/TermsAndPolicies";
 import ResetPassword from "./pages/ResetPassword";
 import { updatePageMetadata } from "./utils/seo";
+import "./styles/route-errors.css";
 
 function AppContent() {
   const location = useLocation();
@@ -36,6 +38,12 @@ function AppContent() {
   const isProductRoute = location.pathname.startsWith("/ProductDetails/");
   const productContentReady = productReadyPath === location.pathname;
   const handleProductReady = useCallback(() => setProductReadyPath(location.pathname), [location.pathname]);
+  useLayoutEffect(() => {
+    const previousRestoration = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    return () => { window.history.scrollRestoration = previousRestoration; };
+  }, [location.pathname, location.search]);
   useEffect(() => {
     updatePageMetadata(location.pathname);
     if (!isProductRoute) setProductReadyPath(null);
@@ -86,9 +94,9 @@ function AppContent() {
         <Route path="/track" element={<TrackOrder/>}/>
         <Route path="/track/:trackingId" element={<TrackOrder/>}/>
         <Route path="/fapshi" element={<Fapshi/>}/>
+        <Route path="*" element={<main className="route-not-found"><span>TSOGO-BIS</span><h1>We can’t find that page</h1><p>The page may have moved, or the address may be incorrect.</p><Link to="/">Return to the home page</Link></main>} />
       </Routes>
       
-      {/* Only show Cart, Footer, Language button, and WhatsApp on non-admin and non-dashboard routes */}
       {!isAdminRoute && !isDashboardRoute && (!isProductRoute || productContentReady) && (
         <>
           <Cart />
@@ -97,8 +105,8 @@ function AppContent() {
         </>
       )}
       
-      {/* Cookie Consent Banner - Shows on all pages */}
-      <CookieConsent />
+      {!isAdminRoute && <CookieConsent />}
+      {!isAdminRoute && !isDashboardRoute && <StoreAdPopup />}
       {!isAdminRoute && <Languagebtn/>}
       {!isAdminRoute && <BackToTop />}
       <AppModal />

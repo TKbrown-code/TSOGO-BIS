@@ -46,6 +46,7 @@
 .users-paid-total { color:var(--users-ink)!important; font-weight:700; white-space:nowrap; }
 .users-language { display:inline-flex; min-width:31px; height:23px; align-items:center; justify-content:center; border:1px solid var(--users-border); border-radius:6px; background:#faf9f5; color:#586158; font-size:9px; font-weight:750; }
 .users-view-button { min-height:31px; padding:0 9px; font-size:10px; white-space:nowrap; }
+.users-row-actions{display:flex;align-items:center;gap:6px}.users-suspend-button,.users-suspend-detail{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:31px;padding:0 9px;border:1px solid #e5d4cb;border-radius:7px;background:#fffaf7;color:#94503d;cursor:pointer}.users-suspend-detail{margin:0 0 16px 2px;padding:0 13px;min-height:38px;font-size:12px;font-weight:650}
 .admin-users-state { display:grid; min-height:240px; align-content:center; justify-items:center; padding:28px; text-align:center; }
 .admin-users-state > span { display:grid; width:47px; height:47px; place-items:center; margin-bottom:12px; border:1px solid var(--users-border); border-radius:50%; background:var(--users-paper); color:var(--users-brass); }
 .admin-users-state h3 { margin:0 0 7px; color:var(--users-ink); font:600 22px Georgia,serif; }

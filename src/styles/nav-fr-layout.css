@@ -1,0 +1,8 @@
+@media (min-width:1025px) and (max-width:1150px){
+  .site-header{grid-template-columns:minmax(130px,auto) minmax(170px,190px) minmax(0,1fr) auto;gap:8px;padding-inline:14px}
+  .site-search{width:100%;min-width:0}
+  .primary-nav{min-width:0;justify-content:center;gap:clamp(5px,.75vw,9px);padding:0 2px}
+  .primary-nav>a{font-size:9px;white-space:nowrap}
+  .header-actions{gap:9px}
+  .brand-wordmark small{display:none}
+}

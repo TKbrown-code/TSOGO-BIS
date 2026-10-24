@@ -4,6 +4,7 @@ import { ArrowRight, BadgeCheck, Globe2, PackageCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import Header from "../components/content/Hero";
 import FeaturedProducts from "../components/catalog/FeaturedProducts";
+import ReferralAwarenessPopup from "../components/content/ReferralAwarenessPopup";
 import "../styles/homepage.css";
 
 const assurances = [
@@ -17,6 +18,7 @@ export default function HomePage() {
   return (
     <main className="home-page">
       <Header />
+      <ReferralAwarenessPopup />
       <FeaturedProducts />
       <section className="home-intro" aria-label={t("home_page.approach_aria")}>
         <div className="home-intro-heading">

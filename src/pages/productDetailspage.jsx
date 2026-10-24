@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
@@ -31,6 +31,9 @@ export default function ProductDetailsPage({ onReady }) {
   const [images, setImages] = useState([]);
   const [imageStates, setImageStates] = useState({});
   const [currentImage, setCurrentImage] = useState(0);
+  const carouselTouchStart = useRef(null);
+  const lastCarouselSwipeAt = useRef(0);
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [selectedColor, setSelectedColor] = useState("");
   const [quantities, setQuantities] = useState({});
   const [selectedShipping, setSelectedShipping] = useState("");
@@ -53,7 +56,6 @@ export default function ProductDetailsPage({ onReady }) {
   const [checkingPurchase, setCheckingPurchase] = useState(true);
   const [hasReviewed, setHasReviewed] = useState(false);
   const [reviewOrderItemId, setReviewOrderItemId] = useState(null);
-  const [reviewSecondsLeft, setReviewSecondsLeft] = useState(0);
   const [productError, setProductError] = useState(false);
 
   // Load product data
@@ -220,8 +222,7 @@ export default function ProductDetailsPage({ onReady }) {
           return;
         }
 
-        const eligibleCheckouts = (checkouts || []).filter((checkout) => checkout.order_id && checkout.delivered_at &&
-          Date.now() < new Date(checkout.delivered_at).getTime() + 60_000);
+        const eligibleCheckouts = (checkouts || []).filter((checkout) => checkout.order_id);
         const orderIds = eligibleCheckouts.map((checkout) => checkout.order_id);
         if (orderIds.length) {
           const { data: orderItems, error: itemsError } = await supabase
@@ -234,8 +235,6 @@ export default function ProductDetailsPage({ onReady }) {
           if (matchingItem) {
             setReviewOrderItemId(matchingItem.id);
             setHasPurchased(true);
-            const matchingCheckout = eligibleCheckouts.find((checkout) => checkout.order_id === matchingItem.order_id);
-            setReviewSecondsLeft(Math.max(0, Math.ceil((new Date(matchingCheckout.delivered_at).getTime() + 60_000 - Date.now()) / 1000)));
           }
         }
 
@@ -365,6 +364,26 @@ export default function ProductDetailsPage({ onReady }) {
 
   const prevImage = () => {
     setCurrentImage((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  const handleCarouselTouchStart = (event) => {
+    const touch = event.touches[0];
+    carouselTouchStart.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleCarouselTouchEnd = (event) => {
+    const start = carouselTouchStart.current;
+    carouselTouchStart.current = null;
+    if (!start || images.length < 2) return;
+
+    const touch = event.changedTouches[0];
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    if (Math.abs(deltaX) < 45 || Math.abs(deltaX) < Math.abs(deltaY) * 1.2) return;
+
+    lastCarouselSwipeAt.current = Date.now();
+    if (deltaX < 0) nextImage();
+    else prevImage();
   };
 
   // Add to cart handler
@@ -641,15 +660,6 @@ export default function ProductDetailsPage({ onReady }) {
     };
   }, []);
 
-  // Hooks must run on every render, including while the product is loading.
-  useEffect(() => {
-    if (!hasPurchased || reviewSecondsLeft <= 0) return undefined;
-    const timerId = window.setInterval(() => {
-      setReviewSecondsLeft((remaining) => Math.max(0, remaining - 1));
-    }, 1000);
-    return () => window.clearInterval(timerId);
-  }, [hasPurchased, reviewSecondsLeft > 0]);
-
   useEffect(() => {
     const hasEditableReview = user?.id && reviews.some((review) => review.user_id === user.id && Date.now() < new Date(review.created_at).getTime() + 180_000);
     if (!hasEditableReview) return undefined;
@@ -662,6 +672,15 @@ export default function ProductDetailsPage({ onReady }) {
     }, 1000);
     return () => window.clearInterval(timerId);
   }, [reviews, user?.id]);
+
+  useEffect(() => {
+    if (!imageViewerOpen) return undefined;
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setImageViewerOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [imageViewerOpen]);
 
   if (!product) {
     if (!productError) return <main className="product-detail-skeleton" aria-label={t("product_details.loading_product")} aria-busy="true" style={{ minHeight: "calc(100vh - 60px)" }}><div className="detail-skeleton-gallery"><div className="detail-skeleton-image" /><div className="detail-skeleton-thumbnails"><i /><i /><i /><i /></div></div><div className="detail-skeleton-info"><i className="detail-skeleton-eyebrow" /><i className="detail-skeleton-title" /><i className="detail-skeleton-copy" /><i className="detail-skeleton-copy short" /><div className="detail-skeleton-meta"><i /><i /><i /></div><i className="detail-skeleton-option" /><i className="detail-skeleton-row" /><i className="detail-skeleton-select" /><i className="detail-skeleton-total" /><i className="detail-skeleton-button" /></div></main>;
@@ -687,7 +706,6 @@ export default function ProductDetailsPage({ onReady }) {
   // Helper functions for reviews
   const renderStars = (value) => <span className="review-star-row" aria-label={t("product_details.rating_out_of_five", { rating: value })}>{Array.from({ length: 5 }, (_, index) => <Star key={index} size={15} fill={index < Math.round(value) ? "currentColor" : "none"} />)}</span>;
   const canEdit = (review) => Boolean(user?.id && review.user_id === user.id && reviewClock < new Date(review.created_at).getTime() + 180_000);
-  const reviewWindowOpen = hasPurchased && reviewSecondsLeft > 0;
 
   // Render product details
   return (
@@ -695,7 +713,11 @@ export default function ProductDetailsPage({ onReady }) {
       {/* Left side - Product Images */}
       <div className="right">
         <div className="premium-gallery">
-          <div className="carousel-container">
+          <div
+            className="carousel-container"
+            onTouchStart={handleCarouselTouchStart}
+            onTouchEnd={handleCarouselTouchEnd}
+          >
             <motion.div 
               className="image-view"
               key={currentImage}
@@ -710,22 +732,38 @@ export default function ProductDetailsPage({ onReady }) {
                 className={`zoomable-img ${imageStates[images[currentImage]?.path]?.loaded ? 'loaded' : 'loading'} ${imageStates[images[currentImage]?.path]?.error ? 'error' : ''}`}
                 onLoad={() => handleImageLoad(images[currentImage]?.path)}
                 onError={(e) => handleImageError(images[currentImage]?.path, e)}
-                onClick={() => images[currentImage]?.url && window.open(images[currentImage]?.url, '_blank', 'noopener,noreferrer')}
+                onClick={() => {
+                  if (Date.now() - lastCarouselSwipeAt.current < 500) return;
+                  setImageViewerOpen(true);
+                }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setImageViewerOpen(true);
+                  }
+                }}
+                aria-label={t("product_details.open_image", { defaultValue: "Open image viewer" })}
               />
             </motion.div>
             
             {/* Navigation Arrows */}
             <button 
+              type="button"
               className="carousel-arrow left-arrow" 
               onClick={prevImage}
               disabled={images.length <= 1}
+              aria-label="Previous product image"
             >
               ‹
             </button>
             <button 
+              type="button"
               className="carousel-arrow right-arrow" 
               onClick={nextImage}
               disabled={images.length <= 1}
+              aria-label="Next product image"
             >
               ›
             </button>
@@ -734,6 +772,15 @@ export default function ProductDetailsPage({ onReady }) {
           {/* Thumbnails */}
           {images.length > 1 && <div className="product-thumbnails" aria-label="Product photos">{images.map((img, idx) => <button type="button" key={`${img.url}-${idx}`} className={idx === currentImage ? "is-active" : ""} onClick={() => setCurrentImage(idx)} aria-label={`Show product photo ${idx + 1}`}><img src={img.url || FallBackImage} alt="" /></button>)}</div>}
         </div>
+
+        {imageViewerOpen && (
+          <div className="product-image-lightbox" role="presentation" onClick={() => { if (Date.now() - lastCarouselSwipeAt.current >= 500) setImageViewerOpen(false); }} onTouchStart={handleCarouselTouchStart} onTouchEnd={handleCarouselTouchEnd}>
+            <button type="button" className="product-image-lightbox-close" onClick={() => setImageViewerOpen(false)} aria-label={t("common.close", { defaultValue: "Close" })}>×</button>
+            {images.length > 1 && <button type="button" className="product-image-lightbox-arrow previous" onClick={(event) => { event.stopPropagation(); prevImage(); }} aria-label="Previous product image">‹</button>}
+            <img src={images[currentImage]?.url || FallBackImage} alt={images[currentImage]?.alt || product.name} onClick={(event) => event.stopPropagation()} />
+            {images.length > 1 && <button type="button" className="product-image-lightbox-arrow next" onClick={(event) => { event.stopPropagation(); nextImage(); }} aria-label="Next product image">›</button>}
+          </div>
+        )}
 
         {/* Reviews Section */}
         <div className="premium-reviews">
@@ -869,12 +916,12 @@ export default function ProductDetailsPage({ onReady }) {
                 </div>
               ) : hasReviewed ? (
                 <div className="review-window-note" role="status">{t("product_details.review_already_submitted", { defaultValue: "You have already left a review for this product." })}</div>
-              ) : hasPurchased && reviewWindowOpen ? (
+              ) : hasPurchased ? (
                 <form
                   className="review-form"
                   onSubmit={async (e) => {
                     e.preventDefault();
-                    if (!reviewWindowOpen || hasReviewed) {
+                    if (!hasPurchased || hasReviewed) {
                       return;
                     }
                     if (!newReview.comment.trim()) {
@@ -919,7 +966,6 @@ export default function ProductDetailsPage({ onReady }) {
                   }}
                 >
                   <h3>{t("product_details.write_review")}</h3>
-                  <p className="review-window-countdown">{t("product_details.review_post_window", { seconds: reviewSecondsLeft, defaultValue: `You have ${reviewSecondsLeft} seconds to post one review for this delivered item. You can update or delete it for three minutes after posting.` })}</p>
                   <div className="rating-input">
                     <span>{t("product_details.rating_label")}: </span>
                     {[1, 2, 3, 4, 5].map((star) => (
@@ -947,14 +993,12 @@ export default function ProductDetailsPage({ onReady }) {
                   />
                   <button className="review-btn" type="submit">{t("product_details.submit_review")}</button>
                 </form>
-              ) : hasPurchased ? (
-                <div className="review-window-note" role="status">Your one-minute review window has ended.</div>
               ) : (
-                <div className="review-window-note" role="status">Reviews are available after this product has been delivered to you.</div>
+                <div className="review-window-note" role="status">{t("product_details.review_purchase_required", { defaultValue: "Only customers who have received this product can leave a review." })}</div>
               )}
             </>
           )}
-          {!user && <div className="review-window-note" role="status">Sign in to leave a review after your order is delivered.</div>}
+          {!user && <div className="review-window-note" role="status">{t("product_details.review_sign_in_required", { defaultValue: "Sign in after receiving this product to leave a review." })}</div>}
         </div>
       </div>
 

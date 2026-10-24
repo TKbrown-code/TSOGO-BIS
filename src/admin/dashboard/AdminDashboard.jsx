@@ -129,25 +129,6 @@ export default function AdminDashboard({ onNavigate = () => {} }) {
 
   useEffect(() => { loadOverview(); }, [loadOverview]);
 
-  // New checkout inserts should appear in the dashboard's recent-orders list
-  // and order metrics without waiting for the admin to refresh the page.
-  useEffect(() => {
-    let refreshTimer;
-    const scheduleRefresh = () => {
-      window.clearTimeout(refreshTimer);
-      refreshTimer = window.setTimeout(() => loadOverview(true), 120);
-    };
-    const channel = supabase
-      .channel("admin-dashboard-new-orders")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "checkouts" }, scheduleRefresh)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "checkouts" }, scheduleRefresh)
-      .subscribe();
-    return () => {
-      window.clearTimeout(refreshTimer);
-      supabase.removeChannel(channel);
-    };
-  }, [loadOverview]);
-
   const metrics = useMemo(() => {
     const paid = overview.periodOrders.filter((order) => paidStatuses.has(statusOf(order)));
     const pending = overview.periodOrders.filter((order) => statusOf(order) === "pending").length;

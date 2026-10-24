@@ -1,0 +1,14 @@
+.checkout-coupon-form{display:grid;gap:8px;margin:14px 0;padding:14px;border:1px solid #e6e1d7;border-radius:6px;background:#faf9f6}
+.checkout-coupon-form>label{color:#34443a;font-size:12px;font-weight:700}
+.checkout-coupon-form>div{display:flex;gap:8px}
+.checkout-coupon-form input{flex:1;min-width:0;min-height:40px;padding:0 11px;border:1px solid #dedbd2;border-radius:4px;background:#fffefa;color:#26352e;font:inherit;font-size:12px}
+.checkout-coupon-form button{min-width:82px;padding:0 13px;border:1px solid #1e342b;border-radius:4px;background:#1e342b;color:#fffefa;font:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.checkout-coupon-form button:disabled{opacity:.5;cursor:not-allowed}
+.checkout-coupon-form p{margin:0;font-size:11px;line-height:1.45}
+.checkout-coupon-form p.success,.checkout-coupon-discount{color:#386549}
+.checkout-coupon-form p.error{color:#a34838}
+.coupon-admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.admin-settings .coupon-admin-grid input,.admin-settings .coupon-admin-grid select{min-width:0}
+.coupon-active-toggle{display:flex;align-items:center;gap:8px;color:#39483f;font-size:12px;font-weight:600}
+.coupon-active-toggle input{width:16px;height:16px;accent-color:#1e342b}
+@media(max-width:480px){.checkout-coupon-form>div{align-items:stretch;flex-direction:column}.checkout-coupon-form button{min-height:40px}.coupon-admin-grid{grid-template-columns:1fr}}

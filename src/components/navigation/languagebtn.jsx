@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Check, ChevronUp, Globe } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import Cookies from "js-cookie";
+import { canStorePreferences } from "../../utils/cookieConsent";
 import "../../styles/languagebtn.css";
 
 const languages = [
@@ -42,8 +43,8 @@ export default function FloatingLangButton() {
       const preferred = profile?.preferred_language;
       if (isSupported(preferred)) {
         await i18n.changeLanguage(preferred);
-        localStorage.setItem("language", preferred);
-        Cookies.set("language", preferred, { expires: 365 });
+        if (canStorePreferences()) localStorage.setItem("language", preferred);
+        Cookies.remove("language");
       } else {
         const language = isSupported(storedLanguage) ? storedLanguage : "fr";
         await i18n.changeLanguage(language);
@@ -81,8 +82,8 @@ export default function FloatingLangButton() {
 
   const handleChange = async (newLang) => {
     await i18n.changeLanguage(newLang);
-    localStorage.setItem("language", newLang);
-    Cookies.set("language", newLang, { expires: 365 });
+    if (canStorePreferences()) localStorage.setItem("language", newLang);
+    Cookies.remove("language");
     setIsOpen(false);
 
     let activeUserId = userId;

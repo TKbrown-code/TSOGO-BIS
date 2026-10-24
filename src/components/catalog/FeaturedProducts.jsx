@@ -5,6 +5,7 @@ import { supabase } from "../../lib/supabase";
 import { useCart } from "../../context/CartContext";
 import { useUserContext } from "../../context/useUserContext";
 import "../../styles/featured-products.css";
+import "../../styles/featured-products-fixes.css";
 import { useModalMessage } from "../../context/ModalMessageContext";
 import { useTranslation } from "react-i18next";
 

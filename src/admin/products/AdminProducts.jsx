@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { useModalMessage } from "../../context/ModalMessageContext";
 import { supabase } from "../../lib/supabase";
 import AdminProductFormEnhanced from "./AdminProductFormEnhanced";
-import { ArrowUpRight, Boxes, CheckCircle2, CircleDollarSign, Edit3, ExternalLink, Filter, Package, Plus, RefreshCw, Search, Trash2, XCircle } from "lucide-react";
+import { ArrowUpRight, Boxes, CheckCircle2, CircleDollarSign, Edit3, ExternalLink, Filter, Package, Plus, RefreshCw, Search, Trash2, XCircle, Download } from "lucide-react";
+import { exportCsv } from "../utils/exportCsv";
 import "./AdminProducts.css";
 import Fallbackimage from "../../assets/imagefallback.jpg";
 
@@ -107,6 +108,7 @@ export default function AdminProducts() {
       <header className="products-heading">
         <div><span className="products-eyebrow">CATALOG MANAGEMENT</span><h1>Products</h1><p>Keep your catalog, inventory, and storefront listings in sync.</p></div>
         <div className="products-heading-actions">
+          <button type="button" className="products-refresh" onClick={() => exportCsv("tsogo-products.csv", products.map((product) => ({ ...product, images: product.images?.map((image) => image.publicUrl || image.image_url), product_tags: product.product_tags?.map((item) => item.tag) })))} disabled={!products.length}><Download size={15} />Export products</button>
           <button type="button" className="products-refresh" onClick={() => loadProducts(true)} disabled={refreshing}><RefreshCw size={16} className={refreshing ? "is-refreshing" : ""} />{refreshing ? "Refreshing" : "Refresh"}</button>
           <button type="button" onClick={() => setEditing({})} className="btn-new-product"><Plus size={17} />Add product</button>
         </div>

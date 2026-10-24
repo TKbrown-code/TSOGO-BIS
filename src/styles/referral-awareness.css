@@ -1,0 +1,10 @@
+.referral-awareness{position:fixed;right:22px;bottom:218px;z-index:45;width:min(365px,calc(100vw - 32px));display:grid;grid-template-columns:40px minmax(0,1fr);gap:13px;padding:18px 40px 18px 16px;border:1px solid #ddd3c4;border-radius:8px;background:#fffefa;color:#26352e;box-shadow:0 12px 36px #17231f24;animation:referral-pop-in .28s ease both}
+.referral-awareness-icon{display:grid;width:38px;height:38px;place-items:center;border-radius:50%;background:#edf2eb;color:#806548}
+.referral-awareness-copy strong{display:block;margin:1px 0 5px;font:500 17px Georgia,serif}
+.referral-awareness-copy p{margin:0 0 8px;color:#687168;font-size:11px;line-height:1.5}
+.referral-awareness-copy a{display:inline-flex;align-items:center;gap:4px;color:#1e342b;font-size:11px;font-weight:700;text-decoration:none}
+.referral-awareness-close{position:absolute;top:10px;right:10px;display:grid;width:28px;height:28px;place-items:center;border:0;border-radius:50%;background:transparent;color:#657067;cursor:pointer}
+.referral-awareness-close:hover{background:#f1eee7}
+@keyframes referral-pop-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:600px){.referral-awareness{right:14px;bottom:210px;width:min(340px,calc(100vw - 28px));padding:15px 38px 15px 13px}}
+@media(prefers-reduced-motion:reduce){.referral-awareness{animation:none}}

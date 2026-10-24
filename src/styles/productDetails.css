@@ -940,6 +940,7 @@
   min-height: 0;
   flex: 0 0 auto;
   isolation: isolate;
+  touch-action: pan-y;
 }
 .premium-gallery .image-view {
   position: absolute;
@@ -987,6 +988,49 @@
   border-radius: 50%;
   object-fit: cover;
 }
+.premium-gallery .image-view img { cursor: zoom-in; }
+.product-image-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  grid-template-columns: minmax(48px, 1fr) minmax(0, min(1000px, 82vw)) minmax(48px, 1fr);
+  align-items: center;
+  justify-items: center;
+  padding: 56px 18px;
+  background: rgba(16, 22, 19, 0.92);
+  touch-action: pan-y;
+}
+.product-image-lightbox > img {
+  grid-column: 2;
+  grid-row: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: calc(100vh - 112px);
+  object-fit: contain;
+  cursor: default;
+}
+.product-image-lightbox-close,
+.product-image-lightbox-arrow {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(255, 254, 250, 0.45);
+  border-radius: 50%;
+  color: #26352e;
+  background: #fffefa;
+  font: 30px/1 Georgia, serif;
+  cursor: pointer;
+}
+.product-image-lightbox-close { top: 18px; right: 18px; }
+.product-image-lightbox-arrow { top: 50%; transform: translateY(-50%); }
+.product-image-lightbox-arrow.previous { left: 20px; }
+.product-image-lightbox-arrow.next { right: 20px; }
 .premium-reviews { display: block; min-width: 0; margin: 0; }
 @media (max-width: 960px) {
   .premium-details-container { grid-template-columns: minmax(0, 1fr); max-width: 760px; margin-inline: auto; padding: 0 18px 48px; }
@@ -999,6 +1043,33 @@
   .premium-details-container > .premium-info { padding: 19px 15px; }
   .premium-gallery { padding: 8px; gap: 9px; }
   .premium-gallery .carousel-container { height: min(420px, calc(100vw - 48px)); min-height: 280px; }
+  .premium-gallery .carousel-arrow {
+    box-sizing: border-box;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border: 1px solid #d9d4c9;
+    background: rgba(255, 254, 250, 0.97);
+    color: #26372f;
+    font-size: 27px;
+    line-height: 1;
+    box-shadow: 0 3px 12px rgba(23, 35, 31, 0.16);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .premium-gallery .carousel-arrow:hover:not(:disabled) {
+    background: #26372f;
+    color: #fffefa;
+  }
+  .premium-gallery .carousel-arrow:focus-visible {
+    outline: 2px solid #735e44;
+    outline-offset: 2px;
+  }
+  .premium-gallery .left-arrow { left: 10px; }
+  .premium-gallery .right-arrow { right: 10px; }
+  .product-image-lightbox { grid-template-columns: 42px minmax(0, 1fr) 42px; padding: 54px 8px; }
+  .product-image-lightbox > img { max-height: calc(100vh - 108px); }
+  .product-image-lightbox-arrow.previous { left: 8px; }
+  .product-image-lightbox-arrow.next { right: 8px; }
 }
 
 /* Compact horizontal product facts and a clear one-minute review window. */

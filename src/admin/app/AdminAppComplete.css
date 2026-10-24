@@ -615,3 +615,6 @@
     min-height: 34px;
   }
 }
+/* Keep page-level export actions grouped beside refresh controls. */
+.orders-heading-actions,.tracking-heading-actions,.admin-users-heading-actions,.reviews-heading-actions,.referrals-heading-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.orders-delete-all{border-color:#efd4cf!important;color:#a54c3f!important}.orders-delete-all:hover{background:#fff3f0!important}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import Cookies from "js-cookie";
+import { canStorePreferences } from "../../utils/cookieConsent";
 import { useCurrencyContext } from "../../context/CurrencyContext";
 import "../../styles/LanguageCurrencySwitcher.css";
 
@@ -25,8 +26,8 @@ export default function LanguageCurrencySwitcher() {
 
   // Load saved preferences on mount
   useEffect(() => {
-    const savedLanguage = Cookies.get("language");
-    const savedCurrency = Cookies.get("currency");
+    const savedLanguage = localStorage.getItem("language") || Cookies.get("language");
+    const savedCurrency = localStorage.getItem("currency") || Cookies.get("currency");
 
     if (savedLanguage && savedLanguage !== i18n.language) {
       i18n.changeLanguage(savedLanguage);
@@ -35,17 +36,19 @@ export default function LanguageCurrencySwitcher() {
     if (savedCurrency && savedCurrency !== currency) {
       setCurrency(savedCurrency);
     }
-  }, []);
+    Cookies.remove("language");
+    Cookies.remove("currency");
+  }, [currency, i18n, setCurrency]);
 
   const handleLanguageChange = (langCode) => {
     i18n.changeLanguage(langCode);
-    Cookies.set("language", langCode, { expires: 365 });
+    if (canStorePreferences()) localStorage.setItem("language", langCode);
     setShowDropdown(false);
   };
 
   const handleCurrencyChange = (currencyCode) => {
     setCurrency(currencyCode);
-    Cookies.set("currency", currencyCode, { expires: 365 });
+    if (canStorePreferences()) localStorage.setItem("currency", currencyCode);
     setShowDropdown(false);
   };
 

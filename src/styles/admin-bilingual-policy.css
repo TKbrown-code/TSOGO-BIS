@@ -1,0 +1,4 @@
+.policy-language-tabs{display:flex;gap:6px;margin:3px 0}
+.policy-language-tabs button{min-height:34px;padding:0 13px;border:1px solid #dedbd2;border-radius:7px;background:#fffefa;color:#526259;font:inherit;font-size:11px;font-weight:650;cursor:pointer}
+.policy-language-tabs button.active{border-color:#1d342c;background:#1d342c;color:#fffefa}
+.policy-language-tabs button:focus-visible{outline:3px solid #9a7856;outline-offset:2px}

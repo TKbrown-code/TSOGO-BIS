@@ -11,12 +11,15 @@ import AdminAnalytics from "../analytics/AdminAnalytics";
 import AdminSettings from "../settings/AdminSettings";
 import AdminReferrals from "../referrals/AdminReferrals";
 import AdminTracking from "../tracking/AdminTracking";
+import AdminCoupons from "../coupons/AdminCoupons";
+import AdminAds from "../ads/AdminAds";
 import AdminAuth from "../auth/AdminAuth";
 import AdminSignIn from "../auth/AdminSignIn";
 import AdminMfaGate from "../auth/AdminMfaGate";
-import { BarChart3, TrendingUp, Package, ShoppingCart, MapPin, Users, FolderTree, Star, Settings, XCircle, LogOut, ChevronLeft, ChevronRight, Menu, Gift, X } from "lucide-react";
+import { BarChart3, TrendingUp, Package, ShoppingCart, MapPin, Users, FolderTree, Star, Settings, XCircle, LogOut, ChevronLeft, ChevronRight, Menu, Gift, X, TicketPercent, Megaphone } from "lucide-react";
 import "./AdminAppComplete.css";
 import Logo from "../../assets/brand-logo.png";
+import NotificationCenter from "../../components/shared/NotificationCenter";
 
 function AdminContent() {
   const { user, isAdmin, loading, signOut } = useAdmin();
@@ -76,6 +79,8 @@ function AdminContent() {
     { id: "users", group: "Customers", icon: <Users size={19} />, label: "Users" },
     { id: "reviews", group: "Customers", icon: <Star size={19} />, label: "Reviews" },
     { id: "referrals", group: "Customers", icon: <Gift size={19} />, label: "Referrals" },
+    { id: "coupons", group: "Commerce", icon: <TicketPercent size={19} />, label: "Coupons" },
+    { id: "ads", group: "Workspace", icon: <Megaphone size={19} />, label: "Ads & popups" },
     { id: "settings", group: "Workspace", icon: <Settings size={19} />, label: "Settings" }
   ];
 
@@ -167,12 +172,16 @@ function AdminContent() {
           <button className="admin-mobile-menu" onClick={() => { setSidebarCollapsed(false); setMobileNavOpen(true); }} aria-label="Open navigation"><Menu size={21} /></button>
           <div className="admin-topbar-title"><span>TSOGO BIS / ADMIN</span><strong>{activeLabel}</strong></div>
           <div className="admin-topbar-actions">
+            <NotificationCenter userId={user.id} audience="admin" onOpen={() => navigateTo("orders")} />
             <span className="admin-live-indicator"><i /> Admin workspace</span>
             <div className="admin-topbar-avatar" title={user.email}>{user.email?.charAt(0).toUpperCase()}</div>
           </div>
         </header>
         <div className="content-wrapper">
-          {activeSection === "dashboard" && <AdminDashboard onNavigate={navigateTo} />}
+          {/* Keep the overview mounted while other admin sections are open so its data and view state are preserved. */}
+          <div hidden={activeSection !== "dashboard"}>
+            <AdminDashboard onNavigate={navigateTo} />
+          </div>
           {activeSection === "analytics" && <AdminAnalytics />}
           {activeSection === "products" && <AdminProducts />}
           {activeSection === "orders" && <AdminOrders />}
@@ -181,6 +190,8 @@ function AdminContent() {
           {activeSection === "categories" && <AdminCategories />}
           {activeSection === "reviews" && <AdminReviews />}
           {activeSection === "referrals" && <AdminReferrals />}
+          {activeSection === "coupons" && <AdminCoupons />}
+          {activeSection === "ads" && <AdminAds />}
           {activeSection === "settings" && <AdminSettings />}
         </div>
       </main>

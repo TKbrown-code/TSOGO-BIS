@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
-import { Activity, ArrowDownRight, ArrowUpRight, Banknote, BarChart3, Check, Clock3, Package, RefreshCw, ShoppingBag, Trophy, XCircle } from "lucide-react";
+import { Activity, ArrowDownRight, ArrowUpRight, Banknote, BarChart3, Check, Clock3, Download, Package, RefreshCw, ShoppingBag, Trophy, XCircle } from "lucide-react";
+import { exportCsv } from "../utils/exportCsv";
 import "./AdminAnalytics.css";
 
 const paidStates = new Set(["paid", "completed", "success", "successful"]);
@@ -178,6 +179,32 @@ export default function AdminAnalytics() {
   const maxStatus = Math.max(...statuses.map((status) => status.count), 1);
   const maxProductQuantity = Math.max(...topProducts.map((product) => product.quantity), 1);
   const rangeName = days === 365 ? "12 months" : `last ${days} days`;
+  const exportAnalytics = () => {
+    const rows = [
+      ...[
+        ["Collected revenue (XAF)", stats.revenue],
+        ["Orders received", stats.orders],
+        ["Paid orders", stats.paid],
+        ["Pending orders", stats.pending],
+        ["Failed or expired orders", stats.failed],
+        ["Units sold", stats.units],
+        ["Average paid order (XAF)", stats.average],
+      ].map(([metric, value]) => ({ record_type: "summary", metric, value, report_period: rangeName })),
+      ...buckets.map((bucket) => ({ record_type: "trend", date_or_period: bucket.label, revenue_xaf: bucket.revenue, paid_orders: bucket.orders, report_period: rangeName })),
+      ...topProducts.map((product, index) => ({ record_type: "top_product", rank: index + 1, product_id: product.id, product_name: product.name, units_sold: product.quantity, product_sales_xaf: product.revenue, report_period: rangeName })),
+      ...orders.map((order) => ({
+        record_type: "order",
+        checkout_id: order.checkout_id,
+        created_at: order.created_at,
+        payment_status: paymentState(order),
+        amount_collected_xaf: paidStates.has(paymentState(order)) ? Number(order.amount_due ?? order.total ?? 0) : 0,
+        order_total_xaf: Number(order.total ?? order.amount_due ?? 0),
+        order_items: readItems(order.items).map((item) => `${item.name || productNames[String(item.product_id ?? item.id)] || "Item"} x ${Number(item.quantity || 0)}`).join("; "),
+        report_period: rangeName,
+      })),
+    ];
+    exportCsv(`tsogo-sales-analytics-${days}-days.csv`, rows);
+  };
 
   if (loading) return <AnalyticsSkeleton />;
 
@@ -185,7 +212,7 @@ export default function AdminAnalytics() {
     <main className="admin-analytics">
       <header className="analytics-heading">
         <div><span className="analytics-eyebrow">INSIGHTS & PERFORMANCE</span><h1>Sales analytics</h1><p>Understand what sells, what earns, and where each order stands.</p></div>
-        <div className="analytics-heading-actions"><div className="analytics-period"><span><Activity size={15} /> Report period</span><select value={days} onChange={(event) => setDays(Number(event.target.value))} aria-label="Analytics period"><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last 12 months</option></select></div><button className="analytics-refresh" onClick={() => loadAnalytics(true)} disabled={refreshing}><RefreshCw size={16} className={refreshing ? "is-refreshing" : ""} />{refreshing ? "Updating" : "Refresh"}</button></div>
+        <div className="analytics-heading-actions"><div className="analytics-period"><span><Activity size={15} /> Report period</span><select value={days} onChange={(event) => setDays(Number(event.target.value))} aria-label="Analytics period"><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last 12 months</option></select></div><button className="analytics-refresh" onClick={exportAnalytics} disabled={Boolean(error)}><Download size={16}/>Export report</button><button className="analytics-refresh" onClick={() => loadAnalytics(true)} disabled={refreshing}><RefreshCw size={16} className={refreshing ? "is-refreshing" : ""} />{refreshing ? "Updating" : "Refresh"}</button></div>
       </header>
 
       {error && <div className="analytics-error" role="alert">{error}</div>}

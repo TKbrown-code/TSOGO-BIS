@@ -5,6 +5,7 @@ import { sendOrderStatusNotification } from "../../utils/sendOrderStatusNotifica
 import { CalendarDays, Check, CheckCircle2, Clock3, Copy, ExternalLink, MapPin, Package, RefreshCw, Search, ScanLine, Camera, X, Truck, TruckIcon, FileText, ClipboardList, Download } from "lucide-react";
 import { code39Svg, normalizeParcelCode } from "../../utils/code39";
 import { jsPDF } from "jspdf";
+import { exportCsv } from "../utils/exportCsv";
 import { useSiteSettings } from "../../context/SiteSettingsContext";
 import brandLogo from "../../assets/brand-logo.png";
 import "./AdminTracking.css";
@@ -596,7 +597,7 @@ export default function AdminTracking() {
     <main className="admin-tracking-page">
       <header className="admin-tracking-heading">
         <div><span className="admin-tracking-eyebrow">FULFILMENT OPERATIONS</span><h1>Shipment tracking</h1><p>Follow every parcel from preparation to delivery and keep customer tracking up to date.</p></div>
-        <button type="button" className="tracking-refresh-button" onClick={() => fetchShipments()} disabled={loading}><RefreshCw size={15} className={loading ? "tracking-spin" : ""} />Refresh shipments</button>
+        <div className="tracking-heading-actions"><button type="button" className="tracking-refresh-button" onClick={() => exportCsv("tsogo-tracking.csv", filteredShipments)} disabled={!filteredShipments.length}><Download size={15} />Export tracking</button><button type="button" className="tracking-refresh-button" onClick={() => fetchShipments()} disabled={loading}><RefreshCw size={15} className={loading ? "tracking-spin" : ""} />Refresh shipments</button></div>
       </header>
 
       <section className="admin-tracking-summary" aria-label="Shipment summary">

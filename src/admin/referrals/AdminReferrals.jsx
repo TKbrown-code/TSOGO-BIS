@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Gift, RefreshCw, Search, Users, Wallet, CircleDollarSign, ArrowUpRight } from "lucide-react";
+import { Gift, RefreshCw, Search, Users, Wallet, CircleDollarSign, ArrowUpRight, Download } from "lucide-react";
 import { supabase } from "../../lib/supabase";
+import { exportCsv } from "../utils/exportCsv";
 import "./AdminReferrals.css";
 
 const money = (value) => `${Number(value || 0).toLocaleString()} XAF`;
@@ -24,16 +25,21 @@ export default function AdminReferrals() {
   const loadReferrals = useCallback(async (refresh = false) => {
     refresh ? setRefreshing(true) : setLoading(true);
     setError("");
-    const { data, error: fetchError } = await supabase
-      .from("referrals")
-      .select("id,referrer_user_id,created_at,commission_amount,commission_status")
-      .order("created_at", { ascending: false })
-      .limit(500);
+    const allRows = [];
+    let fetchError = null;
+    for (let offset = 0; ; offset += 1000) {
+      const { data, error } = await supabase.from("referrals")
+        .select("id,referrer_user_id,created_at,commission_amount,commission_status")
+        .order("created_at", { ascending: false }).range(offset, offset + 999);
+      if (error) { fetchError = error; break; }
+      allRows.push(...(data || []));
+      if ((data || []).length < 1000) break;
+    }
     if (fetchError) {
       console.error("Error loading referrals:", fetchError);
       setError("Referral records are unavailable. Confirm the referral migrations have been applied and the admin referral policy is installed.");
     } else {
-      setReferrals(data || []);
+      setReferrals(allRows);
     }
     setLoading(false);
     setRefreshing(false);
@@ -64,10 +70,10 @@ export default function AdminReferrals() {
           <h1>Referrals</h1>
           <p>Track referral signups and the first order store credit they generated.</p>
         </div>
-        <button type="button" className="dashboard-refresh" onClick={() => loadReferrals(true)} disabled={refreshing}>
+        <div className="referrals-heading-actions"><button type="button" className="dashboard-refresh" onClick={() => exportCsv("tsogo-referrals.csv", referrals)} disabled={!referrals.length}><Download size={15} />Export referrals</button><button type="button" className="dashboard-refresh" onClick={() => loadReferrals(true)} disabled={refreshing}>
           <RefreshCw size={16} className={refreshing ? "is-refreshing" : ""} />
           {refreshing ? "Refreshing" : "Refresh"}
-        </button>
+        </button></div>
       </header>
 
       <div className="referral-stat-grid">

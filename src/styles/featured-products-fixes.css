@@ -1,0 +1,14 @@
+.featured-card-copy { min-width: 0; }
+.featured-card-copy > div { flex: 1; min-width: 0; }
+.featured-name {
+  display: -webkit-box;
+  min-height: 2.25em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.product-info { min-width: 0; }
+.product-info h3 { display: -webkit-box; overflow: hidden; text-overflow: ellipsis; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }

@@ -7,6 +7,8 @@ import { useAdmin } from "../../context/AdminContext";
 import { useSiteSettings } from "../../context/SiteSettingsContext";
 import { Users, Globe, Save, Lock, User, Settings, ShieldCheck, RefreshCw, Store } from "lucide-react";
 import "./AdminSettings.css";
+import "../../styles/checkout-coupon.css";
+import "../../styles/admin-bilingual-policy.css";
 
 async function functionErrorMessage(error, data) {
   if (data?.error) return data.error;
@@ -50,6 +52,14 @@ export default function AdminSettings() {
   const [currency, setCurrency] = useState("XAF");
   const [taxRate, setTaxRate] = useState("0");
   const [termsAndPolicies, setTermsAndPolicies] = useState("");
+  const [termsAndPoliciesEn, setTermsAndPoliciesEn] = useState("");
+  const [termsAndPoliciesFr, setTermsAndPoliciesFr] = useState("");
+  const [policyLanguage, setPolicyLanguage] = useState("en");
+  const [couponCode, setCouponCode] = useState("");
+  const [couponType, setCouponType] = useState("percent");
+  const [couponValue, setCouponValue] = useState("0");
+  const [couponMinimum, setCouponMinimum] = useState("0");
+  const [couponActive, setCouponActive] = useState(false);
 
   // Password change
   const [currentPassword, setCurrentPassword] = useState("");
@@ -107,6 +117,13 @@ export default function AdminSettings() {
       setCurrency(data.base_currency || "XAF");
       setTaxRate(((Number(data.tax_rate) || 0) * 100).toString());
       setTermsAndPolicies(data.terms_and_policies || "");
+      setTermsAndPoliciesEn(data.terms_and_policies_en || data.terms_and_policies || "");
+      setTermsAndPoliciesFr(data.terms_and_policies_fr || "");
+      setCouponCode(data.coupon_code || "");
+      setCouponType(data.coupon_discount_type || "percent");
+      setCouponValue(String(Number(data.coupon_discount_value) || 0));
+      setCouponMinimum(String(Number(data.coupon_minimum) || 0));
+      setCouponActive(data.coupon_active === true);
     }
     setSettingsLoading(false);
   }
@@ -225,7 +242,14 @@ export default function AdminSettings() {
       whatsapp_phone: whatsappPhone.replace(/[^\d+]/g, ""),
       base_currency: currency,
       tax_rate: (parseFloat(taxRate) || 0) / 100,
-      terms_and_policies: termsAndPolicies
+      terms_and_policies: termsAndPoliciesEn || termsAndPolicies,
+      terms_and_policies_en: termsAndPoliciesEn,
+      terms_and_policies_fr: termsAndPoliciesFr,
+      coupon_code: couponCode.trim().toUpperCase(),
+      coupon_discount_type: couponType,
+      coupon_discount_value: Math.max(0, Number(couponValue) || 0),
+      coupon_minimum: Math.max(0, Number(couponMinimum) || 0),
+      coupon_active: couponActive && Boolean(couponCode.trim()) && Number(couponValue) > 0
     };
 
     const { error } = await supabase.from("site_settings").upsert({ id: true, ...settingsData }, { onConflict: "id" });
@@ -424,14 +448,34 @@ export default function AdminSettings() {
           </div>
 
           <div className="form-group">
+            <label htmlFor="coupon-code">Checkout coupon</label>
+            <small>Configure one active customer coupon. Percentage discounts apply to merchandise only; delivery is excluded.</small>
+            <div className="coupon-admin-grid">
+              <input id="coupon-code" value={couponCode} onChange={(event) => setCouponCode(event.target.value.toUpperCase().replace(/\s/g, ""))} placeholder="WELCOME10" aria-label="Coupon code" />
+              <select value={couponType} onChange={(event) => setCouponType(event.target.value)} aria-label="Coupon discount type"><option value="percent">Percent</option><option value="fixed">Fixed amount (FCFA)</option></select>
+              <input type="number" min="0" max={couponType === "percent" ? 100 : undefined} value={couponValue} onChange={(event) => setCouponValue(event.target.value)} aria-label="Coupon discount value" />
+              <input type="number" min="0" value={couponMinimum} onChange={(event) => setCouponMinimum(event.target.value)} aria-label="Minimum merchandise subtotal" placeholder="Minimum FCFA" />
+            </div>
+            <label className="coupon-active-toggle"><input type="checkbox" checked={couponActive} onChange={(event) => setCouponActive(event.target.checked)} />Enable coupon at checkout</label>
+          </div>
+
+          <div className="form-group">
             <label htmlFor="site-terms">Terms and policies</label>
-            <small>Edit the content shown on the public Terms and Policies page. Plain text is supported; separate sections with blank lines.</small>
+            <small>Write each language version separately. The public page follows the visitor’s selected language; English is used when a translation is empty.</small>
+            <div className="policy-language-tabs" role="tablist" aria-label="Policy language">
+              <button type="button" role="tab" aria-selected={policyLanguage === "en"} className={policyLanguage === "en" ? "active" : ""} onClick={() => setPolicyLanguage("en")}>English</button>
+              <button type="button" role="tab" aria-selected={policyLanguage === "fr"} className={policyLanguage === "fr" ? "active" : ""} onClick={() => setPolicyLanguage("fr")}>Français</button>
+            </div>
             <textarea
               id="site-terms"
-              value={termsAndPolicies}
-              onChange={(event) => setTermsAndPolicies(event.target.value)}
+              value={policyLanguage === "en" ? termsAndPoliciesEn : termsAndPoliciesFr}
+              onChange={(event) => {
+                if (policyLanguage === "en") setTermsAndPoliciesEn(event.target.value);
+                else setTermsAndPoliciesFr(event.target.value);
+                setTermsAndPolicies(event.target.value);
+              }}
               rows={16}
-              placeholder="Terms and policies content"
+              placeholder={policyLanguage === "en" ? "English terms and policies" : "Conditions générales et politiques en français"}
             />
           </div>
 

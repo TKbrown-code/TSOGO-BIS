@@ -1,4 +1,6 @@
 import React from "react";
+import { Link } from "react-router-dom";
+import "../../styles/route-errors.css";
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -26,36 +28,15 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{
-          padding: "2rem",
-          textAlign: "center",
-          minHeight: "100vh",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "#f8f9fc"
-        }}>
-          <h1 style={{ color: "#FF5733", marginBottom: "1rem" }}>
-            Oops! Something went wrong
-          </h1>
-          <p style={{ color: "#333", marginBottom: "1.5rem" }}>
-            We're sorry for the inconvenience. Please try refreshing the page.
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              padding: "0.75rem 1.5rem",
-              backgroundColor: "#FFD700",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontWeight: "bold",
-              fontSize: "1rem"
-            }}
-          >
-            Refresh Page
-          </button>
+        <main className="app-error-page">
+          <span className="app-error-mark" aria-hidden="true">TS</span>
+          <span className="app-error-brand">TSOGO-BIS · A CONSIDERED EDIT</span>
+          <h1>We hit an unexpected problem</h1>
+          <p>Your page could not be displayed just now. You can try again or return to the shop.</p>
+          <div className="app-error-actions">
+            <button type="button" onClick={() => this.setState({ hasError: false, error: null, errorInfo: null })}>Try again</button>
+            <Link to="/" onClick={() => this.setState({ hasError: false, error: null, errorInfo: null })}>Return to the shop</Link>
+          </div>
           
           {import.meta.env.DEV && this.state.error && (
             <details style={{ marginTop: "2rem", textAlign: "left", maxWidth: "600px" }}>
@@ -74,7 +55,7 @@ class ErrorBoundary extends React.Component {
               </pre>
             </details>
           )}
-        </div>
+        </main>
       );
     }
 

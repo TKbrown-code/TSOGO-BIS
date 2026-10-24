@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { showSiteModal } from "../../utils/siteModal";
-import { Check, Clock3, MessageSquareText, Package, RefreshCw, Search, ShieldCheck, Star, X } from "lucide-react";
+import { Check, Clock3, MessageSquareText, Package, RefreshCw, Search, ShieldCheck, Star, X, Download } from "lucide-react";
+import { exportCsv } from "../utils/exportCsv";
 import "./AdminReviews.css";
 
 const statusLabels = { pending: "Needs review", published: "Published", rejected: "Rejected" };
@@ -84,7 +85,7 @@ export default function AdminReviews() {
     <main className="admin-reviews-page">
       <header className="reviews-page-heading">
         <div><span className="reviews-eyebrow">CUSTOMER VOICE</span><h1>Product reviews</h1><p>Review customer feedback and decide which submissions appear in the shop.</p></div>
-        <button type="button" className="reviews-refresh" onClick={loadReviews} disabled={loading}><RefreshCw size={15} className={loading ? "reviews-spin" : ""} />Refresh reviews</button>
+        <div className="reviews-heading-actions"><button type="button" className="reviews-refresh" onClick={() => exportCsv("tsogo-reviews.csv", filteredReviews.map((review) => ({ ...review, product_name: review.products?.name, reviewer_name: review.reviewer?.display_name })))} disabled={!filteredReviews.length}><Download size={15} />Export reviews</button><button type="button" className="reviews-refresh" onClick={loadReviews} disabled={loading}><RefreshCw size={15} className={loading ? "reviews-spin" : ""} />Refresh reviews</button></div>
       </header>
 
       <section className="reviews-summary" aria-label="Review summary">

@@ -3,7 +3,8 @@ import { showSiteModal as alert } from "../../utils/siteModal";
 import React, { useCallback, useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { sendOrderStatusNotification } from "../../utils/sendOrderStatusNotification";
-import { ShoppingCart, RefreshCw, DollarSign, Search, User, Phone, MapPin, Truck, Link as LinkIcon, Clock, CheckCircle, Package, Mail, CalendarDays, ExternalLink, CreditCard, RotateCcw } from "lucide-react";
+import { ShoppingCart, RefreshCw, DollarSign, Search, User, Phone, MapPin, Truck, Link as LinkIcon, Clock, CheckCircle, Package, Mail, CalendarDays, ExternalLink, CreditCard, RotateCcw, Download, Trash2 } from "lucide-react";
+import { exportCsv } from "../utils/exportCsv";
 import "./AdminOrders.css";
 
 export default function AdminOrders() {
@@ -15,6 +16,7 @@ export default function AdminOrders() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [loadError, setLoadError] = useState("");
   const [savingOrderId, setSavingOrderId] = useState(null);
+  const [deletingAll, setDeletingAll] = useState(false);
 
   const loadOrders = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
@@ -65,6 +67,18 @@ export default function AdminOrders() {
   useEffect(() => {
     loadOrders();
   }, [loadOrders]);
+
+  async function deleteAllOrders() {
+    if (!window.confirm("Permanently delete every order and shipment record? This cannot be undone.")) return;
+    if (!window.confirm("Confirm again: delete all order history for the entire store?")) return;
+    setDeletingAll(true);
+    const { error } = await supabase.rpc("admin_delete_all_orders");
+    setDeletingAll(false);
+    if (error) { window.alert(`Orders were not deleted: ${error.message}`); return; }
+    setSelectedOrder(null);
+    await loadOrders();
+    window.alert("All order and shipment records were deleted.");
+  }
 
   useEffect(() => {
     let refreshTimer;
@@ -212,7 +226,7 @@ export default function AdminOrders() {
     <main className="admin-orders">
       <header className="orders-page-heading">
         <div><span className="orders-kicker">COMMERCE OPERATIONS</span><h1>Orders</h1><p>Review payments, prepare deliveries, and keep every customer order moving.</p></div>
-        <button type="button" className="orders-refresh" onClick={loadOrders} disabled={loading}><RotateCcw size={15} className={loading ? "is-spinning" : ""} />Refresh orders</button>
+        <div className="orders-heading-actions"><button type="button" className="orders-refresh" onClick={() => exportCsv("tsogo-orders.csv", orders.map(({ items, ...order }) => ({ ...order, items })))} disabled={!orders.length}><Download size={15} />Export orders</button><button type="button" className="orders-refresh orders-delete-all" onClick={deleteAllOrders} disabled={!orders.length||deletingAll}><Trash2 size={15}/>{deletingAll?"Deleting…":"Delete all orders"}</button><button type="button" className="orders-refresh" onClick={loadOrders} disabled={loading}><RotateCcw size={15} className={loading ? "is-spinning" : ""} />Refresh orders</button></div>
       </header>
 
       <section className="orders-stats" aria-label="Order summary">

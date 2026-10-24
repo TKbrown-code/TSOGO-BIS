@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { useTranslation } from "react-i18next";
 import { useCart } from "../context/CartContext";
 import "../styles/checkout.css";
+import "../styles/checkout-coupon.css";
 import { useCurrencyContext } from "../context/CurrencyContext";
 import { preloadAllImages, getCachedImage } from "../utils/imageCache";
 import { useNavigate } from "react-router-dom";
@@ -26,7 +27,7 @@ import { useSiteSettings } from "../context/SiteSettingsContext";
 
 export default function Checkout() {
   const { t, i18n } = useTranslation();
-  const { whatsappPhone } = useSiteSettings();
+  const { whatsappPhone, coupon: couponSettings } = useSiteSettings();
   const { cartItems, updateQuantity, removeItem, removeItems } = useCart();
   const [selectedItems, setSelectedItems] = useState([]);
   const previousCartItemIdsRef = useRef([]);
@@ -50,6 +51,9 @@ export default function Checkout() {
   const [referralCreditLoading, setReferralCreditLoading] = useState(true);
   const [useReferralCredit, setUseReferralCredit] = useState(true);
   const [serviceFeeAgreed, setServiceFeeAgreed] = useState(false);
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponMessage, setCouponMessage] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -135,7 +139,9 @@ export default function Checkout() {
         summary.shipping += shippingFee * quantity;
         return summary;
       }, { merchandise: 0, shipping: 0 }), [cartItems, selectedItems]);
-  const total = merchandiseTotal + (shippingPaymentMode === "online" ? shippingTotal : 0);
+  const couponDiscount = appliedCoupon ? Math.min(merchandiseTotal, Number(appliedCoupon.discount) || 0) : 0;
+  const discountedMerchandiseTotal = Math.max(0, merchandiseTotal - couponDiscount);
+  const total = discountedMerchandiseTotal + (shippingPaymentMode === "online" ? shippingTotal : 0);
 
   const toggleItem = (id) => {
     setSelectedItems((prev) =>
@@ -144,12 +150,53 @@ export default function Checkout() {
   };
 
   // The server re-reads prices and stock; inventory changes only after payment completes.
-  const serviceFee = merchandiseTotal > 100000 ? Math.round(merchandiseTotal * 0.03) : 0;
+  const serviceFee = discountedMerchandiseTotal > 100000 ? Math.round(discountedMerchandiseTotal * 0.03) : 0;
   const referralCreditApplied = useReferralCredit ? Math.min(total, referralCreditBalance) : 0;
   const onlineAmountDue = Math.max(0, total - referralCreditApplied) + serviceFee;
   const whatsappAmountDue = Math.max(0, total - referralCreditApplied);
   const deliveryDueOnArrival = shippingPaymentMode === "arrival" ? shippingTotal : 0;
   useEffect(() => { setServiceFeeAgreed(false); }, [serviceFee, onlineAmountDue, deliveryDueOnArrival]);
+  useEffect(() => { setAppliedCoupon(null); setCouponMessage(""); }, [merchandiseTotal]);
+  const applyCoupon = async (event) => {
+    event.preventDefault();
+    const code = couponInput.trim().toUpperCase();
+    const selectedCart = cartItems.filter((item) => selectedItems.includes(item.id));
+    const { data: coupon, error } = await supabase.from("coupons").select("code,discount_type,discount_value,minimum_amount,product_id,category_id,subcategory_id,active,starts_at,expires_at").eq("code", code).maybeSingle();
+    if (error && error.code !== "42P01") { setAppliedCoupon(null); setCouponMessage(t("coupon.invalid")); return; }
+    let discount = 0;
+    let minimum = 0;
+    if (coupon) {
+      const now = Date.now();
+      const inWindow = (!coupon.starts_at || new Date(coupon.starts_at).getTime() <= now) && (!coupon.expires_at || new Date(coupon.expires_at).getTime() > now);
+      let eligibleItems = selectedCart;
+      if (coupon.product_id || coupon.category_id || coupon.subcategory_id) {
+        const selectedProductIds = [...new Set(selectedCart.map((item) => Number(item.product_id?.id ?? item.product_id)).filter(Number.isFinite))];
+        let productQuery = supabase.from("products").select("id,category_id,subcategory_id").in("id", selectedProductIds);
+        if (coupon.product_id) productQuery = productQuery.eq("id", coupon.product_id);
+        else if (coupon.category_id) productQuery = productQuery.eq("category_id", coupon.category_id);
+        else productQuery = productQuery.eq("subcategory_id", coupon.subcategory_id);
+        const { data: matchingProducts, error: productError } = await productQuery;
+        if (productError) { setAppliedCoupon(null); setCouponMessage(t("coupon.invalid")); return; }
+        const matchingIds = new Set((matchingProducts || []).map((product) => Number(product.id)));
+        eligibleItems = selectedCart.filter((item) => matchingIds.has(Number(item.product_id?.id ?? item.product_id)));
+      }
+      const eligibleSubtotal = eligibleItems.reduce((sum, item) => sum + (Number(item.selected_option?.price) || Number(item.product_id?.price) || 0) * (Number(item.quantity) || 1), 0);
+      minimum = Number(coupon.minimum_amount) || 0;
+      if (!coupon.active || !inWindow || !eligibleItems.length || eligibleSubtotal < minimum) {
+        setAppliedCoupon(null);
+        setCouponMessage(eligibleSubtotal < minimum ? t("coupon.minimum", { amount: convert(minimum, currency) }) : t("coupon.invalid"));
+        return;
+      }
+      discount = coupon.discount_type === "fixed" ? Math.min(eligibleSubtotal, Number(coupon.discount_value) || 0) : Math.min(eligibleSubtotal, Math.round(eligibleSubtotal * Number(coupon.discount_value || 0) / 100));
+    } else if (couponSettings?.active && couponSettings.code && code === couponSettings.code.toUpperCase()) {
+      minimum = Number(couponSettings.minimum) || 0;
+      if (merchandiseTotal < minimum) { setAppliedCoupon(null); setCouponMessage(t("coupon.minimum", { amount: convert(minimum, currency) })); return; }
+      discount = couponSettings.type === "fixed" ? Math.min(merchandiseTotal, Number(couponSettings.value) || 0) : Math.min(merchandiseTotal, Math.round(merchandiseTotal * Number(couponSettings.value || 0) / 100));
+    } else { setAppliedCoupon(null); setCouponMessage(t("coupon.invalid")); return; }
+    if (discount <= 0) { setAppliedCoupon(null); setCouponMessage(t("coupon.invalid")); return; }
+    setAppliedCoupon({ code, discount, productId: coupon?.product_id || null, categoryId: coupon?.category_id || null, subcategoryId: coupon?.subcategory_id || null });
+    setCouponMessage(t("coupon.applied", { amount: `${convert(discount, currency)} ${currency}` }));
+  };
   const initializePayment = async (paymentMode = "online") => {
     if (roleLoading || roleCheckFailed || isAdmin) return;
     if (!user) { showAlert(t("checkout.sign_in_message"), t("checkout.sign_in_title"), "warning"); navigate("/SignUp"); return; }
@@ -185,6 +232,7 @@ export default function Checkout() {
           useReferralCredit,
           paymentMode,
           shippingPaymentMode,
+          couponCode: appliedCoupon?.code || null,
         },
       });
       if (error) {
@@ -368,9 +416,15 @@ export default function Checkout() {
             <label><input type="checkbox" checked={useReferralCredit} onChange={(event) => setUseReferralCredit(event.target.checked)} />{t("checkout.use_referral_credit")}</label>
             <span>{convert(Math.min(total, referralCreditBalance), currency)} {currency}</span>
           </div>}
+          <form className="checkout-coupon-form" onSubmit={applyCoupon}>
+            <label htmlFor="checkout-coupon-code">{t("coupon.label")}</label>
+            <div><input id="checkout-coupon-code" value={couponInput} onChange={(event) => setCouponInput(event.target.value.toUpperCase())} placeholder={t("coupon.placeholder")} autoComplete="off" /><button type="submit" disabled={!couponInput.trim()}>{t("coupon.apply")}</button></div>
+            {couponMessage && <p className={appliedCoupon ? "success" : "error"} role="status">{couponMessage}</p>}
+          </form>
           <table className="checkout-prices-table">
             <tbody>
               <tr><th scope="row">{t("checkout.merchandise_subtotal")}</th><td>{convert(merchandiseTotal, currency)} {currency}</td></tr>
+              {couponDiscount > 0 && <tr className="checkout-coupon-discount"><th scope="row">{t("coupon.discount", { code: appliedCoupon.code })}</th><td>−{convert(couponDiscount, currency)} {currency}</td></tr>}
               <tr><th scope="row">{t("checkout.delivery_fee")} · {shippingPaymentMode === "arrival" ? t("checkout.pay_on_arrival_short") : t("checkout.included_online_short")}</th><td>{convert(shippingTotal, currency)} {currency}</td></tr>
               {serviceFee > 0 && <tr><th scope="row">{t("checkout.service_fee_online_label")}</th><td>{convert(serviceFee, currency)} {currency}</td></tr>}
               {useReferralCredit && referralCreditApplied > 0 && <tr><th scope="row">{t("checkout.referral_credit_applied")}</th><td>−{convert(referralCreditApplied, currency)} {currency}</td></tr>}

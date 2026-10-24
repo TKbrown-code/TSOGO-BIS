@@ -65,6 +65,20 @@ Deno.serve(async (request: Request) => {
 
   let body: { action?: string; email?: string; user_id?: string };
   try {
+    if (body.action === "suspend_user" || body.action === "restore_user") {
+      const userId = body.user_id?.trim();
+      if (!userId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId)) {
+        return respond({ error: "A valid user ID is required" }, 400);
+      }
+      if (userId === caller.id) return respond({ error: "You cannot suspend your own account" }, 400);
+      const { data: adminRole, error: adminRoleError } = await callerClient.from("user_roles").select("user_id").eq("user_id", userId).eq("role", "admin").maybeSingle();
+      if (adminRoleError) throw adminRoleError;
+      if (adminRole) return respond({ error: "Administrator accounts cannot be suspended here" }, 400);
+      const { data, error } = await supabase.auth.admin.updateUserById(userId, { ban_duration: body.action === "suspend_user" ? "876000h" : "none" });
+      if (error) throw error;
+      return respond({ success: true, user_id: userId, banned_until: data.user?.banned_until ?? null });
+    }
+
     body = await request.json();
   } catch {
     return respond({ error: "Invalid JSON body" }, 400);
