@@ -30,6 +30,14 @@ export default function useUserinfo({form, isSignUp, setLoading}) {
 
       setLoading(false);
       localStorage.removeItem("tsogo_referral_code");
+      if (data.account_exists) {
+        confirmMessage(
+          t("auth.signup_existing_account"),
+          t("auth.signup_existing_title"),
+          <button className="modalbtn" onClick={() => { closeMessage(true); navigate("/SignUp?mode=signin"); }}>{t("auth.signin")}</button>,
+        );
+        return;
+      }
       confirmMessage(
         t("auth.signup_email_message"),
         t("auth.signup_email_title"),

@@ -852,6 +852,8 @@
     "signup_error": "La création du compte ou l’envoi de l’e-mail de confirmation a échoué. Vérifiez vos informations et réessayez bientôt.",
     "signup_email_title": "Vérifiez votre e-mail ou connectez-vous",
     "signup_email_message": "S’il s’agit d’un nouveau compte, nous enverrons un e-mail de confirmation. Si vous avez déjà un compte, connectez-vous ou réinitialisez votre mot de passe. Pour protéger votre vie privée, nous ne confirmons pas si une adresse e-mail est déjà inscrite.",
+    "signup_existing_title": "Compte déjà existant",
+    "signup_existing_account": "Un compte associé à cette adresse e-mail existe déjà.",
     "signin": "Se connecter",
     "have_account": "Vous avez déjà un compte ?",
     "no_account": "Vous n'avez pas de compte ?",

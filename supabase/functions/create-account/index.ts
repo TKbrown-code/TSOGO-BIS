@@ -121,9 +121,8 @@ Deno.serve(async (request: Request) => {
       },
     });
     if (error) {
-      // Do not disclose whether an account already exists.
       if (/already registered|already been registered|user exists/i.test(error.message)) {
-        return respond({ success: true, message: "If this address can be registered, a confirmation email will arrive shortly." }, 200, origin);
+        return respond({ success: true, account_exists: true }, 200, origin);
       }
       console.error("Could not create signup confirmation link:", error.message);
       return respond({ error: "Account creation is temporarily unavailable" }, 503, origin);

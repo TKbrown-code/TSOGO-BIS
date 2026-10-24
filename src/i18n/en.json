@@ -887,6 +887,8 @@
     "signup_error": "Account creation or confirmation email failed. Please check your details and try again shortly.",
     "signup_email_title": "Check your email or sign in",
     "signup_email_message": "If this is a new account, we’ll send a confirmation email. If you already have an account, sign in or reset your password. For your privacy, we don’t reveal whether an email address is registered.",
+    "signup_existing_title": "Account already exists",
+    "signup_existing_account": "An account with this email already exists.",
     "signin": "Sign In",
     "have_account": "Already have an account?",
     "no_account": "Don't have an account?",
