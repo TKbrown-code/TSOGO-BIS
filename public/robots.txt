@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /dashboard
 
-Sitemap: https://tsogo-bis.vercel.app/sitemap.xml
+Sitemap: https://tsogobis.com/sitemap.xml
