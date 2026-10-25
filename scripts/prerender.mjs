@@ -9,6 +9,8 @@ const env = loadEnv(process.env.MODE || "production", root, "");
 const siteUrl = (process.env.SITE_URL || env.VITE_SITE_URL || env.APP_URL || "https://tsogo-bis.vercel.app").replace(/\/$/, "");
 
 const publicPages = [
+  { path: "/track", title: "Suivre une commande | TSOGO-BIS", description: "Saisissez votre numero de suivi TSOGO-BIS pour consulter les informations de livraison.", heading: "Suivre une commande", body: "Saisissez votre numero de suivi TSOGO-BIS pour consulter le statut et les informations de livraison de votre commande au Cameroun.", links: [["Livraison", "/logistics"], ["Boutique", "/shop"], ["Nous contacter", "/contact"]], priority: "0.5" },
+  { path: "/SignUp", title: "Connexion ou inscription | TSOGO-BIS", description: "Connectez-vous ou creez un compte TSOGO-BIS.", heading: "Connexion ou inscription", body: "Connectez-vous a votre compte TSOGO-BIS ou creez-en un nouveau pour commander et suivre vos achats.", links: [["Accueil", "/"], ["Boutique", "/shop"], ["Nous contacter", "/contact"]], priority: "0.3" },
   { path: "/", title: "TSOGO-BIS | Boutique en ligne au Cameroun", description: "Decouvrez la boutique en ligne TSOGO-BIS au Cameroun. Parcourez notre catalogue, trouvez des produits pour votre quotidien et commandez en ligne.", heading: "Bienvenue chez TSOGO-BIS", body: "TSOGO-BIS vous propose une boutique en ligne pour parcourir une selection de produits, consulter leurs details et passer commande avec livraison au Cameroun.", links: [["Voir la boutique", "/shop"], ["A propos de TSOGO-BIS", "/about"], ["Livraison", "/logistics"], ["Nous contacter", "/contact"]], priority: "1.0" },
   { path: "/shop", title: "Boutique en ligne | TSOGO-BIS", description: "Parcourez le catalogue TSOGO-BIS, decouvrez les produits disponibles et consultez leurs prix et details.", heading: "La boutique TSOGO-BIS", body: "Explorez le catalogue en ligne. Ouvrez une fiche produit pour consulter sa description, son prix, ses options et sa disponibilite.", links: [["Accueil", "/"], ["A propos", "/about"], ["Livraison", "/logistics"]], priority: "0.9" },
   { path: "/about", title: "A propos | TSOGO-BIS", description: "En savoir plus sur TSOGO-BIS, sa boutique en ligne et son service client.", heading: "A propos de TSOGO-BIS", body: "TSOGO-BIS est une boutique en ligne qui permet aux clients de decouvrir le catalogue, commander et suivre la livraison de leurs achats.", links: [["Parcourir la boutique", "/shop"], ["Nous contacter", "/contact"]], priority: "0.6" },
@@ -21,9 +23,7 @@ const noIndexPages = [
   ["/checkout", "Finaliser une commande", "Connectez-vous et passez en revue votre panier pour finaliser votre commande TSOGO-BIS."],
   ["/orders", "Mes commandes", "Consultez vos commandes TSOGO-BIS."],
   ["/dashboard", "Mon compte", "Gerez votre compte TSOGO-BIS."],
-  ["/SignUp", "Connexion ou inscription", "Connectez-vous ou creez un compte TSOGO-BIS."],
   ["/reset-password", "Reinitialiser le mot de passe", "Reinitialisez le mot de passe de votre compte TSOGO-BIS."],
-  ["/track", "Suivre une commande", "Saisissez votre numero de suivi TSOGO-BIS pour consulter les informations de livraison."],
   ["/referrals", "Programme de parrainage", "Decouvrez TSOGO-BIS depuis un lien de parrainage."],
   ["/fapshi", "Paiement", "Retour de paiement TSOGO-BIS."],
   ["/admin", "Administration", "Espace d'administration TSOGO-BIS."],
