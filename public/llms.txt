@@ -3,12 +3,12 @@
 > Official online storefront for discovering products, placing orders, and finding delivery and contact information.
 
 ## Public pages
-- [Home](https://tsogo-bis.vercel.app/)
-- [Shop](https://tsogo-bis.vercel.app/shop)
-- [About](https://tsogo-bis.vercel.app/about)
-- [Delivery and logistics](https://tsogo-bis.vercel.app/logistics)
-- [Contact](https://tsogo-bis.vercel.app/contact)
-- [Terms and policies](https://tsogo-bis.vercel.app/terms-and-policies)
+- [Home](https://tsogobis.com/)
+- [Shop](https://tsogobis.com/shop)
+- [About](https://tsogobis.com/about)
+- [Delivery and logistics](https://tsogobis.com/track)
+- [Contact](https://tsogobis.com/contact)
+- [Terms and policies](https://tsogobis.com/terms-and-policies)
 
 ## Discovery
-- [XML sitemap](https://tsogo-bis.vercel.app/sitemap.xml)
+- [XML sitemap](https://tsogobis.com/sitemap.xml)
