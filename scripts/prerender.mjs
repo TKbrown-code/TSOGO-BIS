@@ -6,7 +6,7 @@ import { loadEnv } from "vite";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const dist = path.join(root, "dist");
 const env = loadEnv(process.env.MODE || "production", root, "");
-const siteUrl = (process.env.SITE_URL || env.VITE_SITE_URL || env.APP_URL || "https://tsogo-bis.vercel.app").replace(/\/$/, "");
+const siteUrl = (process.env.SITE_URL || env.VITE_SITE_URL || env.APP_URL || "https://tsogobis.com").replace(/\/$/, "");
 
 const publicPages = [
   { path: "/track", title: "Suivre une commande | TSOGO-BIS", description: "Saisissez votre numero de suivi TSOGO-BIS pour consulter les informations de livraison.", heading: "Suivre une commande", body: "Saisissez votre numero de suivi TSOGO-BIS pour consulter le statut et les informations de livraison de votre commande au Cameroun.", links: [["Livraison", "/logistics"], ["Boutique", "/shop"], ["Nous contacter", "/contact"]], priority: "0.5" },
