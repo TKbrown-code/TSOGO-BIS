@@ -35,6 +35,7 @@ import { useSiteSettings } from "../../context/SiteSettingsContext";
 import brandLogo from "../../assets/brand-logo.png";
 import "./AdminTracking.css";
 import { BrowserMultiFormatReader } from "@zxing/browser";
+import { BarcodeFormat, DecodeHintType } from "@zxing/library";
 
 const DELIVERY_STEPS = [
   { id: "pending", label: "Pending", icon: Clock3 },
@@ -344,7 +345,13 @@ export default function AdminTracking() {
           throw new Error("Camera preview is unavailable.");
         }
 
-        const codeReader = new BrowserMultiFormatReader();
+        const hints = new Map();
+
+hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+  BarcodeFormat.CODE_39,
+]);
+
+const codeReader = new BrowserMultiFormatReader(hints);
 
         activeControls = await codeReader.decodeFromConstraints(
           {
