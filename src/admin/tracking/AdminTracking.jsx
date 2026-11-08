@@ -353,23 +353,49 @@ export default function AdminTracking() {
               facingMode: { ideal: "environment" },
             },
           },
-          videoElement,
-          (result) => {
-            if (stopped || !result) return;
+         videoElement,
+(result, error) => {
+  if (stopped) return;
 
-            const value = result.getText();
-            const normalized = normalizeParcelCode(value);
-            if (!normalized) return;
+  // No barcode detected in this frame.
+  if (!result) {
+    if (error && error.name !== "NotFoundException") {
+      console.debug("ZXing scan attempt:", error);
+    }
+    return;
+  }
 
-            const now = Date.now();
-            const sameCode = normalized === lastScanRef.current.value;
-            const withinCooldown = now - lastScanRef.current.time < 3000;
+  // Barcode successfully decoded.
+  const value = result.getText();
 
-            if (sameCode && withinCooldown) return;
+  console.log("BARCODE DETECTED:", {
+    value,
+    format: result.getBarcodeFormat(),
+  });
 
-            lastScanRef.current = { value: normalized, time: now };
-            handleScanRef.current?.(normalized);
-          },
+  const normalized = normalizeParcelCode(value);
+
+  if (!normalized) {
+    setScanKind("error");
+    setScanMessage(
+      `Barcode detected, but its value could not be processed: ${value}`
+    );
+    return;
+  }
+
+  const now = Date.now();
+  const sameCode = normalized === lastScanRef.current.value;
+  const withinCooldown = now - lastScanRef.current.time < 3000;
+
+  if (sameCode && withinCooldown) return;
+
+  lastScanRef.current = { value: normalized, time: now };
+
+  setScanKind("info");
+  setScanMessage(`Barcode detected: ${normalized}. Processing...`);
+
+  handleScanRef.current?.(value);
+},
         );
 
         if (stopped) {
