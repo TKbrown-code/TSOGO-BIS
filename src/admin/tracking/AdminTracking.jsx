@@ -359,24 +359,21 @@ export default function AdminTracking() {
             },
           },
           videoElement,
-          (result, error) => {
+          (result) => {
             if (stopped || !result) return;
 
             const value = result.getText();
-
-            if (!value) return;
-
             const normalized = normalizeParcelCode(value);
+            if (!normalized) return;
+
             const now = Date.now();
+            const sameCode = normalized === lastScanRef.current.value;
+            const withinCooldown = now - lastScanRef.current.time < 3000;
 
-            if (normalized !== lastScanRef.current.value) {
-              lastScanRef.current = {
-                value: normalized,
-                time: now,
-              };
+            if (sameCode && withinCooldown) return;
 
-              handleScanRef.current?.(value);
-            }
+            lastScanRef.current = { value: normalized, time: now };
+            handleScanRef.current?.(normalized);
           },
         );
 
