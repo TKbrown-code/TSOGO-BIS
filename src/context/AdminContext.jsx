@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { signUpUser, sendOtp } from "../hooks/functions";
 import { showSiteModal } from "../utils/siteModal";
@@ -10,10 +10,16 @@ export const AdminProvider = ({ children }) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [adminRole, setAdminRole] = useState(null);
+  const authCheckId = useRef(0);
 
   // Check if user is admin
-  const checkAdmin = useCallback(async (uid) => {
+  const checkAdmin = useCallback(async (uid, requestedCheckId) => {
+    const checkId = requestedCheckId ?? ++authCheckId.current;
+    const isCurrentCheck = () => checkId === authCheckId.current;
+
     if (!uid) {
+      if (!isCurrentCheck()) return false;
+      setUser(null);
       setIsAdmin(false);
       setAdminRole(null);
       setLoading(false);
@@ -22,10 +28,12 @@ export const AdminProvider = ({ children }) => {
 
     try {
       const { data, error } = await supabase.rpc("is_admin_role");
+      if (!isCurrentCheck()) return false;
 
       if (error) {
         console.error("Admin check error:", error);
         await supabase.auth.signOut({ scope: "local" }).catch((signOutError) => console.error("Could not end unverified admin session:", signOutError));
+        if (!isCurrentCheck()) return false;
         setUser(null);
         setIsAdmin(false);
         setAdminRole(null);
@@ -33,25 +41,29 @@ export const AdminProvider = ({ children }) => {
       }
 
       if (data === true) {
+        if (!isCurrentCheck()) return false;
         setIsAdmin(true);
         setAdminRole("admin");
         return true;
       }
 
       await supabase.auth.signOut({ scope: "local" }).catch((signOutError) => console.error("Could not end unauthorized admin session:", signOutError));
+      if (!isCurrentCheck()) return false;
       setUser(null);
       setIsAdmin(false);
       setAdminRole(null);
       return false;
     } catch (err) {
+      if (!isCurrentCheck()) return false;
       console.error("Admin check exception:", err);
       await supabase.auth.signOut({ scope: "local" }).catch((signOutError) => console.error("Could not end unverified admin session:", signOutError));
+      if (!isCurrentCheck()) return false;
       setUser(null);
       setIsAdmin(false);
       setAdminRole(null);
       return false;
     } finally {
-      setLoading(false);
+      if (isCurrentCheck()) setLoading(false);
     }
   }, []);
 
@@ -62,12 +74,16 @@ export const AdminProvider = ({ children }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         const nextUser = session?.user ?? null;
+        const checkId = ++authCheckId.current;
         setUser(nextUser);
+        setIsAdmin(false);
+        setAdminRole(null);
+        setLoading(true);
 
         // Do not call Supabase APIs until the auth callback releases its lock.
         clearTimeout(pendingAdminCheck);
         pendingAdminCheck = setTimeout(() => {
-          if (active) checkAdmin(nextUser?.id);
+          if (active) checkAdmin(nextUser?.id, checkId);
         }, 0);
       }
     );
@@ -81,10 +97,13 @@ export const AdminProvider = ({ children }) => {
 
   // Sign out
   const signOut = async () => {
-    await supabase.auth.signOut();
+    ++authCheckId.current;
     setUser(null);
     setIsAdmin(false);
     setAdminRole(null);
+    setLoading(false);
+    const { error } = await supabase.auth.signOut({ scope: "local" });
+    if (error) console.error("Could not sign out of the admin workspace:", error);
   };
 
   const login = async (credentials) => {

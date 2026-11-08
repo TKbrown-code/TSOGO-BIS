@@ -20,24 +20,31 @@ export default function AdminSignIn() {
     try {
       // Sign in with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim(),
         password
       });
 
       if (authError) throw authError;
+      if (!authData.user) throw new Error("Sign in did not return an authenticated account. Please try again.");
 
       // Check if user is admin
       const { data: adminData, error: adminError } = await supabase.rpc("is_admin_role");
 
-      if (adminError || adminData !== true) {
-        await supabase.auth.signOut();
-        throw new Error("You are not authorized as an admin");
+      if (adminError) {
+        await supabase.auth.signOut({ scope: "local" });
+        console.error("Could not verify admin role during sign in:", adminError);
+        throw new Error("We could not verify admin access. Please try again.");
+      }
+
+      if (adminData !== true) {
+        await supabase.auth.signOut({ scope: "local" });
+        throw new Error("This account does not have administrator access.");
       }
 
       // Success - redirect to admin dashboard
       navigate("/admin");
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : "Sign in failed. Please try again.");
     } finally {
       setLoading(false);
     }
